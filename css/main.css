@@ -148,7 +148,7 @@ a:hover { color: var(--color-accent-hover); }
   z-index: 100;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.97) 0%, rgba(241, 245, 249, 0.95) 100%);
+  background: #ffffff;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
@@ -410,15 +410,23 @@ a:hover { color: var(--color-accent-hover); }
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
 }
+
+/* 5단계 등급 — 한 줄 5열 강제 */
+.kpi-grid--row5 {
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-sm);
+}
+@media (max-width: 1024px) { .kpi-grid--row5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px)  { .kpi-grid--row5 { grid-template-columns: repeat(2, 1fr); } }
 
 .kpi-card {
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
@@ -445,29 +453,42 @@ a:hover { color: var(--color-accent-hover); }
 .kpi-card:hover::before { opacity: 1; }
 
 .kpi-icon {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, var(--accent-color, var(--color-accent)), var(--accent-color-2, var(--color-warning)));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  margin-bottom: var(--space-md);
+  font-size: 1.4rem;
+  margin-bottom: var(--space-sm);
 }
 
 .kpi-name {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: var(--space-sm);
+  margin-bottom: 6px;
   color: var(--text-primary);
 }
 
 .kpi-desc {
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.55;
 }
+
+/* 5단계 등급 한 줄 카드 추가 컴팩트 */
+.kpi-grid--row5 .kpi-card {
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+}
+.kpi-grid--row5 .kpi-icon {
+  width: 40px; height: 40px;
+  font-size: 1.25rem;
+  margin: 0 auto var(--space-xs);
+}
+.kpi-grid--row5 .kpi-name { font-size: 0.875rem; }
+.kpi-grid--row5 .kpi-desc { font-size: 0.78rem; }
 
 /* ============================================
    PROCESS / FLOW
@@ -733,7 +754,7 @@ a:hover { color: var(--color-accent-hover); }
   position: relative;
   margin-top: 120px;
   padding: 80px 0 32px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.97) 0%, rgba(241, 245, 249, 0.98) 100%);
+  background: #ffffff;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 -1px 3px rgba(15, 23, 42, 0.04);
   overflow: hidden;
