@@ -440,7 +440,7 @@ function detectAIWritingSignals(content, companyName) {
   };
 }
 
-function fallbackResult({ companyName, websiteUrl, fetchResult }) {
+function fallbackResult({ companyName, websiteUrl, fetchResult, hasGeminiKey }) {
   const meta = fetchResult.meta || {};
   const baseScore = fetchResult.ok ? 35 : 22;
   const adjust = (cond, delta) => cond ? delta : 0;
@@ -473,7 +473,9 @@ function fallbackResult({ companyName, websiteUrl, fetchResult }) {
     summary: {
       headline: `현재 ${companyName}의 GEO 종합 점수는 ${total}점입니다`,
       diagnosis: fetchResult.ok
-        ? '사이트 분석은 성공했지만 AI 분석 엔진을 사용하지 못해 휴리스틱 점수만 제공합니다. 정밀 진단을 위해 GEMINI_API_KEY 설정을 권장합니다.'
+        ? (hasGeminiKey
+            ? 'AI 분석 엔진이 일시적으로 응답을 반환하지 못해 규칙 기반 점수로 대체했습니다. 잠시 후 다시 시도하시면 정밀 진단을 받을 수 있습니다.'
+            : 'AI 분석 엔진(Gemini API)이 설정되지 않아 규칙 기반 점수로 진단했습니다. 정밀 진단을 위해 환경 변수 GEMINI_API_KEY 설정이 필요합니다.')
         : '사이트 데이터를 가져오지 못했습니다. URL을 확인하거나 robots.txt 정책을 점검해주세요.',
       topProblems: [
         meta.hasFaq ? null : 'FAQ/Q&A 구조 부재',
@@ -598,7 +600,7 @@ export default async function handler(req, res) {
     }
 
     if (!analysis) {
-      analysis = fallbackResult({ companyName, websiteUrl: url, fetchResult });
+      analysis = fallbackResult({ companyName, websiteUrl: url, fetchResult, hasGeminiKey: !!process.env.GEMINI_API_KEY });
     }
 
     // ai_writing 4 신호 검출 — content 모드면 입력 콘텐츠, URL 모드면 fetch한 본문
