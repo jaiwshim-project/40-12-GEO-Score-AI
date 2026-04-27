@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GEO 진단 결과를 AX Biz Group 브랜딩의 단일 HTML 영업 리포트로 변환합니다." />
+  <title>🎁 영업 리포트 생성 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎁%3C/text%3E%3C/svg%3E" />
+  <style>
+    .gr-wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .gr-hero { text-align: center; padding: 56px 24px 32px; }
+    .gr-hero h1 { font-size: 2.2rem; margin-bottom: 12px; }
+    .gr-hero p { color: var(--text-secondary); max-width: 720px; margin: 0 auto; }
+    .gr-hero .gold { color: #d4af37; }
+
+    .gr-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; margin-bottom: 32px; }
+    @media (max-width: 960px) { .gr-grid { grid-template-columns: 1fr; } }
+
+    .gr-form { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 28px; }
+    .gr-form h3 { margin: 0 0 6px; font-size: 1.1rem; }
+    .gr-form .hint { color: var(--text-tertiary); font-size: 0.82rem; margin-bottom: 18px; }
+
+    .gr-field { margin-bottom: 14px; }
+    .gr-field label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
+    .gr-field input, .gr-field textarea, .gr-field select {
+      width: 100%; padding: 10px 12px; background: var(--bg-tertiary);
+      border: 1px solid var(--border-primary); border-radius: 8px;
+      color: var(--text-primary); font-family: inherit; font-size: 0.92rem;
+    }
+    .gr-field input:focus, .gr-field textarea:focus { outline: none; border-color: #d4af37; }
+    .gr-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .gr-kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .gr-kpi-grid .gr-field { margin-bottom: 8px; }
+    .gr-kpi-grid label { font-size: 0.72rem; }
+
+    .gr-loaded-badge { background: rgba(0,214,143,0.12); border: 1px solid #00d68f; color: #00d68f; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 14px; display: none; }
+    .gr-loaded-badge.show { display: block; }
+
+    .gr-btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      color: #0a0e1a; border: none; border-radius: 10px;
+      font-weight: 800; font-size: 1rem; cursor: pointer;
+      letter-spacing: 0.02em; transition: transform 0.15s;
+    }
+    .gr-btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+    .gr-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .gr-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .gr-btn-secondary {
+      flex: 1; padding: 10px; background: var(--bg-tertiary);
+      color: var(--text-primary); border: 1px solid var(--border-primary);
+      border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .gr-btn-secondary:hover { border-color: #d4af37; color: #d4af37; }
+
+    .gr-preview {
+      background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px;
+      overflow: hidden; min-height: 600px; display: flex; flex-direction: column;
+    }
+    .gr-preview-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 20px; border-bottom: 1px solid var(--border-primary);
+      background: var(--bg-tertiary);
+    }
+    .gr-preview-head .label { font-weight: 700; font-size: 0.92rem; color: var(--text-secondary); }
+    .gr-preview-head .meta { font-size: 0.78rem; color: var(--text-tertiary); }
+    .gr-preview iframe { flex: 1; width: 100%; min-height: 600px; border: none; background: #faf6ed; }
+    .gr-preview-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--text-tertiary); font-size: 0.95rem; padding: 60px 24px; text-align: center;
+    }
+
+    .gr-toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+      padding: 12px 18px; border-radius: 8px; background: #1a1f2e;
+      color: #d4af37; border: 1px solid #d4af37; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transform: translateY(20px); opacity: 0; transition: all 0.25s;
+      font-size: 0.92rem;
+    }
+    .gr-toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- ========== NAVIGATION ========== -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="architecture.html" class="nav-link">아키텍처</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="cep.html" class="nav-link">🎯 CEP 발굴</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="generate-report.html" class="nav-link nav-cta">🎁 영업 리포트</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="gr-wrap">
+    <div class="gr-hero">
+      <h1>🎁 <span class="gold">AX Biz Group</span> 영업 리포트 생성</h1>
+      <p>SaaS 진단 결과를 단일 HTML 영업 도구로 변환합니다. 다크 네이비·골드·아이보리 브랜딩, 3탭 구조(진단·개선·대표)로 의사결정자에게 바로 제출 가능합니다.</p>
+    </div>
+
+    <div class="gr-grid">
+
+      <!-- ===== 좌측: 입력 폼 ===== -->
+      <div class="gr-form">
+        <h3>리포트 입력 정보</h3>
+        <div class="hint">진단 ID(?id=...)가 있으면 sessionStorage에서 자동 로드됩니다.</div>
+
+        <div id="grLoadedBadge" class="gr-loaded-badge">
+          ✓ 진단 결과 자동 로드 완료
+        </div>
+
+        <div class="gr-field">
+          <label for="grBrand">브랜드명</label>
+          <input type="text" id="grBrand" placeholder="예: 디지털스마일치과" />
+        </div>
+
+        <div class="gr-field-row">
+          <div class="gr-field">
+            <label for="grIndustry">업종</label>
+            <input type="text" id="grIndustry" placeholder="예: 치과" />
+          </div>
+          <div class="gr-field">
+            <label for="grTotalScore">종합 점수 (0~100)</label>
+            <input type="number" id="grTotalScore" min="0" max="100" placeholder="42" />
+          </div>
+        </div>
+
+        <div class="gr-field">
+          <label for="grWebsiteUrl">홈페이지 URL</label>
+          <input type="url" id="grWebsiteUrl" placeholder="https://example.com" />
+        </div>
+
+        <h3 style="margin-top: 18px;">5신호 점수 (0~100)</h3>
+        <div class="hint">자동 로드 시 10 KPI 모두 채워집니다. 수동 입력은 핵심 5개만:</div>
+
+        <div class="gr-kpi-grid">
+          <div class="gr-field">
+            <label>검색 가시성</label>
+            <input type="number" id="kpi_visibility" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>AI 인용 가능성</label>
+            <input type="number" id="kpi_citation" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>E-E-A-T 신뢰도</label>
+            <input type="number" id="kpi_authority" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>콘텐츠 생산력</label>
+            <input type="number" id="kpi_velocity" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>고객 참여도</label>
+            <input type="number" id="kpi_engagement" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>전환 설계</label>
+            <input type="number" id="kpi_conversion" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>채널 확장</label>
+            <input type="number" id="kpi_channel" min="0" max="100" />
+          </div>
+          <div class="gr-field">
+            <label>AIO 준비도</label>
+            <input type="number" id="kpi_aio" min="0" max="100" />
+          </div>
+        </div>
+
+        <button type="button" id="grGenerateBtn" class="gr-btn-primary">
+          🎁 AX Biz Group 영업 리포트 생성
+        </button>
+
+        <div class="gr-btn-row">
+          <button type="button" id="grDownloadBtn" class="gr-btn-secondary" disabled>⬇️ HTML 다운로드</button>
+          <button type="button" id="grOpenBtn" class="gr-btn-secondary" disabled>🪟 새 탭 열기</button>
+        </div>
+      </div>
+
+      <!-- ===== 우측: 미리보기 ===== -->
+      <div class="gr-preview">
+        <div class="gr-preview-head">
+          <span class="label">📄 리포트 미리보기</span>
+          <span class="meta" id="grPreviewMeta">생성 전</span>
+        </div>
+        <div id="grPreviewEmpty" class="gr-preview-empty">
+          좌측 입력 정보를 채운 뒤<br /><strong>🎁 AX Biz Group 영업 리포트 생성</strong> 버튼을 눌러주세요.
+        </div>
+        <iframe id="grPreviewFrame" style="display:none;" title="리포트 미리보기"></iframe>
+      </div>
+
+    </div>
+  </section>
+
+  <div id="grToast" class="gr-toast"></div>
+
+  <script src="js/generate-report.js"></script>
+</body>
+</html>

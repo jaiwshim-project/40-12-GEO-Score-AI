@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>삼일자동차운전전문학원 — AI 검색 최적화 신규 개발 제안서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;900&family=Pretendard:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --bg-tint: #ebe4d3;
+    --surface: #ffffff;
+    --surface-warm: #fdfbf6;
+    --ink-darkest: #0a0e1a;
+    --ink-dark: #14213d;
+    --ink-mid: #1e3a5f;
+    --ink-soft: #4a5568;
+    --ink-light: #718096;
+    --line: #e6dec8;
+    --line-dark: #cbb98e;
+    --gold: #b8945a;
+    --gold-bright: #d4b078;
+    --gold-deep: #8b6f3f;
+    --gold-dark: #6b5430;
+    --critical: #8b1f1f;
+    --warning: #a05d1c;
+    --success: #2f5d3f;
+    --info: #1e3a5f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.75;
+    color: var(--ink-dark);
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(184,148,90,.06) 0%, transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(20,33,61,.04) 0%, transparent 40%);
+    background-attachment: fixed;
+    padding: 56px 20px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 0;
+    box-shadow:
+      0 1px 0 rgba(184,148,90,.15),
+      0 2px 4px rgba(20,33,61,.04),
+      0 24px 60px rgba(20,33,61,.10),
+      0 0 0 1px rgba(184,148,90,.08);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .container::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--gold-deep) 0%, var(--gold-bright) 50%, var(--gold-deep) 100%);
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 60%, var(--ink-mid) 100%);
+    color: #fff;
+    padding: 70px 80px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+  header::before {
+    content: "";
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(184,148,90,.12) 0%, transparent 70%);
+  }
+  .crest {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .crest-line {
+    width: 40px;
+    height: 1px;
+    background: var(--gold-bright);
+  }
+  .label {
+    display: inline-block;
+    color: var(--gold-bright);
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+  }
+  h1 {
+    font-family: 'Noto Serif KR', 'Cormorant Garamond', serif;
+    font-size: 38px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 18px;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    position: relative;
+  }
+  h1 .accent {
+    color: var(--gold-bright);
+    font-weight: 400;
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .subtitle {
+    color: rgba(255,255,255,.78);
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 720px;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+  .meta {
+    display: flex;
+    gap: 0;
+    margin-top: 36px;
+    padding-top: 28px;
+    font-size: 13px;
+    color: rgba(255,255,255,.6);
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(184,148,90,.25);
+  }
+  .meta span {
+    padding: 4px 28px 4px 0;
+    margin-right: 28px;
+    border-right: 1px solid rgba(184,148,90,.2);
+    letter-spacing: 0.02em;
+  }
+  .meta span:last-child { border-right: none; }
+  .meta span strong {
+    display: block;
+    color: var(--gold-bright);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 4px;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .meta span em {
+    color: #fff;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  /* CONTENT WRAPPER */
+  .content { padding: 60px 80px; }
+
+  /* HEADINGS */
+  h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink-darkest);
+    margin: 64px 0 24px;
+    padding-bottom: 16px;
+    position: relative;
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid var(--line);
+  }
+  h2::before {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: var(--gold);
+  }
+  h2:first-child { margin-top: 0; }
+
+  h3 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--ink-dark);
+    margin: 32px 0 14px;
+    letter-spacing: -0.01em;
+  }
+  h4 {
+    font-size: 15px;
+    color: var(--ink-mid);
+    margin: 20px 0 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  p {
+    margin-bottom: 14px;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  strong { color: var(--ink-darkest); font-weight: 600; }
+
+  /* SCORE GRID */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 28px 0;
+  }
+  .score-card {
+    padding: 22px 24px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--ink-light);
+    transition: all .2s;
+  }
+  .score-card:hover { box-shadow: 0 4px 16px rgba(20,33,61,.06); transform: translateY(-1px); }
+  .score-card.critical { border-left-color: var(--critical); background: linear-gradient(to right, rgba(139,31,31,.025), var(--surface) 30%); }
+  .score-card.warning { border-left-color: var(--warning); background: linear-gradient(to right, rgba(160,93,28,.025), var(--surface) 30%); }
+  .score-card.good { border-left-color: var(--success); background: linear-gradient(to right, rgba(47,93,63,.025), var(--surface) 30%); }
+  .score-card .item-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: var(--ink-darkest);
+    letter-spacing: -0.01em;
+  }
+  .score-card .stars { font-size: 16px; color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; }
+  .score-card .stars .empty { color: var(--line-dark); }
+  .score-card .note { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  th, td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    line-height: 1.6;
+  }
+  th {
+    background: var(--surface-warm);
+    color: var(--ink-darkest);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--gold);
+  }
+  td { color: var(--ink-soft); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-warm); }
+  table tr td:first-child { font-weight: 500; color: var(--ink-dark); }
+
+  /* ALERTS */
+  .alert {
+    padding: 20px 24px;
+    border-radius: 4px;
+    margin: 18px 0;
+    border-left: 3px solid;
+    background: var(--surface-warm);
+    position: relative;
+  }
+  .alert.danger {
+    background: linear-gradient(to right, rgba(139,31,31,.04), var(--surface-warm));
+    border-color: var(--critical);
+    color: #5c1818;
+  }
+  .alert.warning {
+    background: linear-gradient(to right, rgba(160,93,28,.04), var(--surface-warm));
+    border-color: var(--warning);
+    color: #6e3e10;
+  }
+  .alert.info {
+    background: linear-gradient(to right, rgba(30,58,95,.04), var(--surface-warm));
+    border-color: var(--info);
+    color: #1a2540;
+  }
+  .alert.success {
+    background: linear-gradient(to right, rgba(47,93,63,.04), var(--surface-warm));
+    border-color: var(--success);
+    color: #1d3d29;
+  }
+  .alert strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .alert ul li { color: inherit; }
+
+  ul, ol { margin: 10px 0 18px 22px; }
+  li {
+    margin-bottom: 8px;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+  li strong { color: var(--ink-darkest); }
+
+  /* CODE */
+  pre {
+    background: var(--ink-darkest);
+    color: #e8e2d2;
+    padding: 20px 24px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+    margin: 16px 0;
+    line-height: 1.7;
+    border-left: 3px solid var(--gold);
+    position: relative;
+  }
+  code {
+    background: var(--bg-tint);
+    color: var(--gold-deep);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-weight: 500;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-weight: 400; }
+
+  /* PHASE TIMELINE */
+  .timeline { margin: 28px 0; }
+  .phase {
+    padding: 24px 28px;
+    margin-bottom: 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    position: relative;
+    transition: all .2s;
+  }
+  .phase:hover {
+    box-shadow: 0 6px 20px rgba(20,33,61,.06);
+    transform: translateX(2px);
+  }
+  .phase.urgent { border-left-color: var(--critical); }
+  .phase.short { border-left-color: var(--warning); }
+  .phase.mid { border-left-color: var(--success); }
+  .phase.long { border-left-color: var(--info); }
+  .phase-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+  }
+  .phase.urgent .phase-tag { background: var(--critical); color: #fff; }
+  .phase.short .phase-tag { background: var(--warning); color: #fff; }
+  .phase.mid .phase-tag { background: var(--success); color: #fff; }
+  .phase.long .phase-tag { background: var(--info); color: #fff; }
+  .phase h3 {
+    margin-top: 0;
+    color: var(--ink-darkest);
+    font-size: 18px;
+  }
+
+  /* SUMMARY HERO BOX */
+  .summary-box {
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    color: #fff;
+    padding: 44px 50px;
+    border-radius: 4px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(20,33,61,.15);
+  }
+  .summary-box::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-deep));
+  }
+  .summary-box::after {
+    content: "❖";
+    position: absolute;
+    top: 30px; right: 36px;
+    color: var(--gold);
+    font-size: 28px;
+    opacity: .3;
+  }
+  .summary-box h3 {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    color: var(--gold-bright);
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+  }
+  .summary-box p {
+    color: rgba(255,255,255,.85);
+    font-size: 15px;
+    line-height: 1.85;
+  }
+  .summary-box strong { color: var(--gold-bright); font-weight: 600; }
+  .summary-box .big-number {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    font-size: 56px;
+    font-weight: 600;
+    margin: 18px 0;
+    color: #fff;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .summary-box .big-number .em {
+    color: var(--gold-bright);
+    font-style: italic;
+  }
+
+  /* KPI ROW */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 24px 20px;
+    border-radius: 4px;
+    text-align: center;
+    position: relative;
+  }
+  .kpi::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 2px;
+    background: var(--gold);
+  }
+  .kpi-value {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink-darkest);
+    letter-spacing: -0.02em;
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--ink-light);
+    margin-top: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* PREMIUM FOOTER */
+  footer.premium-footer {
+    margin-top: 0;
+    padding: 0;
+    background: linear-gradient(180deg, var(--ink-darkest) 0%, #050810 100%);
+    color: rgba(255,255,255,.7);
+    font-size: 13px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  footer.premium-footer::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+  footer.premium-footer::after {
+    content: "";
+    position: absolute;
+    bottom: -200px; left: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(184,148,90,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1.3fr 2fr;
+    gap: 60px;
+    padding: 60px 80px 40px;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-brand .ax-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .ax-monogram {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 4px 12px rgba(184,148,90,.35));
+  }
+  .ax-logo-img {
+    width: 76px;
+    height: 76px;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #ffffff 0%, #faf6ec 100%);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 0 1px rgba(184,148,90,.45),
+      0 6px 20px rgba(184,148,90,.25),
+      inset 0 1px 0 rgba(255,255,255,.6);
+    position: relative;
+  }
+  .ax-logo-img::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 4px;
+    border: 1px solid rgba(184,148,90,.2);
+    pointer-events: none;
+  }
+  .ax-logo-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .header-ax-mark {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 14px 4px 4px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(184,148,90,.25);
+    border-radius: 4px;
+    backdrop-filter: blur(8px);
+  }
+  .header-ax-mark .ax-mini-img {
+    width: 36px;
+    height: 36px;
+    background: #fff;
+    border-radius: 3px;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .header-ax-mark .ax-mini-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .header-ax-mark .ax-mini-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+  .header-ax-mark .ax-mini-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+  .header-ax-mark .ax-mini-by {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 9.5px;
+    letter-spacing: 0.32em;
+    color: rgba(255,255,255,.5);
+    text-transform: uppercase;
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 1;
+  }
+  .ax-wordmark { display: flex; flex-direction: column; }
+  .ax-name {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #fff;
+    line-height: 1;
+  }
+  .ax-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    color: var(--gold-bright);
+    margin-top: 6px;
+    font-style: italic;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .brand-desc {
+    color: rgba(255,255,255,.55);
+    font-size: 13px;
+    line-height: 1.75;
+    font-weight: 300;
+    max-width: 320px;
+    margin: 0;
+  }
+  .brand-desc strong { color: rgba(255,255,255,.85); font-weight: 500; }
+  .footer-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+  .footer-col h5 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(184,148,90,.22);
+    font-weight: 600;
+  }
+  .footer-col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .footer-col li {
+    color: rgba(255,255,255,.6);
+    font-size: 13px;
+    margin-bottom: 9px;
+    line-height: 1.65;
+    padding-left: 0;
+    letter-spacing: 0.01em;
+  }
+  .footer-col li::before { content: none; }
+  .footer-col li strong { color: rgba(255,255,255,.88); font-weight: 500; }
+  .footer-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(184,148,90,.25) 20%, rgba(184,148,90,.25) 80%, transparent);
+    margin: 0 80px;
+  }
+  .footer-bottom {
+    padding: 24px 80px 32px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,.45);
+    letter-spacing: 0.04em;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-bottom strong {
+    color: var(--gold-bright);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+  }
+  .footer-bottom .footer-mark {
+    color: var(--gold);
+    margin: 0 12px;
+    font-size: 12px;
+    display: inline-block;
+    transform: translateY(-1px);
+  }
+  .footer-mark {
+    display: inline-block;
+    color: var(--gold);
+    margin: 0 8px;
+    font-size: 14px;
+  }
+
+  /* TABS — TRI-COLOR JEWEL TONES */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin: 48px 0 0;
+    padding: 6px;
+    background: var(--ink-darkest);
+    border-radius: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(20,33,61,.22);
+    border: 1px solid var(--gold-dark);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 18px 22px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.28s ease;
+    text-align: center;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    position: relative;
+    overflow: hidden;
+  }
+  .tab-btn::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: transparent;
+    transition: all 0.28s ease;
+  }
+  .tab-btn .tab-icon {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 18px;
+    vertical-align: middle;
+  }
+  .tab-btn .tab-sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,.7);
+    margin-top: 6px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  /* TAB 1 — 진단 리포트 · WINE / GARNET */
+  .tab-btn[data-tab="audit"] {
+    background: linear-gradient(135deg, #3a0f15 0%, #5e1820 100%);
+    color: #f5d4d4;
+  }
+  .tab-btn[data-tab="audit"] .tab-sub { color: rgba(245,212,212,.55); }
+  .tab-btn[data-tab="audit"]:hover {
+    background: linear-gradient(135deg, #5e1820 0%, #8b1f2c 100%);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .tab-btn[data-tab="audit"].active {
+    background: linear-gradient(135deg, #6b1d24 0%, #a02233 50%, #c92a3a 100%);
+    color: #fff;
+    box-shadow:
+      0 0 0 1px #d44b59,
+      0 6px 20px rgba(185,28,40,.45),
+      inset 0 1px 0 rgba(255,255,255,.18);
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .tab-btn[data-tab="audit"].active .tab-sub { color: rgba(255,255,255,.85); }
+
+  /* TAB 2 — 신규 개발 제안 · EMERALD / FOREST */
+  .tab-btn[data-tab="solution"] {
+    background: linear-gradient(135deg, #0d2017 0%, #1a3d29 100%);
+    color: #c8e6d2;
+  }
+  .tab-btn[data-tab="solution"] .tab-sub { color: rgba(200,230,210,.55); }
+  .tab-btn[data-tab="solution"]:hover {
+    background: linear-gradient(135deg, #1a3d29 0%, #2d6644 100%);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .tab-btn[data-tab="solution"].active {
+    background: linear-gradient(135deg, #1f4d2e 0%, #2d7a4a 50%, #3aa364 100%);
+    color: #fff;
+    box-shadow:
+      0 0 0 1px #4ec07c,
+      0 6px 20px rgba(58,163,100,.4),
+      inset 0 1px 0 rgba(255,255,255,.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .tab-btn[data-tab="solution"].active .tab-sub { color: rgba(255,255,255,.88); }
+
+  /* TAB 3 — 대표 프로필 · ROYAL GOLD */
+  .tab-btn[data-tab="profile"] {
+    background: linear-gradient(135deg, #2a1d0a 0%, #4d3818 100%);
+    color: #f0dfb8;
+  }
+  .tab-btn[data-tab="profile"] .tab-sub { color: rgba(240,223,184,.55); }
+  .tab-btn[data-tab="profile"]:hover {
+    background: linear-gradient(135deg, #4d3818 0%, #7a5d2c 100%);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .tab-btn[data-tab="profile"].active {
+    background: linear-gradient(135deg, var(--gold-deep) 0%, var(--gold) 55%, var(--gold-bright) 100%);
+    color: #fff;
+    box-shadow:
+      0 0 0 1px var(--gold-bright),
+      0 6px 20px rgba(184,148,90,.45),
+      inset 0 1px 0 rgba(255,255,255,.25);
+    text-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  .tab-btn[data-tab="profile"].active .tab-sub { color: rgba(255,255,255,.92); }
+  .tab-panel { display: none; padding-top: 36px; animation: fadeIn 0.4s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* PRINCIPAL PROFILE */
+  .principal-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 56px;
+    align-items: start;
+    margin-top: 28px;
+  }
+  .principal-photo-col { position: sticky; top: 120px; }
+  .principal-photo {
+    width: 280px;
+    height: 320px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .principal-photo::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .principal-photo::after {
+    content: "";
+    position: absolute;
+    bottom: -22px; right: -22px;
+    width: 50px; height: 50px;
+    border-right: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    pointer-events: none;
+  }
+  .principal-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+    display: block;
+    filter: contrast(1.04);
+    box-shadow: 0 18px 44px rgba(20,33,61,.18);
+  }
+  .principal-photo-fallback {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 64px;
+    color: var(--gold-bright);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    box-shadow: 0 18px 44px rgba(20,33,61,.18);
+  }
+  .principal-name-card {
+    text-align: center;
+    padding: 20px 0 18px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-warm);
+    margin-top: 36px;
+  }
+  .principal-name-card .ko-name {
+    display: block;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink-darkest);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .principal-name-card .role-tag {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-top: 8px;
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  .principal-body { padding-top: 4px; }
+  .principal-quote {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 21px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--ink-darkest);
+    padding: 6px 0 16px 22px;
+    border-left: 3px solid var(--gold);
+    margin: 0 0 18px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+  }
+  .principal-summary {
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.85;
+    margin-bottom: 32px;
+  }
+
+  .principal-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-bottom: 36px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-warm) 100%);
+  }
+  .principal-stats .stat {
+    padding: 22px 8px 20px;
+    text-align: center;
+    border-right: 1px solid var(--line);
+    position: relative;
+  }
+  .principal-stats .stat::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 26px; height: 2px;
+    background: var(--gold);
+  }
+  .principal-stats .stat:last-child { border-right: none; }
+  .principal-stats .num {
+    display: block;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .principal-stats .label {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .principal-h3 {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    font-size: 12px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin: 28px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+  }
+  .principal-list { list-style: none; margin: 0 0 18px; padding: 0; }
+  .principal-list li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 14.5px;
+    margin-bottom: 9px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+  }
+  .principal-list li::before {
+    content: "❖";
+    position: absolute;
+    left: 0;
+    top: 1px;
+    color: var(--gold);
+    font-size: 10px;
+  }
+  .principal-list li strong { color: var(--ink-darkest); }
+  .principal-text {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.9;
+    margin-bottom: 18px;
+  }
+
+  .principal-contact-card {
+    margin-top: 36px;
+    padding: 22px 28px;
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .principal-contact-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-deep));
+  }
+  .contact-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(184,148,90,.18);
+  }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    width: 80px;
+    font-weight: 600;
+  }
+  .contact-val {
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+
+  /* PRINT */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; padding: 0; border: none; }
+    .container::before { display: none; }
+    header { padding: 30px 30px 20px; }
+    .content { padding: 30px; }
+    footer { padding: 20px 30px; }
+    .tabs { display: none; }
+    .tab-panel { display: block !important; page-break-before: always; }
+    .tab-panel:first-of-type { page-break-before: auto; }
+    footer.premium-footer { background: #fff !important; color: #333; }
+    footer.premium-footer * { color: #333 !important; }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 20px 12px; }
+    header { padding: 40px 28px 32px; }
+    .content { padding: 36px 28px; }
+    h1 { font-size: 26px; }
+    .summary-box { padding: 28px; }
+    .summary-box .big-number { font-size: 36px; }
+    .score-grid, .kpi-row { grid-template-columns: 1fr; }
+    .meta span { padding-right: 16px; margin-right: 16px; }
+    .footer-inner { grid-template-columns: 1fr; gap: 40px; padding: 40px 28px 24px; }
+    .footer-cols { grid-template-columns: 1fr; gap: 28px; }
+    .footer-divider { margin: 0 28px; }
+    .footer-bottom { padding: 20px 28px 28px; }
+    .tabs { flex-direction: column; }
+    .principal-grid { grid-template-columns: 1fr; gap: 36px; }
+    .principal-photo-col { position: static; }
+    .principal-photo { width: 220px; height: 260px; margin: 0 auto; }
+    .principal-name-card { margin-top: 28px; }
+    .principal-stats { grid-template-columns: repeat(2, 1fr); }
+    .principal-stats .stat:nth-child(2) { border-right: none; }
+    .principal-stats .stat:nth-child(1), .principal-stats .stat:nth-child(2) { border-bottom: 1px solid var(--line); }
+    .header-top { flex-direction: column; gap: 16px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="header-top">
+    <div class="crest">
+      <span class="crest-line"></span>
+      <span class="label">Samil Driving School · Premium Proposal</span>
+    </div>
+    <div class="header-ax-mark" title="Presented by AX Biz Group">
+      <div class="ax-mini-img">
+        <img src="https://jaiwshim-project.github.io/01-2-AXBizGroup/로고-AX비즈그룹.jpg" alt="AX Biz Group">
+      </div>
+      <div class="ax-mini-text">
+        <span class="ax-mini-by">Presented by</span>
+        <span class="ax-mini-name">AX BIZ GROUP</span>
+      </div>
+    </div>
+  </div>
+  <h1>AI 검색 시대를 위한<br><span class="accent">신규 홈페이지</span> 개발 제안</h1>
+  <p class="subtitle">삼일자동차운전전문학원 — ChatGPT, Claude, Perplexity, Gemini 등 AI 검색에서 천안 지역 대표 운전학원으로 추천되도록 설계된 새로운 홈페이지를 3주 안에 완성합니다.</p>
+  <div class="meta">
+    <span><strong>대상</strong><em>3daysdriving.co.kr</em></span>
+    <span><strong>발행일</strong><em>2026년 4월 27일</em></span>
+    <span><strong>개발 기간</strong><em>3주</em></span>
+    <span><strong>개발 비용</strong><em>400만원 (VAT 별도)</em></span>
+  </div>
+</header>
+
+<div class="content">
+
+<div class="summary-box">
+  <h3>Executive Summary</h3>
+  <p>삼일자동차운전전문학원은 <strong>1996년 창업, 28년 업력</strong>의 천안 지역 대표 운전 전문학원입니다. 그러나 ChatGPT나 Perplexity 같은 <strong>AI 검색에 학원 정보가 거의 노출되지 않고</strong>, 일반 검색에서도 찾기 어려운 상태입니다.</p>
+  <p style="margin-top:10px;">현 홈페이지는 외부 업체의 임대형 시스템으로 만들어져 있어 <strong>운영자가 자유롭게 수정·확장할 수 없는 구조</strong>입니다. AI 검색 노출에 필요한 핵심 요소들을 적용하기 위해서는 <strong>신규 개발이 유일한 해결 경로</strong>입니다.</p>
+  <div class="big-number">3주 · <span class="em">400</span>만원</div>
+  <p>본 제안서는 <strong>AI 검색에서 인용되는 새로운 홈페이지를 3주 안에, 400만원(VAT 별도)으로 구축</strong>하는 계획을 담고 있습니다. 28년 업력과 천안·아산·평택·안성 4개 지역 학생 유입이라는 강력한 오프라인 자산을 온라인에서 빛내드립니다.</p>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" role="tab" aria-controls="panel-audit" aria-selected="true" data-tab="audit">
+    진단 리포트
+    <span class="tab-sub">Current State Analysis</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-controls="panel-solution" aria-selected="false" data-tab="solution">
+    신규 개발 제안
+    <span class="tab-sub">3 Weeks · 4 Million KRW</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-controls="panel-profile" aria-selected="false" data-tab="profile">
+    대표 프로필
+    <span class="tab-sub">Principal Consultant</span>
+  </button>
+</div>
+
+<section class="tab-panel active" id="panel-audit" role="tabpanel">
+
+<h2>1. 학원 개요</h2>
+<table>
+  <tr><th width="180">항목</th><th>내용</th></tr>
+  <tr><td>상호</td><td>(주)삼일자동차운전전문학원</td></tr>
+  <tr><td>대표</td><td>배일열</td></tr>
+  <tr><td>사업자등록번호</td><td>578-86-03450</td></tr>
+  <tr><td>주소</td><td>충청남도 천안시 서북구 성거읍 석문길 10-3</td></tr>
+  <tr><td>전화</td><td>041-622-3030 / 010-9030-3182</td></tr>
+  <tr><td>설립</td><td>1996년 (Since 1996)</td></tr>
+  <tr><td>주요 서비스</td><td>1종/2종 운전면허 취득 과정, 운전연수(6시간 39만원), 셔틀 운영</td></tr>
+  <tr><td>핵심 타겟 지역</td><td>천안 · 아산 · 평택 · 안성</td></tr>
+</table>
+
+<h2>2. 현재 상태 한눈에 보기</h2>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-value">2</div><div class="kpi-label">검색 노출 페이지</div></div>
+  <div class="kpi"><div class="kpi-value">0</div><div class="kpi-label">AI 검색 인용</div></div>
+  <div class="kpi"><div class="kpi-value">0</div><div class="kpi-label">외부 추천·후기</div></div>
+</div>
+
+<div class="score-grid">
+  <div class="score-card critical">
+    <div class="item-title">AI 검색 노출</div>
+    <div class="stars">★<span class="empty">★★★★</span></div>
+    <div class="note">ChatGPT·Claude·Perplexity·Gemini 어디에서도 검색 결과로 등장하지 않음</div>
+  </div>
+  <div class="score-card critical">
+    <div class="item-title">검색엔진 노출</div>
+    <div class="stars">★<span class="empty">★★★★</span></div>
+    <div class="note">구글에서 학원 페이지가 단 2개만 발견됨 — 28년 운영 학원치고 매우 적음</div>
+  </div>
+  <div class="score-card critical">
+    <div class="item-title">외부 추천·언급</div>
+    <div class="stars">★<span class="empty">★★★★</span></div>
+    <div class="note">블로그·커뮤니티·언론에 학원 후기나 언급이 거의 없음</div>
+  </div>
+  <div class="score-card critical">
+    <div class="item-title">홈페이지 콘텐츠 깊이</div>
+    <div class="stars">★<span class="empty">★★★★</span></div>
+    <div class="note">학생들이 궁금해할 정보(블로그·후기·가이드)를 담는 코너가 없음</div>
+  </div>
+  <div class="score-card warning">
+    <div class="item-title">홈페이지 운영 자유도</div>
+    <div class="stars">★<span class="empty">★★★★</span></div>
+    <div class="note">외부 업체 임대형 시스템 — 학원이 직접 글·정보를 추가하기 어려움</div>
+  </div>
+  <div class="score-card warning">
+    <div class="item-title">모바일 사용성</div>
+    <div class="stars">★★<span class="empty">★★★</span></div>
+    <div class="note">현재 모바일 화면 최적화·속도 개선 여지가 큼</div>
+  </div>
+  <div class="score-card good">
+    <div class="item-title">사업자 신뢰 정보</div>
+    <div class="stars">★★★★<span class="empty">★</span></div>
+    <div class="note">상호·대표·주소·연락처가 명확히 표시되어 있음</div>
+  </div>
+  <div class="score-card good">
+    <div class="item-title">운영 업력</div>
+    <div class="stars">★★★★★</div>
+    <div class="note">1996년부터 28년간 운영 — 가장 강력한 자산이지만 온라인에서 활용되지 않음</div>
+  </div>
+</div>
+
+<h2>3. 핵심 문제점</h2>
+
+<h3>3-1. AI 검색에 등장하지 않습니다</h3>
+<div class="alert danger">
+  <strong>현재 상태</strong>
+  ChatGPT나 Perplexity에 "천안 운전면허학원 추천", "천안 단기 운전면허"를 물어봐도 삼일자동차운전전문학원이 답변에 등장하지 않습니다. 28년 업력과 차별화된 서비스가 있음에도 AI 검색 사용자가 학원의 존재 자체를 알 수 없는 상태입니다.
+</div>
+
+<h3>3-2. 일반 검색에서도 거의 노출되지 않습니다</h3>
+<div class="alert danger">
+  <strong>발견된 문제</strong>
+  구글에서 학원 사이트를 검색하면 메인 페이지와 수강료 페이지 단 두 개만 발견됩니다. 학원의 다양한 정보(과정 안내·셔틀·강사·후기 등)가 검색에서 찾아지지 않아 잠재 학생들에게 도달하지 못하고 있습니다.
+</div>
+
+<h3>3-3. 외부 추천·후기가 쌓이지 않았습니다</h3>
+<p>운전학원은 본래 후기와 블로그 추천이 입소문에 결정적인 업종이지만, 현재 외부 매체·블로그·커뮤니티에 학원에 대한 언급이 사실상 없습니다. <strong>오프라인의 28년 평판이 온라인 신뢰로 전환되지 못하고 있습니다.</strong></p>
+
+<h3>3-4. 학원이 직접 운영할 수 있는 코너가 없습니다</h3>
+<p>현 홈페이지에는 공지사항·갤러리 정도만 있어, <strong>학원 강사진 소개, 합격 후기, 면허 취득 가이드, 셔틀 노선 안내 등 잠재 학생이 궁금해할 정보를 풀어낼 공간이 없습니다.</strong> AI 검색은 이런 풍부한 정보가 있는 사이트를 우선 추천합니다.</p>
+
+<h3>3-5. 모바일 환경에서 개선 여지가 큽니다</h3>
+<p>학생들 대부분이 휴대폰으로 학원을 찾는 시대인데, 현재 사이트는 <strong>모바일 화면 최적화와 페이지 로딩 속도</strong>에서 개선이 필요합니다. 페이지가 느리거나 보기 불편하면 학생들이 다른 학원 페이지로 떠나갑니다.</p>
+
+<h2>4. 활용 가능한 강점</h2>
+<div class="alert success">
+  <strong>이미 가지고 계신 강력한 자산들</strong>
+  <ul style="margin-top: 8px;">
+    <li><strong>1996년부터 28년 업력</strong> — AI와 검색엔진이 가장 신뢰하는 신호</li>
+    <li><strong>명확한 사업자 정보</strong> — 상호·대표·주소·연락처 모두 정리되어 있음</li>
+    <li><strong>4개 지역 학생 유입</strong> — 천안·아산·평택·안성, 지역 검색 잠재력 큼</li>
+    <li><strong>차별화 포인트</strong> — "3일 완성", 매일 자체시험, 셔틀 운영, 도로주행 영상</li>
+    <li><strong>실시간 운영 정보</strong> — 교육 일정 현황, 셔틀 도착 알림 등 실용 콘텐츠</li>
+  </ul>
+</div>
+
+</section>
+
+<section class="tab-panel" id="panel-solution" role="tabpanel">
+
+<h2>5. 왜 신규 개발이 필요한가</h2>
+
+<div class="alert danger">
+  <strong>현 홈페이지로는 개선이 어렵습니다</strong>
+  현재 홈페이지는 외부 업체의 임대형 시스템으로 만들어져 있어, <strong>학원 측에서 자유롭게 수정·추가·확장할 수 없는 구조</strong>입니다. 검색엔진과 AI가 좋아하는 형태로 페이지 구조를 다듬거나, 새로운 정보 코너를 추가하거나, 모바일 화면을 개선하거나, 학원이 직접 글을 올릴 수 있는 게시판을 만드는 작업이 모두 막혀있습니다.
+</div>
+
+<p style="margin-top:14px;">따라서 <strong>AI 검색 시대에 맞춰 처음부터 새롭게 설계된 홈페이지</strong>를 별도로 만들어 기존 도메인 주소(3daysdriving.co.kr)에 이관하는 것이 유일한 해결 방법입니다. 본 제안은 이를 <strong>3주 안에 400만원(VAT 별도)</strong>으로 완수합니다.</p>
+
+<h2>6. 새 홈페이지에 담길 내용</h2>
+
+<table>
+  <tr><th width="200">구성 요소</th><th>고객사가 받게 될 결과</th></tr>
+  <tr><td>속도</td><td>3초 이내에 열리는 빠른 페이지 — 학생들이 기다리지 않고 바로 정보 확인</td></tr>
+  <tr><td>모바일 대응</td><td>휴대폰·태블릿·PC 어디서 봐도 화면이 자연스럽게 맞춰지는 반응형 화면</td></tr>
+  <tr><td>학원 직접 운영</td><td>학원 운영자가 컴퓨터 사용 수준으로 글·사진·소식을 직접 올릴 수 있는 글쓰기 화면</td></tr>
+  <tr><td>AI 검색 노출 설계</td><td>ChatGPT·Claude·Perplexity·Gemini가 학원 정보를 정확히 읽고 추천할 수 있도록 사이트 구조를 표준에 맞춰 설계</td></tr>
+  <tr><td>구글·네이버 검색 강화</td><td>학원의 모든 정보가 검색에 잘 노출되도록 페이지마다 별도 설정</td></tr>
+  <tr><td>지도·길찾기 연동</td><td>네이버 지도·카카오맵·구글 지도에서 학원이 정확히 표시되도록 연결</td></tr>
+  <tr><td>안전성</td><td>HTTPS 보안 인증서 기본 적용 — 학생들이 안심하고 사용</td></tr>
+  <tr><td>구성 페이지</td><td>학원 소개, 면허 과정 4종, 운전연수, 수강료, 위치·셔틀, 자주 묻는 질문, 학원 소식 블로그, 문의 — <strong>총 18페이지</strong></td></tr>
+</table>
+
+<h2>7. 3주 개발 일정</h2>
+
+<div class="timeline">
+
+<div class="phase urgent">
+  <span class="phase-tag">Week 1 — 기획과 디자인</span>
+  <h3>1주차: 사이트 구조 설계와 디자인 시안</h3>
+  <ul>
+    <li><strong>1~2일차</strong>: 학원 정보를 어떤 메뉴로 구성할지 확정 (학원 소개·면허 과정·연수·수강료·위치·자주 묻는 질문·블로그·문의)</li>
+    <li><strong>3~4일차</strong>: PC와 모바일 화면 디자인 시안 1차 제작 — 학원의 28년 신뢰감과 친근함을 함께 담는 톤</li>
+    <li><strong>5~7일차</strong>: 기존 정보 정리, 학원 사진·도로주행 영상 등 자료 준비, 디자인 시안 컨펌</li>
+  </ul>
+  <p style="margin-top:8px;font-size:13px;color:var(--ink-light);"><strong>학원 측 협조 사항</strong> — 학원 사진, 강사 정보, 도로주행 코스 영상 제공 / 자주 묻는 질문에 대한 답변 검토</p>
+</div>
+
+<div class="phase short">
+  <span class="phase-tag">Week 2 — 개발과 검색 최적화</span>
+  <h3>2주차: 화면 구현과 AI 검색 최적화 적용</h3>
+  <ul>
+    <li><strong>8~9일차</strong>: 전 페이지 화면 코드 구현, PC·모바일 반응형 작업</li>
+    <li><strong>10~11일차</strong>: 모든 페이지에 검색 노출용 정보 입력 (제목·설명·미리보기 등)</li>
+    <li><strong>12일차</strong>: AI 검색이 학원 정보를 정확히 인식하도록 표준 정보 구조 적용 — 영업시간·주소·전화·면허 과정·후기·자주 묻는 질문이 AI에 그대로 전달됨</li>
+    <li><strong>13일차</strong>: 검색엔진과 AI가 사이트의 모든 페이지를 빠짐없이 읽을 수 있도록 안내 파일 정비</li>
+    <li><strong>14일차</strong>: 학원 운영자가 직접 글을 올릴 수 있는 블로그 시스템 구축</li>
+  </ul>
+</div>
+
+<div class="phase mid">
+  <span class="phase-tag">Week 3 — 콘텐츠와 정식 오픈</span>
+  <h3>3주차: 첫 콘텐츠 채움과 실제 오픈</h3>
+  <ul>
+    <li><strong>15~16일차</strong>: 블로그에 잠재 학생이 검색할 만한 6편의 글을 미리 작성·게시
+      <ul>
+        <li>"천안 운전면허 5일 완성 실제 사례"</li>
+        <li>"1종 보통 vs 2종 보통, 어떤 면허를 따야 할까"</li>
+        <li>"천안 도로주행 시험 코스 완벽 안내"</li>
+        <li>"운전연수 6시간 코스 — 장롱면허 탈출 가이드"</li>
+        <li>"성거읍·천안·아산·평택 셔틀 노선 안내"</li>
+        <li>"신체검사부터 면허 발급까지 — 28년 학원의 전 과정 가이드"</li>
+      </ul>
+    </li>
+    <li><strong>17일차</strong>: 페이지 로딩 속도 최적화 — 3초 이내 열리도록 튜닝</li>
+    <li><strong>18일차</strong>: 크롬·엣지·사파리·삼성인터넷 등 모든 브라우저와 실제 휴대폰에서 화면 점검</li>
+    <li><strong>19일차</strong>: 임시 주소에서 학원 측 최종 확인 후 수정 반영</li>
+    <li><strong>20일차</strong>: 기존 도메인 주소(3daysdriving.co.kr) 이관, 보안 인증서 자동 적용</li>
+    <li><strong>21일차</strong>: 구글·네이버·빙 검색에 새 사이트 등록, 방문자 분석 도구 연결, 정식 오픈</li>
+  </ul>
+</div>
+
+<div class="phase long">
+  <span class="phase-tag">오픈 이후 — 무상 안정화 2주</span>
+  <h3>오픈 후 사후 지원 (포함)</h3>
+  <ul>
+    <li><strong>오픈 후 14일간</strong> 발견되는 오류·미세 조정을 무상으로 대응</li>
+    <li><strong>운영자 매뉴얼 PDF</strong> 제공 — 블로그 글 작성, 사진 올리기, 정보 수정 방법을 그림으로 안내</li>
+    <li><strong>1회 운영 교육</strong> — 화상 회의 60분, 학원 측 담당자가 실제 글을 한 번 올려보는 실습 포함</li>
+    <li><strong>30일차 검색 노출 점검 리포트</strong> 1회 제공 — 새 사이트가 검색에 얼마나 들어갔는지 결과 보고</li>
+  </ul>
+</div>
+
+</div>
+
+<h2>8. 견적 (총 400만원 / VAT 별도)</h2>
+
+<table>
+  <tr>
+    <th>항목</th>
+    <th>내용</th>
+    <th width="130" style="text-align:right;">금액</th>
+  </tr>
+  <tr>
+    <td>기획 · 정보 구조 설계</td>
+    <td>메뉴 구성, 핵심 키워드 정리, 기존 정보 재구성</td>
+    <td style="text-align:right;">600,000원</td>
+  </tr>
+  <tr>
+    <td>디자인 (PC + 모바일)</td>
+    <td>학원 톤에 맞춘 디자인 시안 — 메인 + 서브 페이지 12종</td>
+    <td style="text-align:right;">800,000원</td>
+  </tr>
+  <tr>
+    <td>홈페이지 화면 개발</td>
+    <td>전체 18페이지 화면 구현 + 모바일 반응형</td>
+    <td style="text-align:right;">1,200,000원</td>
+  </tr>
+  <tr>
+    <td>AI 검색·일반 검색 최적화</td>
+    <td>AI 검색 인식용 표준 정보 구조 + 검색엔진 등록 일괄 작업</td>
+    <td style="text-align:right;">700,000원</td>
+  </tr>
+  <tr>
+    <td>블로그 시스템 구축</td>
+    <td>학원 운영자가 직접 글을 올릴 수 있는 글쓰기 화면 제작</td>
+    <td style="text-align:right;">400,000원</td>
+  </tr>
+  <tr>
+    <td>초기 콘텐츠 작성</td>
+    <td>블로그 6편 작성 — 잠재 학생이 검색할 만한 주제로 직접 제작</td>
+    <td style="text-align:right;">300,000원</td>
+  </tr>
+  <tr style="background:var(--surface-warm);">
+    <td colspan="2"><strong>합계 (VAT 별도)</strong></td>
+    <td style="text-align:right;font-size:16px;color:var(--gold-deep);"><strong>4,000,000원</strong></td>
+  </tr>
+</table>
+
+<div class="alert info" style="margin-top:14px;">
+  <strong>지급 방식</strong>
+  계약 시 50%(200만원) · 정식 오픈 시 50%(200만원) — 이체 또는 세금계산서 발행 가능
+</div>
+
+<div class="alert success">
+  <strong>모두 포함되는 사항 (별도 비용 없음)</strong>
+  <ul style="margin-top:8px;">
+    <li>도메인 주소 이관 작업 및 보안 인증서</li>
+    <li>1년치 호스팅 비용 (이후 연간 0~10만원 수준)</li>
+    <li>오픈 후 14일 무상 오류 대응</li>
+    <li>운영자 매뉴얼 PDF + 1회 화상 교육</li>
+    <li>오픈 30일차 검색 노출 점검 리포트</li>
+  </ul>
+</div>
+
+<h2>9. 예상 성과</h2>
+<table>
+  <tr>
+    <th>지표</th>
+    <th>현재</th>
+    <th>오픈 1개월</th>
+    <th>3개월 후</th>
+    <th>6개월 후</th>
+  </tr>
+  <tr>
+    <td>구글 검색에 노출되는 페이지 수</td>
+    <td>2개</td>
+    <td>15~25개</td>
+    <td>40~60개</td>
+    <td>80~120개</td>
+  </tr>
+  <tr>
+    <td>월간 학원 검색 노출 횟수</td>
+    <td>측정 불가</td>
+    <td>1,500회 이상</td>
+    <td>5,000회 이상</td>
+    <td>20,000회 이상</td>
+  </tr>
+  <tr>
+    <td>AI 검색 답변 등장률<br>(천안 운전학원 질문 기준)</td>
+    <td>0%</td>
+    <td>등장 시작</td>
+    <td>20~30%</td>
+    <td>50% 이상</td>
+  </tr>
+  <tr>
+    <td>외부 블로그·매체 추천 건수</td>
+    <td>0건</td>
+    <td>2~5건</td>
+    <td>5~10건</td>
+    <td>20건 이상</td>
+  </tr>
+  <tr>
+    <td>네이버 지도·카카오맵 노출</td>
+    <td>미연동</td>
+    <td>등록 완료</td>
+    <td>지역 상위권</td>
+    <td>천안 운전학원 1~3위</td>
+  </tr>
+</table>
+
+<div class="alert info" style="margin-top:24px;">
+  <strong>이 성과가 학원에 가져다 줄 실질적 가치</strong>
+  <p style="margin-top:10px;color:inherit;">이 수치들은 단순한 통계가 아니라, 학원이 새로운 학생을 만나는 방식 자체를 바꾸는 변화입니다. 우선 <strong>네이버 검색에서 학원이 자연스럽게 노출</strong>됩니다. "천안 운전면허", "성거읍 운전학원", "1종 보통 단기 코스" 같은 검색에 학원 정보가 떠오르고, 광고에 의존하지 않고도 신뢰 기반의 자연 유입이 매월 수천 회 누적되기 시작합니다. 더 결정적인 변화는 <strong>AI 대화에서 일어납니다</strong>. 요즘 학생과 학부모들은 "천안에서 운전면허 빨리 따는 곳 추천해줘"라고 ChatGPT나 Gemini에 직접 물어보는 시대로 들어섰습니다. 지금까지는 28년 업력에도 불구하고 이런 대화에서 학원 이름이 단 한 번도 등장하지 않았지만, 신규 홈페이지 오픈 후에는 AI가 학원의 상세 정보·차별화 포인트·합격 사례를 정확히 인식하여 <strong>추천 답변으로 학원을 제시할 확률이 획기적으로 증가</strong>합니다. 이는 일회성 마케팅 효과가 아니라 시간이 갈수록 더 강해지는 <strong>디지털 무형자산의 축적</strong>입니다. 한 번 검색에 자리 잡은 콘텐츠와 추천 신호는 누적 효과를 발휘하여, 6개월 후에는 천안·아산·평택·안성 지역 운전학원 분야에서 디지털 권위를 확보한 유일한 학원으로 자리매김하게 됩니다. 28년 동안 쌓아온 오프라인의 명성을 AI 시대의 온라인 자산으로 전환하는 가장 빠르고 확실한 길입니다.</p>
+</div>
+
+<h2>10. 결론과 다음 단계</h2>
+
+<div class="alert info">
+  <strong>한 줄 요약</strong>
+  현 홈페이지는 외부 업체 시스템 한계로 개선이 어렵습니다. 28년 업력의 강력한 오프라인 자산이 온라인에서 빛을 보지 못하는 상황이며, 신규 개발만이 현실적인 해결책입니다.
+</div>
+
+<div class="alert success">
+  <strong>제안 핵심</strong>
+  <strong>3주 · 400만원(VAT 별도)</strong>으로 AI 검색에서 추천되는 새로운 홈페이지를 완성합니다. 디자인·개발·검색 최적화·블로그·초기 콘텐츠 6편·운영 교육까지 모두 포함된 일괄 패키지이며, 정식 오픈 시점부터 검색 노출이 시작되어 1개월 안에 가시적 변화가 나타나기 시작합니다.
+</div>
+
+<h3>의사결정 후 진행 순서</h3>
+<ol>
+  <li><strong>제안서 검토 및 컨펌</strong> — 일정·금액·구성 합의</li>
+  <li><strong>계약서 체결과 착수금 50%(200만원) 지급</strong></li>
+  <li><strong>킥오프 미팅</strong> — 디자인 톤, 강조하실 차별화 포인트, 학원 자료 전달</li>
+  <li><strong>3주 개발 진행</strong> — 1주차 디자인 컨펌, 2주차 진행 공유, 3주차 최종 컨펌</li>
+  <li><strong>정식 오픈 + 잔금 50%(200만원) 지급</strong></li>
+</ol>
+
+<p style="margin-top:14px;">계약 체결일로부터 <strong>영업일 기준 21일 이내</strong> 정식 오픈을 보장합니다. 의사결정 즉시 착수 가능하며, 1개월 후 첫 AI 검색 등장, 3개월 후 안정적 검색 노출, 6개월 후 천안·아산·평택·안성 지역에서 운전학원 검색 시 상위 노출과 AI 답변 추천 50% 이상을 목표로 합니다.</p>
+
+</section>
+
+<section class="tab-panel" id="panel-profile" role="tabpanel">
+
+<h2>대표 컨설턴트 소개</h2>
+
+<div class="principal-grid">
+  <div class="principal-photo-col">
+    <div class="principal-photo">
+      <img src="https://aitutorhub.com/ceo-profile.png" alt="심재우 대표"
+           onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','&lt;div class=&quot;principal-photo-fallback&quot;&gt;沈&lt;/div&gt;');">
+    </div>
+    <div class="principal-name-card">
+      <span class="ko-name">심재우</span>
+      <span class="role-tag">Principal Consultant</span>
+    </div>
+  </div>
+
+  <div class="principal-body">
+    <p class="principal-quote">대외 소통 · 사업화 전략 · 글로벌 확산</p>
+    <p class="principal-summary">디지털트윈 시뮬레이션 전문가에서 글로벌 B2B 세일즈 마스터로, 다시 AI 시대의 비즈니스 가시성 설계자로 — <strong>현대자동차 5년 · GE USA 8년의 글로벌 산업 경력</strong>과 <strong>특허 10건·저작권 50건·저서 50권</strong>의 지식재산을 바탕으로, 28년 업력의 오프라인 자산을 AI 시대 온라인 권위로 전환하는 전략을 직접 설계합니다.</p>
+
+    <div class="principal-stats">
+      <div class="stat"><span class="num">10</span><span class="label">Patents · 특허</span></div>
+      <div class="stat"><span class="num">50</span><span class="label">Copyrights · 저작권</span></div>
+      <div class="stat"><span class="num">20</span><span class="label">Trademarks · 상표권</span></div>
+      <div class="stat"><span class="num">50</span><span class="label">Books · 저서</span></div>
+    </div>
+
+    <h3 class="principal-h3">Career · 주요 경력</h3>
+    <ul class="principal-list">
+      <li><strong>기계공학 석사</strong> — 구조해석 및 시뮬레이션 전공</li>
+      <li><strong>현대자동차 기술연구소</strong> — 5년</li>
+      <li><strong>General Electric (USA) Plastics</strong> — 8년</li>
+      <li><strong>허스웨이트 스핀셀링</strong> 국제공인 마스터트레이너</li>
+    </ul>
+
+    <h3 class="principal-h3">Expertise · 전문 분야</h3>
+    <p class="principal-text">디지털트윈 · 컴퓨터 시뮬레이션 · 글로벌 B2B 세일즈 마스터 트레이너 · 비즈니스 전략 · 미디어 커뮤니케이션 · 투자 유치 · 글로벌 확산 · 파트너십 개발 · 과학 대중화</p>
+
+    <h3 class="principal-h3">Featured Works · 주요 활동</h3>
+    <ul class="principal-list">
+      <li>『점의 반란』 공동 저술</li>
+      <li><strong>AI노벨문해력5©</strong> 개발</li>
+      <li><strong>3색줄독서법</strong> 개발 및 특허 등록</li>
+      <li><strong>15창의질문</strong> 개발 및 저작권 등록</li>
+      <li>기업 교육 프로그램 <strong>90건</strong> 개발</li>
+      <li>주요 저서 <strong>50권</strong> 출판</li>
+    </ul>
+
+    <h3 class="principal-h3">Recognition · 등재</h3>
+    <p class="principal-text"><strong>마르퀴즈 후즈후 (Marquis Who's Who) 세계인명사전</strong> — 2016년 & 2020년 등재</p>
+
+    <div class="principal-contact-card">
+      <div class="contact-row">
+        <span class="contact-label">Email</span>
+        <span class="contact-val">jaiwshim@gmail.com</span>
+      </div>
+      <div class="contact-row">
+        <span class="contact-label">Mobile</span>
+        <span class="contact-val">010-2397-5734</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+</div>
+
+<footer class="premium-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="ax-logo-row">
+        <div class="ax-logo-img">
+          <img src="https://jaiwshim-project.github.io/01-2-AXBizGroup/로고-AX비즈그룹.jpg" alt="AX Biz Group">
+        </div>
+        <div class="ax-wordmark">
+          <span class="ax-name">AX BIZ GROUP</span>
+          <span class="ax-tagline">AI · Excellence · Strategy</span>
+        </div>
+      </div>
+      <p class="brand-desc">
+        <strong>AX Biz Group</strong>은 AI 검색 시대의 비즈니스 가시성을 설계하는 프리미엄 AI 내재화 컨설팅 그룹입니다. 28년 업력의 오프라인 자산을 ChatGPT · Claude · Perplexity · Gemini 시대의 온라인 권위로 전환하는 전략을 제공합니다.
+      </p>
+    </div>
+
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h5>Services</h5>
+        <ul>
+          <li>AI 검색 노출 진단</li>
+          <li>프리미엄 신규 홈페이지 개발</li>
+          <li>지속적 콘텐츠 운영 대행</li>
+          <li>지역 비즈니스 GEO 전략</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>This Proposal</h5>
+        <ul>
+          <li><strong>대상</strong> 삼일자동차운전전문학원</li>
+          <li><strong>일정</strong> 3주 개발</li>
+          <li><strong>비용</strong> 400만원 (VAT 별도)</li>
+          <li><strong>발행</strong> 2026년 4월 27일</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Contact</h5>
+        <ul>
+          <li>제안 문의 환영합니다</li>
+          <li>이메일·전화 회신</li>
+          <li>화상 미팅 가능</li>
+          <li>방문 미팅 가능 (수도권)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-divider"></div>
+
+  <div class="footer-bottom">
+    본 제안서는 2026년 4월 27일 기준 공개 정보를 분석하여 작성되었습니다
+    <span class="footer-mark">❖</span>
+    © 2026 <strong>AX BIZ GROUP</strong> · All Rights Reserved
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function() {
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabs.forEach(b => {
+        const isActive = b.dataset.tab === target;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', isActive);
+      });
+      panels.forEach(p => {
+        p.classList.toggle('active', p.id === 'panel-' + target);
+      });
+      window.scrollTo({ top: document.querySelector('.tabs').offsetTop - 20, behavior: 'smooth' });
+    });
+  });
+
+  if (location.hash === '#solution') {
+    document.querySelector('[data-tab="solution"]').click();
+  }
+})();
+</script>
+
+</body>
+</html>

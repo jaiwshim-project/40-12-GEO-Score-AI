@@ -85,6 +85,186 @@ async function fetchWebsiteContent(url) {
   }
 }
 
+// AI 인프라 4신호 검증: robots.txt + sitemap.xml 외부 인프라 체크
+// 7개 AI 봇 차단 여부 + sitemap 유효성 검출 → robotsScore/sitemapScore (0~5)
+async function fetchInfraSignals(url) {
+  const AI_BOTS = ['GPTBot', 'ClaudeBot', 'ChatGPT-User', 'PerplexityBot', 'Google-Extended', 'Amazonbot', 'CCBot'];
+  const result = {
+    robotsTxtFound: false,
+    robotsContent: '',
+    blockedBots: [],
+    blockedBotsCount: 0,
+    allowedBotsCount: 7,
+    sitemapFound: false,
+    sitemapValid: false,
+    sitemapUrlCount: 0,
+    sitemapLastMod: null,
+    sitemapStatus: 0,
+    robotsScore: 0,
+    sitemapScore: 0
+  };
+
+  let origin = '';
+  try {
+    const u = new URL(url);
+    origin = u.origin;
+  } catch (e) {
+    return result;
+  }
+
+  const robotsUrl = origin + '/robots.txt';
+  const sitemapUrl = origin + '/sitemap.xml';
+
+  const fetchWithTimeout = async (target, ms = 5000) => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), ms);
+    try {
+      const r = await fetch(target, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; GEOScoreAI/1.0; +https://geo-score-ai.vercel.app)'
+        },
+        redirect: 'follow'
+      });
+      clearTimeout(t);
+      return r;
+    } catch (e) {
+      clearTimeout(t);
+      return null;
+    }
+  };
+
+  const [robotsRes, sitemapRes] = await Promise.all([
+    fetchWithTimeout(robotsUrl),
+    fetchWithTimeout(sitemapUrl)
+  ]);
+
+  // robots.txt 파싱
+  if (robotsRes && robotsRes.ok) {
+    try {
+      const text = await robotsRes.text();
+      result.robotsTxtFound = true;
+      result.robotsContent = text.slice(0, 1000);
+
+      // User-agent 그룹 단위로 파싱
+      const lines = text.split(/\r?\n/);
+      const groups = []; // [{ agents: [...], disallows: [...] }]
+      let cur = null;
+      let lastWasAgent = false;
+      for (let raw of lines) {
+        const line = raw.replace(/#.*$/, '').trim();
+        if (!line) continue;
+        const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+        if (!m) continue;
+        const key = m[1].toLowerCase();
+        const val = m[2].trim();
+        if (key === 'user-agent') {
+          if (!lastWasAgent || !cur) {
+            cur = { agents: [], disallows: [] };
+            groups.push(cur);
+          }
+          cur.agents.push(val);
+          lastWasAgent = true;
+        } else if (key === 'disallow') {
+          if (cur) cur.disallows.push(val);
+          lastWasAgent = false;
+        } else {
+          lastWasAgent = false;
+        }
+      }
+
+      // 전체 차단(*) 여부
+      const wildcardBlocksAll = groups.some(g =>
+        g.agents.some(a => a === '*') &&
+        g.disallows.some(d => d === '/' )
+      );
+
+      const blockedSet = new Set();
+      for (const bot of AI_BOTS) {
+        const botLc = bot.toLowerCase();
+        const grp = groups.find(g => g.agents.some(a => a.toLowerCase() === botLc));
+        if (grp) {
+          if (grp.disallows.some(d => d === '/')) blockedSet.add(bot);
+        } else if (wildcardBlocksAll) {
+          // 명시적 그룹 없고 *가 전체 차단이면 차단으로 간주
+          blockedSet.add(bot);
+        }
+      }
+      result.blockedBots = Array.from(blockedSet);
+      result.blockedBotsCount = result.blockedBots.length;
+      result.allowedBotsCount = 7 - result.blockedBotsCount;
+    } catch (e) {
+      // 파싱 실패 시 기본값 유지
+    }
+  }
+
+  // sitemap.xml 파싱
+  if (sitemapRes) {
+    result.sitemapStatus = sitemapRes.status || 0;
+    if (sitemapRes.ok) {
+      result.sitemapFound = true;
+      try {
+        const xml = await sitemapRes.text();
+        // 유효성: <urlset 또는 <sitemapindex 태그 + <loc> 1개 이상
+        const isXml = /<\?xml|<urlset|<sitemapindex/i.test(xml);
+        const locMatches = xml.match(/<loc>[\s\S]*?<\/loc>/gi) || [];
+        result.sitemapUrlCount = locMatches.length;
+        result.sitemapValid = isXml && locMatches.length > 0;
+
+        const lastModMatch = xml.match(/<lastmod>([\s\S]*?)<\/lastmod>/i);
+        if (lastModMatch) result.sitemapLastMod = lastModMatch[1].trim();
+
+        // 외부 도메인 sitemap 여부 (자기 도메인 URL이 하나도 없으면 외부로 간주)
+        if (locMatches.length > 0 && origin) {
+          const host = new URL(origin).hostname.replace(/^www\./, '');
+          const ownDomain = locMatches.some(loc => {
+            const inner = loc.replace(/<\/?loc>/gi, '').trim();
+            try {
+              const lh = new URL(inner).hostname.replace(/^www\./, '');
+              return lh === host || lh.endsWith('.' + host);
+            } catch (_) {
+              return false;
+            }
+          });
+          if (!ownDomain) result.sitemapValid = false;
+        }
+      } catch (e) {
+        result.sitemapValid = false;
+      }
+    }
+  }
+
+  // 별점 환산 (0~5)
+  // robotsScore: 모두 허용 = 5, 차단 1봇 = 4, 2 = 3, 3 = 2, 4 = 1, 5+ = 0
+  if (!result.robotsTxtFound) {
+    // robots.txt 없으면 모든 봇 허용으로 간주 → 5점
+    result.robotsScore = 5;
+    result.allowedBotsCount = 7;
+    result.blockedBotsCount = 0;
+  } else {
+    result.robotsScore = Math.max(0, 5 - result.blockedBotsCount);
+  }
+
+  // sitemapScore: 자기도메인+50+URL = 5, 자기도메인+10+URL = 4, 1+URL = 3, 발견 but 손상 = 1, 미발견 = 0
+  if (!result.sitemapFound) {
+    result.sitemapScore = 0;
+  } else if (!result.sitemapValid) {
+    result.sitemapScore = 1;
+  } else if (result.sitemapUrlCount >= 50) {
+    result.sitemapScore = 5;
+  } else if (result.sitemapUrlCount >= 20) {
+    result.sitemapScore = 4;
+  } else if (result.sitemapUrlCount >= 10) {
+    result.sitemapScore = 3;
+  } else if (result.sitemapUrlCount >= 1) {
+    result.sitemapScore = 2;
+  } else {
+    result.sitemapScore = 1;
+  }
+
+  return result;
+}
+
 function extractJSON(text) {
   if (!text) return null;
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -348,6 +528,7 @@ export default async function handler(req, res) {
 
     let url = '';
     let fetchResult;
+    let infraSignals = null;
 
     if (mode === 'content' && content) {
       // 직접 입력 콘텐츠 모드 — fetch 생략, 콘텐츠 자체를 분석 대상으로
@@ -383,7 +564,12 @@ export default async function handler(req, res) {
       try { new URL(url); } catch (e) {
         return res.status(400).json({ error: '올바른 URL이 아닙니다' });
       }
-      fetchResult = await fetchWebsiteContent(url);
+      const [_fr, _is] = await Promise.all([
+        fetchWebsiteContent(url),
+        fetchInfraSignals(url)
+      ]);
+      fetchResult = _fr;
+      infraSignals = _is;
     }
 
     let analysis = null;
@@ -438,6 +624,22 @@ export default async function handler(req, res) {
       analysis.scores.citation.aiwScore = aiwScore;
     }
 
+    // 외부 인프라 신호로 visibility/citation KPI 가산 (URL 모드 전용)
+    if (infraSignals) {
+      if (analysis.scores?.visibility) {
+        const bonus = Math.min(25, infraSignals.robotsScore * 3 + infraSignals.sitemapScore * 2);
+        const v = (analysis.scores.visibility.value || 0) + bonus;
+        analysis.scores.visibility.value = Math.max(5, Math.min(95, v));
+        analysis.scores.visibility.infraBonus = bonus;
+      }
+      if (analysis.scores?.citation) {
+        const bonus = infraSignals.robotsScore * 2;
+        const v = (analysis.scores.citation.value || 0) + bonus;
+        analysis.scores.citation.value = Math.max(5, Math.min(95, v));
+        analysis.scores.citation.infraBonus = bonus;
+      }
+    }
+
     const scoreValues = KPI_LIST.map(k => analysis.scores?.[k.id]?.value ?? 0);
     const totalScore = Math.round(scoreValues.reduce((a, b) => a + b, 0) / 10);
 
@@ -468,7 +670,8 @@ export default async function handler(req, res) {
         usedGemini,
         siteFetchOk: fetchResult.ok,
         contentLength: fetchResult.meta?.contentLength || 0,
-        aiwSignals
+        aiwSignals,
+        infraSignals
       }
     });
   } catch (e) {
