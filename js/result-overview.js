@@ -1,0 +1,56 @@
+/**
+ * 종합 분석 탭 - radar chart + 강점/약점/즉시 개선
+ */
+(function() {
+  function render(result) {
+    // 레이더 차트
+    const radarData = window.KPI_DEFINITIONS.map(kpi => ({
+      label: kpi.name.replace(' 지수', '').replace('지수', ''),
+      value: result.scores[kpi.id]?.value || 0
+    }));
+    Chart.radar('radarChart', radarData);
+
+    // 강점/약점/즉시 개선
+    const sorted = Object.entries(result.scores)
+      .map(([id, s]) => ({
+        id, value: s.value || 0,
+        kpi: window.KPI_DEFINITIONS.find(k => k.id === id),
+        reason: s.reason
+      }))
+      .filter(x => x.kpi);
+
+    const strengths = [...sorted].sort((a, b) => b.value - a.value).slice(0, 3);
+    const weaknesses = [...sorted].sort((a, b) => a.value - b.value).slice(0, 3);
+
+    document.getElementById('strengthsList').innerHTML = strengths.map(s => `
+      <div style="margin-bottom: 12px; padding: 12px; background: rgba(0,214,143,0.08); border-left: 3px solid #00d68f; border-radius: 6px;">
+        <div style="display:flex;justify-content:space-between;font-weight:600;">
+          <span>${s.kpi.icon} ${s.kpi.name}</span>
+          <span style="color:#00d68f;font-family:monospace;">${s.value}</span>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('weaknessesList').innerHTML = weaknesses.map(w => `
+      <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,61,113,0.08); border-left: 3px solid #ff3d71; border-radius: 6px;">
+        <div style="display:flex;justify-content:space-between;font-weight:600;">
+          <span>${w.kpi.icon} ${w.kpi.name}</span>
+          <span style="color:#ff3d71;font-family:monospace;">${w.value}</span>
+        </div>
+      </div>`).join('');
+
+    const quickWins = sorted.filter(s => s.value < 50 && ['citation', 'conversion', 'visibility'].includes(s.id));
+    document.getElementById('quickWinsList').innerHTML = quickWins.length ? quickWins.map(q => `
+      <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,168,0,0.08); border-left: 3px solid #ffa800; border-radius: 6px;">
+        <div style="font-weight:600;margin-bottom:4px;">${q.kpi.icon} ${q.kpi.name}</div>
+        <div style="font-size:0.85rem;color:var(--text-tertiary);">2주 내 적용 가능</div>
+      </div>`).join('') : '<div style="color:var(--text-tertiary);font-size:0.9rem;">현재 즉시 개선 가능한 항목이 적습니다.</div>';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ResultShared.init(render);
+    document.getElementById('saveReportPdf')?.addEventListener('click', () => {
+      const r = ResultShared.result;
+      window.PdfExport?.exportResultPagePDF(r, ResultShared.recommendation);
+    });
+  });
+})();

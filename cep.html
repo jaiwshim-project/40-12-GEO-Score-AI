@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎯 CEP 발굴 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E" />
+  <style>
+    .cep-progress { display: flex; gap: 8px; margin: 32px 0 48px; max-width: 900px; margin-left: auto; margin-right: auto; padding: 0 16px; }
+    .cep-step-pill { flex: 1; padding: 12px 8px; text-align: center; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 10px; transition: all 0.3s; position: relative; }
+    .cep-step-pill.done { background: rgba(0, 214, 143, 0.08); border-color: rgba(0, 214, 143, 0.3); }
+    .cep-step-pill.active { background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 168, 0, 0.1)); border-color: var(--color-accent); box-shadow: 0 4px 16px rgba(255, 107, 53, 0.2); transform: translateY(-2px); }
+    .cep-step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--bg-tertiary); color: var(--text-tertiary); font-weight: 800; font-size: 0.85rem; margin-bottom: 6px; }
+    .cep-step-pill.done .cep-step-num { background: #00d68f; color: white; }
+    .cep-step-pill.active .cep-step-num { background: var(--color-accent); color: white; }
+    .cep-step-label { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
+    .cep-step-pill.active .cep-step-label, .cep-step-pill.done .cep-step-label { color: var(--text-primary); }
+
+    .cep-panel { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 20px; padding: 40px; max-width: 900px; margin: 0 auto 32px; }
+    .cep-panel.hidden { display: none; }
+    .cep-panel h2 { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; margin-bottom: 8px; }
+    .cep-panel-desc { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--border-primary); }
+    .cep-result-area { margin-top: 24px; }
+    .cep-loader { display: flex; flex-direction: column; align-items: center; padding: 48px 0; gap: 16px; color: var(--text-secondary); }
+    .cep-loader-spinner { width: 40px; height: 40px; border: 3px solid rgba(255, 107, 53, 0.15); border-top-color: var(--color-accent); border-radius: 50%; animation: cepspin 1s linear infinite; }
+    @keyframes cepspin { to { transform: rotate(360deg); } }
+
+    .cep-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cep-chip { padding: 8px 14px; background: rgba(0, 149, 255, 0.08); border: 1px solid rgba(0, 149, 255, 0.25); border-radius: 999px; font-size: 0.88rem; color: var(--text-primary); display: inline-flex; align-items: center; gap: 6px; }
+    .cep-chip-remove { color: rgba(255, 255, 255, 0.4); cursor: pointer; font-size: 1rem; line-height: 1; }
+    .cep-chip-remove:hover { color: #ff3d71; }
+
+    .cep-cluster { background: var(--bg-tertiary); border-left: 3px solid #0095ff; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .cep-cluster-name { font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+    .cep-cluster-keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .cep-cluster-kw { padding: 3px 10px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 0.78rem; color: var(--text-secondary); font-family: monospace; }
+
+    .cep-scene-card { background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 12px; padding: 20px; margin-bottom: 12px; transition: all 0.2s; }
+    .cep-scene-card.selected { border-color: var(--color-accent); background: rgba(255, 107, 53, 0.06); }
+    .cep-scene-text { font-size: 1rem; font-weight: 700; color: var(--text-primary); line-height: 1.5; margin-bottom: 8px; }
+    .cep-scene-source { font-size: 0.78rem; color: var(--text-tertiary); }
+
+    .cep-priority-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .cep-priority-table th { text-align: left; font-size: 0.78rem; color: var(--text-tertiary); padding: 4px 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+    .cep-priority-table td { padding: 14px 12px; background: var(--bg-tertiary); border-top: 1px solid var(--border-primary); border-bottom: 1px solid var(--border-primary); }
+    .cep-priority-table td:first-child { border-left: 1px solid var(--border-primary); border-radius: 8px 0 0 8px; }
+    .cep-priority-table td:last-child { border-right: 1px solid var(--border-primary); border-radius: 0 8px 8px 0; text-align: center; }
+    .cep-score-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-family: monospace; font-size: 0.85rem; }
+    .cep-score-badge.high { background: rgba(0, 214, 143, 0.15); color: #00d68f; }
+    .cep-score-badge.med { background: rgba(255, 168, 0, 0.15); color: #ffa800; }
+    .cep-score-badge.low { background: rgba(255, 61, 113, 0.15); color: #ff3d71; }
+    .cep-total-score { font-size: 1.5rem; font-weight: 900; color: var(--color-accent); font-family: monospace; }
+
+    .cep-final-card { background: linear-gradient(135deg, rgba(255, 107, 53, 0.08), rgba(255, 168, 0, 0.04)); border: 1px solid rgba(255, 107, 53, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .cep-final-rank { display: inline-block; padding: 4px 12px; background: var(--color-accent); color: white; border-radius: 6px; font-size: 0.78rem; font-weight: 800; margin-bottom: 12px; }
+    .cep-final-scene { font-size: 1.1rem; font-weight: 700; line-height: 1.5; margin-bottom: 16px; }
+    .cep-final-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+    .cep-final-label { font-size: 0.72rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-bottom: 6px; }
+    .cep-final-value { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; }
+    .cep-final-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .cep-final-tag { padding: 4px 10px; background: rgba(0, 149, 255, 0.1); color: #7dd3fc; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+
+    .cep-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-primary); }
+    .cep-actions .left { display: flex; gap: 8px; }
+    .btn-cep-next { padding: 14px 28px; background: linear-gradient(135deg, var(--color-accent), var(--color-warning)); color: white; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .btn-cep-next:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3); }
+    .btn-cep-next:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-cep-back { padding: 12px 20px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    .btn-cep-back:hover { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="index.html#process" class="nav-link">진단 프로세스</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="architecture.html" class="nav-link">아키텍처</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="cep.html" class="nav-link">🎯 CEP 발굴</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="section">
+    <div class="container">
+      <!-- 헤더 -->
+      <div class="section-header">
+        <span class="section-tag">CEP Discovery</span>
+        <h2 class="section-title">🎯 CEP 발굴 5단계</h2>
+        <p class="section-subtitle" style="max-width: 760px; margin: 0 auto;">
+          소비자 검색 데이터에서 브랜드가 점유할 <strong style="color: var(--color-accent);">진입 좌표(Category Entry Point)</strong>를 발굴합니다.
+          AI 검색 시대에 가장 효과적인 콘텐츠 전략의 출발점입니다.
+        </p>
+      </div>
+
+      <!-- 진행 표시 -->
+      <div class="cep-progress">
+        <div class="cep-step-pill active" data-step="0">
+          <div class="cep-step-num">📥</div>
+          <div class="cep-step-label">브랜드 입력</div>
+        </div>
+        <div class="cep-step-pill" data-step="1">
+          <div class="cep-step-num">1</div>
+          <div class="cep-step-label">삶의 언어 수집</div>
+        </div>
+        <div class="cep-step-pill" data-step="2">
+          <div class="cep-step-num">2</div>
+          <div class="cep-step-label">검색 클러스터</div>
+        </div>
+        <div class="cep-step-pill" data-step="3">
+          <div class="cep-step-num">3</div>
+          <div class="cep-step-label">CEP 장면 번역</div>
+        </div>
+        <div class="cep-step-pill" data-step="4">
+          <div class="cep-step-num">4</div>
+          <div class="cep-step-label">우선순위 평가</div>
+        </div>
+        <div class="cep-step-pill" data-step="5">
+          <div class="cep-step-num">5</div>
+          <div class="cep-step-label">실행 좌표 확정</div>
+        </div>
+      </div>
+
+      <!-- Step 0: 브랜드 입력 -->
+      <div class="cep-panel" data-panel="0">
+        <h2>📥 브랜드 정보 입력</h2>
+        <p class="cep-panel-desc">CEP 발굴의 출발점입니다. 브랜드명, 카테고리, 그리고 어떤 시장에서 활동하는지 알려주세요.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="cepBrand">브랜드/제품명</label>
+          <input type="text" id="cepBrand" class="form-input" placeholder="예: 디지털스마일치과" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cepCategory">제품/서비스 카테고리</label>
+          <input type="text" id="cepCategory" class="form-input" placeholder="예: 임플란트, 선크림, 러닝화, 비대면 영어교육" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cepIndustry">업종</label>
+          <select id="cepIndustry" class="form-input">
+            <option value="">자동 감지</option>
+            <option value="dental">치과</option>
+            <option value="hospital">병원/의료</option>
+            <option value="legal">법무/세무</option>
+            <option value="education">교육/학원</option>
+            <option value="beauty">미용/뷰티</option>
+            <option value="restaurant">음식점/카페</option>
+            <option value="retail">유통/판매</option>
+            <option value="b2b">B2B/제조</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cepTarget">대상 고객의 일반적 상황 (선택)</label>
+          <input type="text" id="cepTarget" class="form-input" placeholder="예: 30대 직장인 여성, 7인 이상 대가족, 출산 직후 부모" />
+        </div>
+
+        <div class="cep-actions">
+          <span style="color: var(--text-tertiary); font-size: 0.85rem;">⏱️ 전체 5단계 약 3~5분 소요</span>
+          <button class="btn-cep-next" id="btnStart">🎯 1단계 시작 →</button>
+        </div>
+      </div>
+
+      <!-- Step 1: 일상 언어 수집 -->
+      <div class="cep-panel hidden" data-panel="1">
+        <h2>1️⃣ 일상의 언어 수집</h2>
+        <p class="cep-panel-desc">
+          소비자가 카테고리에 들어오기 직전 사용하는 <strong style="color: var(--color-accent);">삶의 언어</strong>를 수집합니다.
+          예: "비 오는 주말 아이와 갈 곳", "7인 대가족 냉장고", "부스러기 안 떨어지는 간식".
+          AI가 카테고리에 맞는 표현 8~12개를 제안하고, 추가/수정할 수 있습니다.
+        </p>
+
+        <div class="cep-result-area" id="step1Result"></div>
+
+        <div class="cep-actions">
+          <button class="btn-cep-back" data-back="0">← 이전</button>
+          <button class="btn-cep-next" id="btnStep2" disabled>2단계: 검색 클러스터 →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: 검색 클러스터 -->
+      <div class="cep-panel hidden" data-panel="2">
+        <h2>2️⃣ 검색 경로와 클러스터 분석</h2>
+        <p class="cep-panel-desc">
+          개별 키워드가 아닌 <strong style="color: var(--color-accent);">검색 경로 + 클러스터</strong> 단위로 읽습니다.
+          AI가 1단계 표현을 시드로 검색 의도를 그룹화하고, 같은 장면에 묶이는 키워드들을 추출합니다.
+        </p>
+
+        <div class="cep-result-area" id="step2Result"></div>
+
+        <div class="cep-actions">
+          <button class="btn-cep-back" data-back="1">← 이전</button>
+          <button class="btn-cep-next" id="btnStep3" disabled>3단계: 장면 번역 →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: CEP 장면 번역 -->
+      <div class="cep-panel hidden" data-panel="3">
+        <h2>3️⃣ 소비자 과업 + CEP 장면 번역</h2>
+        <p class="cep-panel-desc">
+          검색 클러스터를 <strong style="color: var(--color-accent);">소비자의 과업과 장면 문장</strong>으로 번역합니다.
+          예: "선크림 밀림 클러스터" → "아침에 화장하기 전, 선크림은 꼭 발라야 하지만 베이스 메이크업이 들뜨거나 뭉치지 않기를 바라는 순간".
+          타깃이 아닌 <strong style="color: var(--color-accent);">순간</strong>으로 정의합니다.
+        </p>
+
+        <div class="cep-result-area" id="step3Result"></div>
+
+        <div class="cep-actions">
+          <button class="btn-cep-back" data-back="2">← 이전</button>
+          <button class="btn-cep-next" id="btnStep4" disabled>4단계: 우선순위 평가 →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: 우선순위 평가 -->
+      <div class="cep-panel hidden" data-panel="4">
+        <h2>4️⃣ 명시적/잠재적 CEP 우선순위</h2>
+        <p class="cep-panel-desc">
+          각 CEP 후보를 <strong style="color: var(--color-accent);">3가지 기준</strong>으로 평가합니다.
+          ① 시장성(반복·확장 가능성) ② 브랜드 적합성(우리가 자연스러운 답이 되는가) ③ 입증 가능성(데이터·리뷰·테스트 결과로 증명 가능한가).
+          큰 시장 대표 CEP + 작지만 선점 가능한 잠재 CEP를 함께 남깁니다.
+        </p>
+
+        <div class="cep-result-area" id="step4Result"></div>
+
+        <div class="cep-actions">
+          <button class="btn-cep-back" data-back="3">← 이전</button>
+          <button class="btn-cep-next" id="btnStep5" disabled>5단계: 실행 좌표 확정 →</button>
+        </div>
+      </div>
+
+      <!-- Step 5: 최종 좌표 확정 -->
+      <div class="cep-panel hidden" data-panel="5">
+        <h2>5️⃣ 실행 가능한 장면 문장 확정</h2>
+        <p class="cep-panel-desc">
+          최종 선택된 CEP를 <strong style="color: var(--color-accent);">조직이 실행할 수 있는 장면 문장</strong>으로 확정합니다.
+          각 CEP에는 콘텐츠 메시지, 제품 설명 포인트, GEO 대응 근거가 함께 제안됩니다.
+        </p>
+
+        <div class="cep-result-area" id="step5Result"></div>
+
+        <div class="cep-actions">
+          <button class="btn-cep-back" data-back="4">← 이전</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-cep-back" id="btnSaveCEP">📥 JSON 다운로드</button>
+            <button class="btn-cep-next" id="btnApplyCEP">🔗 진단 결과에 통합 →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 푸터는 inline-build 후 footer 처리 (patch-premium에서 자동) -->
+  <!-- ========== PREMIUM FOOTER ========== -->
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">AI 검색 시대 기업의 존재 가능성을 점수로 진단하고,<br/><strong>존재하게 만드는</strong> 플랫폼.</p>
+          <div class="premium-footer-badges">
+            <span class="pf-badge">🎯 CEP 발굴</span>
+            <span class="pf-badge">🤖 Gemini AI</span>
+            <span class="pf-badge">⚡ 5단계 워크플로</span>
+          </div>
+        </div>
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="result-overview.html">📈 결과 분석</a></li>
+            <li><a href="cep.html">🎯 CEP 발굴</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+          </ul>
+          <div class="premium-footer-cta">
+            <a href="cep.html" class="pf-cta-btn">CEP 발굴 시작 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="premium-footer-bottom">
+        <div class="pf-bottom-left">
+          <span>© 2026 <strong>GEO Score AI</strong></span>
+          <span class="pf-divider">·</span>
+          <span>심재우</span>
+        </div>
+        <div class="pf-bottom-right">
+          <em>"브랜드가 점유하는 것은 세그먼트가 아니라 순간이다"</em>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/kpi-config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/standalone-shim.js"></script>
+  <script src="js/cep.js"></script>
+</body>
+</html>

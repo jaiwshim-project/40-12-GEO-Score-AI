@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GEO Score AI - AI 검색 시대 기업의 존재력을 진단하는 플랫폼. 10대 KPI로 마케팅·홍보 활동을 점수화하고 AI 최적화 솔루션을 제안합니다." />
+  <meta name="keywords" content="GEO, AIO, AI 검색 최적화, 마케팅 진단, KPI 분석, AI 인용 가능성" />
+  <meta property="og:title" content="GEO Score AI - AI가 당신을 선택하게 만드십시오" />
+  <meta property="og:description" content="AI 검색에서 귀사의 존재 가능성을 점수로 진단하고, 존재하게 만드는 플랫폼" />
+  <meta property="og:type" content="website" />
+  <title>GEO Score AI - AI 검색 시대 존재력 진단 플랫폼</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+
+  <!-- ========== NAVIGATION ========== -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="index.html#process" class="nav-link">진단 프로세스</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="architecture.html" class="nav-link">아키텍처</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="cep.html" class="nav-link">🎯 CEP 발굴</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="diag">
+    <div class="container">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        <span>AI 검색 최적화 진단 플랫폼 v1.0</span>
+      </div>
+
+      <h1 class="hero-title">
+        AI 검색에서<br />
+        귀사는 <span class="gradient">존재하고</span> 있습니까?
+      </h1>
+
+      <p class="hero-subtitle">
+        검색이 아니라 AI에 선택되는 시대입니다.<br />
+        10가지 KPI로 귀사의 마케팅·홍보 활동을 진단하고, 점수로 분석해 드립니다.
+      </p>
+
+      <div class="hero-intro" style="max-width: 760px; margin: 0 auto var(--space-lg); padding: 24px 28px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <span style="font-size: 1.125rem;">📊</span>
+          <strong style="font-size: 0.925rem; color: var(--text-primary);">GEO Score란?</strong>
+          <span style="font-size: 0.675rem; color: var(--text-tertiary); font-weight: 500;">Generative Engine Optimization Score</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.7; margin: 0;">
+          ChatGPT · Perplexity · Gemini 등 <strong style="color: var(--text-primary);">생성형 AI가 귀사를 인용·추천할 가능성</strong>을 0~100점으로 정량화한 지표입니다.
+          콘텐츠 신뢰성, 구조화 데이터, 외부 평판, AI 인용 적합성 등 <strong style="color: var(--text-primary);">10개 핵심 KPI</strong>를 종합해
+          현재 위치(Weak / Fair / Good / Excellent)와 개선 우선순위를 한눈에 보여드립니다.
+        </p>
+      </div>
+
+      <div class="diag-form fade-in">
+        <h3 class="diag-form-title">🚀 무료 GEO Score 진단 시작</h3>
+
+        <!-- 진단 모드 토글 -->
+        <div class="form-group">
+          <div class="tabs" id="diagModeToggle" style="margin-bottom: 0;">
+            <button type="button" class="tab active" data-mode="url">🌐 홈페이지 URL로 진단</button>
+            <button type="button" class="tab" data-mode="content">📝 작성한 글로 진단</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="companyName">기업/기관명</label>
+          <input type="text" id="companyName" class="form-input"
+                 placeholder="예: 디지털스마일치과" />
+        </div>
+
+        <!-- URL 모드 -->
+        <div class="form-group" id="urlMode">
+          <label class="form-label" for="websiteUrl">홈페이지 URL</label>
+          <input type="url" id="websiteUrl" class="form-input"
+                 placeholder="https://example.com" />
+        </div>
+
+        <!-- 콘텐츠 모드 -->
+        <div class="form-group hidden" id="contentMode">
+          <label class="form-label" for="contentText">분석할 글 (제품 설명, 블로그 포스트, 회사 소개 등)</label>
+          <textarea id="contentText" class="form-input"
+                    rows="10"
+                    placeholder="여기에 분석할 콘텐츠를 붙여넣으세요. AI가 이 글을 기준으로 10대 KPI를 평가합니다.&#10;&#10;예시: 회사 소개글, 제품 상세 페이지, 블로그 포스트, 보도자료 등."
+                    style="resize: vertical; min-height: 220px; font-family: inherit; line-height: 1.6;"></textarea>
+          <p style="margin-top: 8px; font-size: 0.78rem; color: var(--text-tertiary);">
+            💡 글의 길이: 300~6,000자 권장 · 너무 짧으면 정확도 낮음
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="industry">업종 (선택)</label>
+          <select id="industry" class="form-input">
+            <option value="">자동 감지</option>
+            <option value="dental">치과</option>
+            <option value="hospital">병원/의료</option>
+            <option value="legal">법무/세무</option>
+            <option value="education">교육/학원</option>
+            <option value="beauty">미용/뷰티</option>
+            <option value="restaurant">음식점/카페</option>
+            <option value="retail">유통/판매</option>
+            <option value="b2b">B2B/제조</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+
+        <!-- 자동 재작성 옵션 -->
+        <div class="form-group" style="background: rgba(255, 107, 53, 0.06); border: 1px solid rgba(255, 107, 53, 0.2); border-radius: 10px; padding: 14px 18px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+            <input type="checkbox" id="autoRewrite" style="width: 18px; height: 18px; accent-color: var(--color-accent); cursor: pointer;" />
+            <div>
+              <div style="font-weight: 700; font-size: 0.92rem;">✨ 진단 + <span style="color: var(--color-accent);">90점 글 자동 생성</span></div>
+              <div style="font-size: 0.78rem; color: var(--text-tertiary); margin-top: 2px;">진단 완료 후 AI가 90점 이상의 글을 자동으로 재작성합니다 (콘텐츠 모드 권장)</div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn btn-primary btn-large" id="startDiagnosis">
+          <span>🎯 AI 노출 진단 시작</span>
+        </button>
+
+        <p style="margin-top: 16px; font-size: 0.85rem; color: var(--text-tertiary); text-align: center;">
+          ⏱️ 약 30초 소요 · 🔒 입력 정보는 진단 외 용도로 사용되지 않습니다
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== URGENCY CTA ========== -->
+  <section class="section" style="padding-top: var(--space-xl);">
+    <div class="container">
+      <div style="max-width: 960px; margin: 0 auto; padding: 36px 32px; text-align: center; background: linear-gradient(135deg, rgba(255, 107, 53, 0.12) 0%, rgba(255, 168, 0, 0.08) 50%, rgba(0, 214, 143, 0.08) 100%); border: 1px solid rgba(255, 107, 53, 0.25); border-radius: 20px; box-shadow: 0 8px 32px rgba(255, 107, 53, 0.08);">
+        <h2 style="font-size: clamp(1.5rem, 3.5vw, 2.25rem); font-weight: 800; line-height: 1.4; margin: 0; letter-spacing: -0.02em;">
+          지금 바꾸지 않으면<br/>
+          <span style="background: linear-gradient(135deg, #ff6b35, #ffa800); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">AI 인용&amp;추천 시장</span>을 잃습니다!
+        </h2>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ai_writing 가치 제안 ========== -->
+  <section class="section" id="ai-writing-value" style="padding: var(--space-xl) 0;">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag" style="color: #a855f7; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3);">⭐ AI 인용 글쓰기 — 우리 차별점</span>
+        <h2 class="section-title">왜 GEO Score AI인가?</h2>
+        <p class="section-subtitle" style="max-width: 760px; margin: 0 auto;">
+          단순 점수가 아니라, <strong style="color: #a855f7;">AI가 실제로 인용하는 콘텐츠</strong>를 만드는 알고리즘.<br/>
+          ai_writing 6원칙 기반 결정적 측정 + 자동 90점 변환 + 30개 파생 + 실제 인용성 검증.
+        </p>
+      </div>
+
+      <!-- 6원칙 카드 -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 32px 0;">
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.25); border-left: 4px solid #a855f7; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">🎯</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 0. CEP 장면 점유</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">"사람"이 아니라 "순간"을 표적으로. <a href="cep.html" style="color: #a855f7;">CEP 발굴 →</a></div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.25); border-left: 4px solid #a855f7; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">👤</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 1. 작성자 권위</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">도입부+결론에 작성자 정보 별도 단락. E-E-A-T 13신호 측정.</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.25); border-left: 4px solid #a855f7; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">📐</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 2. 정의문 H2</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">H2 첫 문장 "X는 ~이다" 형태. LLM 추출 친화도 ≥ 50%.</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.25); border-left: 4px solid #a855f7; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">🔢</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 3. 구조화</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">번호 리스트 · 표 · Q:A: · 명시적 수치 (%·원·명·건).</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.4); border-left: 4px solid #00d68f; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">⭐</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 4. AI 인용 4신호</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">질문형 H2 + 브랜드 반복 + 외부 신호 + CTA 도달률 ≥ 50%</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid rgba(168,85,247,0.25); border-left: 4px solid #a855f7; border-radius: 12px; padding: 20px;">
+          <div style="font-size: 1.6rem; margin-bottom: 8px;">🚀</div>
+          <div style="font-weight: 700; margin-bottom: 6px;">원칙 5. 행동 유도</div>
+          <div style="color: var(--text-tertiary); font-size: 0.88rem;">핵심 답 + CTA 솔루션 + TL;DR. KPI 6 (전환 설계).</div>
+        </div>
+      </div>
+
+      <!-- Before/After 케이스 -->
+      <div style="margin: 48px 0; padding: 32px; background: linear-gradient(135deg, rgba(255,61,113,0.06), rgba(0,214,143,0.06)); border: 1px solid rgba(0,214,143,0.25); border-radius: 20px;">
+        <h3 style="text-align: center; margin-bottom: 24px;">📊 실제 변환 사례</h3>
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: center;">
+          <div style="text-align: center; padding: 20px; background: var(--bg-card); border: 1px solid rgba(255,61,113,0.3); border-radius: 12px;">
+            <div style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">📉 원본</div>
+            <div style="font-size: 4rem; font-weight: 900; color: #ff3d71; font-family: monospace;">25</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">Critical · 27자 · KPI 4 18점</div>
+            <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.78rem; color: var(--text-tertiary); font-style: italic;">
+              "우리 치과는 좋은 치과입니다."
+            </div>
+          </div>
+          <div style="font-size: 3rem; color: var(--color-accent);">→</div>
+          <div style="text-align: center; padding: 20px; background: var(--bg-card); border: 1px solid rgba(0,214,143,0.3); border-radius: 12px;">
+            <div style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">📈 90점 글 + 30파생</div>
+            <div style="font-size: 4rem; font-weight: 900; color: #00d68f; font-family: monospace;">93</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">AI Dominant · 3,938자 · KPI 4 92점</div>
+            <div style="margin-top: 12px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.78rem; color: var(--text-tertiary); font-style: italic;">
+              5신호 12/15 · 인용률 80%
+            </div>
+          </div>
+        </div>
+        <p style="text-align: center; margin-top: 20px; color: var(--text-secondary); font-size: 0.92rem;">
+          <strong style="color: #00d68f;">+68점</strong> 상승 · 자가 검증 루프 1회 · 30개 파생까지 자동 생성
+        </p>
+      </div>
+
+      <!-- 4가지 도구 -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <a href="rewrite.html" style="text-decoration: none; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; transition: all 0.2s; display: block;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">✨</div>
+          <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">90점 글 자동 생성</div>
+          <div style="color: var(--text-tertiary); font-size: 0.85rem;">자가 검증 3회로 GEO Score 90점 도달까지 자동 반복.</div>
+        </a>
+        <a href="derive.html" style="text-decoration: none; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; transition: all 0.2s; display: block;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🌳</div>
+          <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">30개 질문형 파생</div>
+          <div style="color: var(--text-tertiary); font-size: 0.85rem;">"1글 → 30파생" — 데이터량 부족 한 번에 해결.</div>
+        </a>
+        <a href="cep.html" style="text-decoration: none; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; transition: all 0.2s; display: block;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🎯</div>
+          <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">CEP 장면 발굴</div>
+          <div style="color: var(--text-tertiary); font-size: 0.85rem;">5단계 워크플로로 "표적 순간" 도출.</div>
+        </a>
+        <a href="citation-test.html" style="text-decoration: none; padding: 24px; background: var(--bg-card); border: 1px solid rgba(0,149,255,0.3); border-radius: 12px; transition: all 0.2s; display: block;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🔍</div>
+          <div style="font-weight: 700; color: #0095ff; margin-bottom: 6px;">AI 인용성 실제 검증</div>
+          <div style="color: var(--text-tertiary); font-size: 0.85rem;">10개 가상 질문으로 실제 인용 가능성 측정.</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== KPI GRID ========== -->
+  <section class="section" id="kpi">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">GEO Score Framework</span>
+        <h2 class="section-title">10대 KPI로 진단하는<br />AI 시대 존재력</h2>
+        <p class="section-subtitle">
+          기존 SEO가 아닌, AI가 인용하고 추천하는 기준으로 설계된 측정 체계입니다.
+        </p>
+      </div>
+
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </div>
+  </section>
+
+  <!-- ========== PROCESS ========== -->
+  <section class="section" id="process">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">진단 프로세스</span>
+        <h2 class="section-title">입력 한 번, 통찰 8단계</h2>
+        <p class="section-subtitle">
+          기업명과 URL만 입력하면 자동 크롤링부터 계약 제안까지 전체 흐름이 자동화됩니다.
+        </p>
+      </div>
+
+      <div class="process-flow">
+        <div class="process-step">
+          <div class="process-num">1</div>
+          <div class="process-name">정보 입력</div>
+          <div class="process-desc">기업명 + URL</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">2</div>
+          <div class="process-name">자동 크롤링</div>
+          <div class="process-desc">데이터 수집</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">3</div>
+          <div class="process-name">AI 분석</div>
+          <div class="process-desc">Gemini 엔진</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">4</div>
+          <div class="process-name">KPI 점수화</div>
+          <div class="process-desc">10개 지표</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">5</div>
+          <div class="process-name">레이더 차트</div>
+          <div class="process-desc">시각화 리포트</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">6</div>
+          <div class="process-name">문제 도출</div>
+          <div class="process-desc">취약 영역 강조</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">7</div>
+          <div class="process-name">솔루션 제안</div>
+          <div class="process-desc">GEO-AIO 연결</div>
+        </div>
+        <div class="process-step">
+          <div class="process-num">8</div>
+          <div class="process-name">계약 전환</div>
+          <div class="process-desc">즉시 실행</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== GRADE SYSTEM ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">등급 체계</span>
+        <h2 class="section-title">5단계 등급으로 한눈에</h2>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent-color: #00d68f; --accent-color-2: #00b87c;">
+          <div class="kpi-icon">👑</div>
+          <div class="kpi-name">AI Dominant (90~100)</div>
+          <div class="kpi-desc">시장 지배 수준. AI가 우선 추천하는 기업.</div>
+        </div>
+        <div class="kpi-card" style="--accent-color: #0095ff; --accent-color-2: #0073cc;">
+          <div class="kpi-icon">💪</div>
+          <div class="kpi-name">Strong (70~89)</div>
+          <div class="kpi-desc">상위권. AI 인용이 활발하게 일어남.</div>
+        </div>
+        <div class="kpi-card" style="--accent-color: #ffa800; --accent-color-2: #ff8800;">
+          <div class="kpi-icon">📈</div>
+          <div class="kpi-name">Growing (50~69)</div>
+          <div class="kpi-desc">성장 가능. 약간의 보완으로 상위권 진입 가능.</div>
+        </div>
+        <div class="kpi-card" style="--accent-color: #ff6b35; --accent-color-2: #ff4500;">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-name">Weak (30~49)</div>
+          <div class="kpi-desc">위험 단계. 경쟁사에 밀리는 상태.</div>
+        </div>
+        <div class="kpi-card" style="--accent-color: #ff3d71; --accent-color-2: #cc1f4d;">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-name">Critical (0~29)</div>
+          <div class="kpi-desc">거의 없음. AI 검색에서 사실상 부재 상태.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-section">
+        <h2 class="cta-title">
+          지금 바꾸지 않으면<br />
+          <span style="color: var(--color-accent);">AI 인용&amp;추천 시장을 잃습니다</span>
+        </h2>
+        <p class="cta-subtitle">
+          경쟁사는 이미 AI에 등장하고 있습니다. 무료 진단으로 귀사의 위치를 확인하세요.
+        </p>
+        <div class="cta-buttons">
+          <a href="#diag" class="btn btn-primary btn-large" style="width: auto;">
+            🎯 무료 진단 시작
+          </a>
+          <a href="chatbot.html" class="btn btn-ghost btn-large" style="width: auto;">
+            💬 AI 상담사와 대화
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/kpi-config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/standalone-shim.js"></script>
+  <script src="js/index.js"></script>
+  <!-- ========== PREMIUM FOOTER ========== -->
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">
+            AI 검색 시대 기업의 존재 가능성을 점수로 진단하고,<br/>
+            <strong>존재하게 만드는</strong> 플랫폼.
+          </p>
+          <div class="premium-footer-badges">
+            <span class="pf-badge">🤖 Gemini AI</span>
+            <span class="pf-badge">🔒 Vercel Edge</span>
+            <span class="pf-badge">⚡ 30초 진단</span>
+          </div>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="results.html">📈 결과 분석</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+            <li><a href="admin.html">🔐 관리자</a></li>
+          </ul>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+            <li><a href="index.html#kpi">🔢 10대 KPI</a></li>
+            <li><a href="index.html#process">⚙️ 진단 프로세스</a></li>
+          </ul>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+            <li><a href="chatbot.html">💬 실시간 상담</a></li>
+          </ul>
+          <div class="premium-footer-cta">
+            <a href="index.html#diag" class="pf-cta-btn">무료 진단 시작 →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="premium-footer-bottom">
+        <div class="pf-bottom-left">
+          <span>© 2026 <strong>GEO Score AI</strong></span>
+          <span class="pf-divider">·</span>
+          <span>심재우</span>
+          <span class="pf-divider">·</span>
+          <a href="mailto:jaiwshim@gmail.com">jaiwshim@gmail.com</a>
+        </div>
+        <div class="pf-bottom-right">
+          <em>"문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다"</em>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

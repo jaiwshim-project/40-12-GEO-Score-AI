@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 상담 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💬%3C/text%3E%3C/svg%3E" />
+  <style>
+    .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; max-width: 1280px; margin: 0 auto; padding: 24px; height: calc(100vh - 80px); }
+    @media (max-width: 900px) { .chat-layout { grid-template-columns: 1fr; height: auto; } .chat-sidebar { display: none; } }
+    .chat-sidebar { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+    .suggested-q { padding: 12px; background: var(--bg-tertiary); border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.15s; border: 1px solid transparent; }
+    .suggested-q:hover { background: var(--bg-elevated); border-color: var(--color-accent); }
+    .chat-main { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; display: flex; flex-direction: column; min-height: 600px; overflow: hidden; }
+    .chat-header { padding: 20px 24px; border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; gap: 16px; background: var(--bg-tertiary); }
+    .chat-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #ff6b35, #ffa800); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .chat-online { width: 10px; height: 10px; background: #00d68f; border-radius: 50%; box-shadow: 0 0 8px #00d68f; }
+    .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    .msg { max-width: 80%; padding: 14px 18px; border-radius: 16px; font-size: 0.95rem; line-height: 1.6; word-wrap: break-word; }
+    .msg.user { background: linear-gradient(135deg, #ff6b35, #ff4500); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg.assistant { background: var(--bg-tertiary); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg-meta { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px; padding: 0 8px; }
+    .chat-input-area { padding: 16px 20px; border-top: 1px solid var(--border-primary); background: var(--bg-secondary); }
+    .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .chat-input { flex: 1; min-height: 48px; max-height: 120px; padding: 14px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: vertical; }
+    .chat-input:focus { outline: none; border-color: var(--color-accent); }
+    .chat-send { padding: 12px 20px; min-width: 80px; }
+    .typing { display: inline-flex; gap: 4px; padding: 8px 0; }
+    .typing span { width: 8px; height: 8px; background: var(--text-tertiary); border-radius: 50%; animation: typingBounce 1.2s infinite ease-in-out; }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%, 60%, 100% { transform: scale(0.6); opacity: 0.4; } 30% { transform: scale(1); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="index.html#process" class="nav-link">진단 프로세스</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="architecture.html" class="nav-link">아키텍처</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="cep.html" class="nav-link">🎯 CEP 발굴</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="chat-layout">
+
+    <aside class="chat-sidebar">
+      <h3 style="font-size: 1rem; font-weight: 700;">💡 추천 질문</h3>
+      <div class="suggested-q" data-q="GEO와 SEO는 어떻게 다른가요?">
+        🤔 GEO와 SEO는 어떻게 다른가요?
+      </div>
+      <div class="suggested-q" data-q="우리 회사는 어떤 패키지가 적합한가요?">
+        🎯 우리 회사는 어떤 패키지가 적합한가요?
+      </div>
+      <div class="suggested-q" data-q="진단 점수가 낮으면 어떻게 해야 하나요?">
+        ⚠️ 진단 점수가 낮으면 어떻게 해야 하나요?
+      </div>
+      <div class="suggested-q" data-q="GEO-AIO 솔루션 도입 시 효과는?">
+        🚀 GEO-AIO 솔루션 도입 시 효과는?
+      </div>
+      <div class="suggested-q" data-q="3개월 후 어떤 변화를 기대할 수 있나요?">
+        📈 3개월 후 어떤 변화를 기대할 수 있나요?
+      </div>
+      <div class="suggested-q" data-q="가격은 어떻게 책정되나요?">
+        💰 가격은 어떻게 책정되나요?
+      </div>
+
+      <hr style="border: none; border-top: 1px solid var(--border-primary); margin: 8px 0;" />
+
+      <h3 style="font-size: 1rem; font-weight: 700;">📊 진단 결과 연동</h3>
+      <div id="diagContext" style="font-size: 0.9rem; color: var(--text-secondary);">
+        진단 결과 없음
+      </div>
+      <button class="btn btn-secondary" id="loadLatest" style="font-size: 0.85rem;">
+        🔄 최근 진단 불러오기
+      </button>
+
+      <hr style="border: none; border-top: 1px solid var(--border-primary); margin: 8px 0;" />
+
+      <button class="btn btn-ghost" id="clearChat" style="font-size: 0.85rem;">
+        🗑️ 대화 초기화
+      </button>
+    </aside>
+
+    <main class="chat-main">
+      <div class="chat-header">
+        <div class="chat-avatar">🤖</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            GEO Score AI 컨설턴트
+            <span class="chat-online"></span>
+          </div>
+          <div style="color: var(--text-tertiary); font-size: 0.85rem;">
+            Gemini 1.5 Flash · 한국어 전문
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg assistant">
+          안녕하세요! 👋 <strong>GEO Score AI 컨설턴트</strong>입니다.<br /><br />
+          AI 검색 시대 기업 마케팅에 대한 모든 질문에 답해드립니다. 진단 결과를 가지고 계시면 더 구체적인 조언을 드릴 수 있어요.<br /><br />
+          왼쪽의 추천 질문을 눌러보거나 자유롭게 질문해주세요.
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chatInput" placeholder="메시지를 입력하세요... (Shift+Enter 줄바꿈)" rows="1"></textarea>
+          <button class="btn btn-primary chat-send" id="chatSend">
+            ✈️ 전송
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/standalone-shim.js"></script>
+  <script src="js/chatbot.js"></script>
+  <!-- ========== PREMIUM FOOTER ========== -->
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">
+            AI 검색 시대 기업의 존재 가능성을 점수로 진단하고,<br/>
+            <strong>존재하게 만드는</strong> 플랫폼.
+          </p>
+          <div class="premium-footer-badges">
+            <span class="pf-badge">🤖 Gemini AI</span>
+            <span class="pf-badge">🔒 Vercel Edge</span>
+            <span class="pf-badge">⚡ 30초 진단</span>
+          </div>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="results.html">📈 결과 분석</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+            <li><a href="admin.html">🔐 관리자</a></li>
+          </ul>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+            <li><a href="index.html#kpi">🔢 10대 KPI</a></li>
+            <li><a href="index.html#process">⚙️ 진단 프로세스</a></li>
+          </ul>
+        </div>
+
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+            <li><a href="chatbot.html">💬 실시간 상담</a></li>
+          </ul>
+          <div class="premium-footer-cta">
+            <a href="index.html#diag" class="pf-cta-btn">무료 진단 시작 →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="premium-footer-bottom">
+        <div class="pf-bottom-left">
+          <span>© 2026 <strong>GEO Score AI</strong></span>
+          <span class="pf-divider">·</span>
+          <span>심재우</span>
+          <span class="pf-divider">·</span>
+          <a href="mailto:jaiwshim@gmail.com">jaiwshim@gmail.com</a>
+        </div>
+        <div class="pf-bottom-right">
+          <em>"문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다"</em>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

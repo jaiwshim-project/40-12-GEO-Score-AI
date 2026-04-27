@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔍 AI 인용성 검증 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔍%3C/text%3E%3C/svg%3E" />
+  <style>
+    .ct-input { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 32px; max-width: 1100px; margin: 0 auto 32px; }
+    .ct-loader { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 60px 32px; max-width: 1100px; margin: 0 auto 32px; text-align: center; }
+    .ct-spinner { width: 56px; height: 56px; border: 4px solid rgba(0, 149, 255, 0.15); border-top-color: #0095ff; border-radius: 50%; animation: ctspin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes ctspin { to { transform: rotate(360deg); } }
+
+    .ct-result { max-width: 1280px; margin: 0 auto; }
+    .ct-summary { background: linear-gradient(135deg, rgba(0,149,255,0.06), rgba(0,214,143,0.06)); border: 1px solid rgba(0,149,255,0.25); border-radius: 20px; padding: 32px; margin-bottom: 32px; text-align: center; }
+    .ct-rate { font-size: 5rem; font-weight: 900; line-height: 1; font-family: monospace; }
+    .ct-rate.high { color: #00d68f; }
+    .ct-rate.mid { color: #ffa800; }
+    .ct-rate.low { color: #ff3d71; }
+    .ct-grade { font-size: 1.2rem; color: var(--text-secondary); margin-top: 12px; font-weight: 700; }
+
+    .ct-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
+    .ct-stat { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; padding: 16px; text-align: center; }
+    .ct-stat-val { font-size: 1.8rem; font-weight: 800; font-family: monospace; }
+    .ct-stat-lbl { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 4px; text-transform: uppercase; }
+
+    .ct-answer-card { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; padding: 20px; margin-bottom: 12px; border-left: 4px solid var(--border-primary); }
+    .ct-answer-card.cited { border-left-color: #00d68f; background: rgba(0,214,143,0.04); }
+    .ct-answer-card.notcited { border-left-color: #ff3d71; }
+    .ct-q { font-weight: 700; margin-bottom: 8px; color: var(--text-primary); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .ct-q-tag { font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+    .ct-q-tag.general { background: rgba(0,149,255,0.12); color: #0095ff; }
+    .ct-q-tag.branded { background: rgba(168,85,247,0.12); color: #a855f7; }
+    .ct-cited-badge { font-size: 0.78rem; padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+    .ct-cited-badge.yes { background: rgba(0,214,143,0.15); color: #00d68f; }
+    .ct-cited-badge.no { background: rgba(255,61,113,0.15); color: #ff3d71; }
+    .ct-a { padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary); margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="cep.html" class="nav-link">🎯 CEP 발굴</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="section">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-tag">실제 AI 답변 시뮬레이션</span>
+        <h2 class="section-title">🔍 AI 인용성 검증</h2>
+        <p class="section-subtitle" style="max-width: 760px; margin: 0 auto;">
+          입력한 글이 AI 검색(Perplexity·SearchGPT·AI Overview)에서
+          <strong style="color: #0095ff;">실제로 인용되는지</strong>를 10개 가상 질문으로 시뮬레이션.
+          KPI 4 점수가 진짜 인용으로 이어지는지 결정적 검증.
+        </p>
+      </div>
+
+      <div class="ct-input" id="ctInputSection">
+        <div id="ctUsagePanel"></div>
+        <h3 style="margin-bottom: 16px;">📝 검증할 글 입력</h3>
+        <div class="form-group">
+          <label class="form-label" for="ctBrand">브랜드/회사명</label>
+          <input type="text" id="ctBrand" class="form-input" placeholder="예: 디지털스마일치과" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ctIndustry">업종 (선택)</label>
+          <select id="ctIndustry" class="form-input">
+            <option value="">자동 감지</option>
+            <option value="dental">치과</option>
+            <option value="hospital">병원/의료</option>
+            <option value="legal">법무/세무</option>
+            <option value="education">교육/학원</option>
+            <option value="beauty">미용/뷰티</option>
+            <option value="restaurant">음식점/카페</option>
+            <option value="retail">유통/판매</option>
+            <option value="b2b">B2B/제조</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ctContent">검증할 글</label>
+          <textarea id="ctContent" class="form-input" style="min-height: 220px; resize: vertical;" placeholder="AI 검색에 인용되는지 검증하고 싶은 글을 붙여넣으세요. 90점 글 또는 30개 파생 결과를 검증하는 데 권장."></textarea>
+          <p style="margin-top: 6px; font-size: 0.78rem; color: var(--text-tertiary);">💡 100자 이상. 90점 글로 변환된 콘텐츠로 검증하면 인용률이 가장 높게 측정됩니다.</p>
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+          <button class="btn btn-primary btn-large" id="btnCt" style="background: linear-gradient(135deg, #0095ff, #00d68f);">
+            🔍 10개 질문으로 인용성 검증 시작
+          </button>
+          <p style="margin-top: 12px; font-size: 0.78rem; color: var(--text-tertiary);">⏱️ 약 30~45초 · Gemini 11회 호출 (질문 1회 + 답변 10회 병렬)</p>
+        </div>
+      </div>
+
+      <div class="ct-loader hidden" id="ctLoaderSection">
+        <div class="ct-spinner"></div>
+        <h3 style="margin-bottom: 12px;">AI가 인용성을 검증하고 있습니다</h3>
+        <p id="ctLoaderInfo" style="color: var(--text-tertiary);">10개 가상 질문 생성 중...</p>
+      </div>
+
+      <div class="ct-result hidden" id="ctResultSection">
+        <div class="ct-summary">
+          <div style="font-size: 0.9rem; color: var(--text-tertiary); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">실제 AI 인용률</div>
+          <div class="ct-rate" id="ctRate">-</div>
+          <div class="ct-grade" id="ctGrade">-</div>
+          <div class="ct-stats">
+            <div class="ct-stat">
+              <div class="ct-stat-val" id="ctCited">-</div>
+              <div class="ct-stat-lbl">인용된 답변</div>
+            </div>
+            <div class="ct-stat">
+              <div class="ct-stat-val" id="ctGeneral">-</div>
+              <div class="ct-stat-lbl">일반 질문 인용</div>
+            </div>
+            <div class="ct-stat">
+              <div class="ct-stat-val" id="ctBranded">-</div>
+              <div class="ct-stat-lbl">브랜드 질문 인용</div>
+            </div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 0.92rem; margin-top: 16px;" id="ctSummaryText">-</p>
+        </div>
+
+        <h3 style="margin-bottom: 16px;">📋 10개 질문별 답변 결과</h3>
+        <div id="ctAnswers"></div>
+
+        <div style="text-align: center; margin-top: 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-secondary" id="btnCtCopy">📋 결과 복사 (마크다운)</button>
+          <button class="btn btn-secondary" id="btnCtDownload">📥 JSON 다운로드</button>
+          <button class="btn btn-ghost" id="btnCtNew">🆕 새로 검증</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="js/common.js"></script>
+  <script src="js/standalone-shim.js"></script>
+  <script src="js/citation-test.js"></script>
+</body>
+</html>

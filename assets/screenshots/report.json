@@ -1,0 +1,51 @@
+[
+  {
+    "name": "index",
+    "url": "http://127.0.0.1:8765/",
+    "ok": true,
+    "size": 844458,
+    "errors": []
+  },
+  {
+    "name": "results",
+    "url": "http://127.0.0.1:8765/results.html?id=mock-test",
+    "ok": true,
+    "size": 681044,
+    "errors": []
+  },
+  {
+    "name": "dashboard",
+    "url": "http://127.0.0.1:8765/dashboard.html",
+    "ok": true,
+    "size": 265147,
+    "errors": []
+  },
+  {
+    "name": "manual",
+    "url": "http://127.0.0.1:8765/manual.html",
+    "ok": true,
+    "size": 977457,
+    "errors": []
+  },
+  {
+    "name": "architecture",
+    "url": "http://127.0.0.1:8765/architecture.html",
+    "ok": true,
+    "size": 487362,
+    "errors": []
+  },
+  {
+    "name": "chatbot",
+    "url": "http://127.0.0.1:8765/chatbot.html",
+    "ok": true,
+    "size": 163311,
+    "errors": []
+  },
+  {
+    "name": "admin",
+    "url": "http://127.0.0.1:8765/admin.html",
+    "ok": true,
+    "size": 336957,
+    "errors": []
+  }
+]

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="GEO Score AI - 진단 결과 3D 온톨로지 시각화">
+<title>GEO Score AI · 3D 온톨로지 분석</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+body { background:#f8fafb; color:#0f172a; overflow:hidden; }
+
+.header {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:linear-gradient(180deg,rgba(255,255,255,.98) 0%,rgba(248,250,251,.92) 70%,rgba(248,250,251,0) 100%);
+  padding:14px 24px; display:flex; align-items:center; justify-content:space-between;
+}
+.header h1 { font-size:18px; font-weight:800; background:linear-gradient(135deg,#1F6BFF,#7c3aed,#0d9488); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.header .sub { font-size:11px; color:#64748b; margin-top:2px; }
+
+.control-panel {
+  position:fixed; left:14px; top:72px; z-index:100;
+  background:rgba(255,255,255,.97); backdrop-filter:blur(16px);
+  border:1px solid rgba(0,0,0,.08); border-radius:14px;
+  padding:16px; width:240px; max-height:calc(100vh - 90px); overflow-y:auto;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.control-panel h3 { font-size:12px; font-weight:700; color:#1e293b; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.section { margin-bottom:16px; }
+.section-title { font-size:10px; font-weight:600; color:#64748b; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+
+.legend-item { display:flex; align-items:center; gap:7px; padding:4px 0; font-size:11px; color:#1e293b; font-weight:500; cursor:pointer; transition:opacity .2s; }
+.legend-item:hover { opacity:.7; }
+.legend-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.rel-item { display:flex; align-items:center; gap:6px; padding:2px 0; font-size:10px; color:#475569; font-weight:500; }
+.rel-line { width:16px; height:2px; flex-shrink:0; }
+
+.btn { padding:6px 12px; border-radius:8px; border:1px solid rgba(31,107,255,.2); background:rgba(31,107,255,.08); color:#1F6BFF; font-size:11px; font-weight:600; cursor:pointer; transition:all .2s; }
+.btn:hover { background:rgba(31,107,255,.15); border-color:#1F6BFF; }
+.btn-group { display:flex; flex-wrap:wrap; gap:5px; }
+
+.view-toggle { display:flex; border-radius:8px; overflow:hidden; border:1px solid rgba(31,107,255,.15); }
+.view-toggle button { flex:1; padding:5px 8px; background:transparent; border:none; color:#64748b; font-size:10px; font-weight:600; cursor:pointer; transition:all .2s; }
+.view-toggle button.active { background:rgba(31,107,255,.12); color:#1F6BFF; }
+
+.detail-panel {
+  position:fixed; right:0; top:0; width:320px; height:100vh; z-index:100;
+  background:rgba(255,255,255,.96); backdrop-filter:blur(16px);
+  border-left:1px solid rgba(31,107,255,.15);
+  padding:72px 20px 20px; transform:translateX(100%); transition:transform .3s; overflow-y:auto;
+}
+.detail-panel.open { transform:translateX(0); }
+.detail-close { position:absolute; top:16px; right:14px; background:none; border:none; color:#64748b; font-size:22px; cursor:pointer; }
+.detail-type-badge { display:inline-block; padding:3px 12px; border-radius:6px; font-size:11px; font-weight:700; margin-bottom:12px; }
+.detail-section { margin-bottom:16px; }
+.detail-section h4 { font-size:10px; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:6px; }
+.detail-section p { font-size:13px; color:#334155; line-height:1.6; }
+.detail-rel { padding:6px 10px; background:rgba(0,0,0,.03); border-radius:6px; margin-bottom:4px; font-size:11px; color:#334155; border:1px solid rgba(0,0,0,.06); }
+
+.info-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  background:linear-gradient(0deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.85) 70%,rgba(255,255,255,0) 100%);
+  padding:10px 24px; display:flex; align-items:center; justify-content:space-between;
+}
+.info-bar .stats { display:flex; gap:16px; }
+.stat { font-size:10px; color:#475569; font-weight:500; }
+.stat span { color:#1F6BFF; font-weight:700; }
+.info-bar .hint { font-size:10px; color:#64748b; }
+
+.desc-panel {
+  position:fixed; right:16px; bottom:52px; z-index:100;
+  width:360px; max-height:320px; overflow-y:auto;
+  background:rgba(255,255,255,.97); backdrop-filter:blur(16px);
+  border:1px solid rgba(0,0,0,.08); border-radius:14px;
+  padding:18px 20px; transition:opacity .4s, transform .4s;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.desc-panel.hidden { opacity:0; transform:translateY(10px); pointer-events:none; }
+.desc-panel h4 { font-size:13px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.desc-panel h4 .tag { font-size:9px; font-weight:600; padding:2px 8px; border-radius:6px; text-transform:uppercase; letter-spacing:.5px; }
+.desc-panel p { font-size:11px; color:#334155; line-height:1.7; margin-bottom:10px; }
+.desc-panel .meta { font-size:10px; color:#64748b; font-weight:500; border-top:1px solid rgba(0,0,0,.08); padding-top:8px; display:flex; gap:12px; flex-wrap:wrap; }
+.desc-toggle { position:absolute; top:10px; right:12px; background:none; border:none; color:#64748b; font-size:16px; cursor:pointer; }
+
+.issue-panel {
+  position:fixed; right:16px; top:72px; z-index:101;
+  width:380px; max-height:calc(100vh - 130px); overflow-y:auto;
+  background:rgba(255,255,255,.98); backdrop-filter:blur(16px);
+  border:1px solid rgba(190,18,60,.12); border-radius:14px;
+  padding:20px; transition:opacity .4s, transform .4s;
+  box-shadow:0 4px 24px rgba(190,18,60,.08), 0 1px 4px rgba(0,0,0,.06);
+}
+.issue-panel.hidden { opacity:0; transform:translateX(20px); pointer-events:none; }
+.issue-panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(190,18,60,.1); }
+.issue-panel-header h3 { font-size:14px; font-weight:800; color:#be123c; display:flex; align-items:center; gap:6px; }
+.issue-panel-close { background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; }
+.issue-cause-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:12px; }
+.issue-section { margin-bottom:14px; }
+.issue-section-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+.issue-section p { font-size:12px; color:#334155; line-height:1.7; margin:0; }
+.issue-solution { border-radius:8px; padding:10px 12px; margin-bottom:6px; }
+.issue-solution-head { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+.issue-solution-badge { font-size:9px; font-weight:700; color:#fff; padding:1px 7px; border-radius:3px; }
+.issue-solution-title { font-size:12px; font-weight:700; color:#1e293b; }
+.issue-solution p { font-size:11px; color:#475569; line-height:1.6; margin:0; }
+.issue-name-btn { display:block; width:100%; text-align:left; padding:8px 12px; margin-bottom:4px; border-radius:8px; border:1px solid rgba(0,0,0,.06); background:rgba(190,18,60,.03); cursor:pointer; transition:all .2s; font-family:inherit; }
+.issue-name-btn:hover { background:rgba(190,18,60,.08); border-color:rgba(190,18,60,.2); }
+.issue-name-btn.active { background:rgba(190,18,60,.1); border-color:rgba(190,18,60,.25); }
+
+#loadingOverlay { position:fixed; inset:0; z-index:300; background:#f8fafb; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .5s; }
+#loadingOverlay.fade { opacity:0; pointer-events:none; }
+.loader { width:48px; height:48px; border:3px solid rgba(31,107,255,.15); border-top-color:#1F6BFF; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+#graph3d { width:100vw; height:100vh; }
+.node-tooltip { position:absolute; padding:8px 14px; background:rgba(255,255,255,.95); border:1px solid rgba(31,107,255,.2); border-radius:8px; color:#334155; font-size:12px; pointer-events:none; z-index:150; white-space:nowrap; backdrop-filter:blur(8px); }
+
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(31,107,255,.2); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="loader"></div>
+  <div style="color:#1F6BFF;font-size:14px;font-weight:600">3D 온톨로지 엔진 로딩 중...</div>
+  <div style="color:#94a3b8;font-size:11px;margin-top:6px" id="loadStatus">진단 데이터 수신 대기</div>
+</div>
+
+<div class="header">
+  <div>
+    <h1>&#x1F578; GEO Score AI · 3D 온톨로지 분석</h1>
+    <div class="sub">AXOS 8노드 + 9관계 &mdash; KPI 인과 그래프 + 액션 영향 매트릭스</div>
+  </div>
+  <div class="btn-group">
+    <button class="btn" onclick="resetCamera()">&#x1F3AF; 초기화</button>
+    <button class="btn" onclick="toggleAutoRotate()">&#x1F504; 회전</button>
+    <button class="btn" onclick="exportPNG()">&#x1F4F7; 캡처</button>
+  </div>
+</div>
+
+<div class="control-panel">
+  <h3>&#x1F3AE; Controls</h3>
+  <div class="section">
+    <div class="section-title">뷰 모드</div>
+    <div class="view-toggle" id="viewToggle">
+      <button class="active" onclick="setViewMode('cluster',this)">군집</button>
+      <button onclick="setViewMode('layer',this)">레이어</button>
+      <button onclick="setViewMode('timeline',this)">타임라인</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">노드 타입 (8종)</div>
+    <div id="nodeLegend"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Issue 원인 구분 (외곽 링)</div>
+    <div id="issueCauseLegend"></div>
+    <div style="margin-top:8px">
+      <button class="btn" id="btnIssueMode" onclick="toggleIssueMode()" style="width:100%">&#x26A0; 약점 KPI만 보기</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">관계 타입 (9종)</div>
+    <div id="relLegend"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">3D 좌표계</div>
+    <div class="rel-item"><div class="rel-line" style="background:#ef4444"></div><span style="color:#ef4444;font-weight:600">X</span> 프로세스 흐름</div>
+    <div class="rel-item"><div class="rel-line" style="background:#22c55e"></div><span style="color:#22c55e;font-weight:600">Y</span> 조직/액터 계층</div>
+    <div class="rel-item"><div class="rel-line" style="background:#3b82f6"></div><span style="color:#3b82f6;font-weight:600">Z</span> 데이터 깊이</div>
+  </div>
+  <div class="section">
+    <div class="section-title">좌표계 표시</div>
+    <div class="btn-group">
+      <button class="btn" onclick="toggleAxes()" id="btnAxes">&#x1F4D0; 축 ON</button>
+      <button class="btn" onclick="toggleGrid()" id="btnGrid">&#x1F4CF; 그리드 ON</button>
+    </div>
+  </div>
+</div>
+
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeDetail()">&times;</button>
+  <div id="detailContent"></div>
+</div>
+
+<div class="info-bar">
+  <div class="stats">
+    <div class="stat">노드: <span id="statNodes">0</span></div>
+    <div class="stat">관계: <span id="statEdges">0</span></div>
+    <div class="stat">약점: <span id="statIssues" style="color:#be123c">0</span></div>
+    <div class="stat">모드: <span id="statView">군집</span></div>
+  </div>
+  <div class="hint">&#x1F5B1; 좌클릭=회전 &nbsp;|&nbsp; 우클릭=이동 &nbsp;|&nbsp; 스크롤=줌 &nbsp;|&nbsp; 노드 클릭=상세</div>
+</div>
+
+<div class="desc-panel" id="descPanel">
+  <button class="desc-toggle" onclick="toggleDesc()">&times;</button>
+  <div id="descContent"></div>
+</div>
+
+<div class="issue-panel hidden" id="issuePanel">
+  <div class="issue-panel-header">
+    <h3>&#x26A0; 약점 KPI 분석</h3>
+    <button class="issue-panel-close" onclick="closeIssuePanel()">&times;</button>
+  </div>
+  <div id="issueListArea"></div>
+  <div id="issueDetailArea"></div>
+</div>
+
+<div id="graph3d"></div>
+<div class="node-tooltip" id="tooltip" style="display:none"></div>
+
+<script>
+// ============================================================
+// AXOS 스키마
+// ============================================================
+const NODE_TYPES = {
+  Actor:    { color:"#1F6BFF", icon:"\u{1F464}", desc:"행위자",         z:0,  size:10 },
+  Process:  { color:"#7c3aed", icon:"⚙",    desc:"프로세스",       z:1,  size:8 },
+  Data:     { color:"#0d9488", icon:"\u{1F4CA}", desc:"데이터",         z:2,  size:8 },
+  System:   { color:"#06b6d4", icon:"\u{1F5A5}", desc:"시스템",         z:2,  size:7 },
+  Artifact: { color:"#ea580c", icon:"\u{1F4C4}", desc:"산출물",         z:3,  size:7 },
+  Decision: { color:"#4a5568", icon:"\u{1F500}", desc:"의사결정",       z:1,  size:9 },
+  Event:    { color:"#d97706", icon:"⚡",    desc:"이벤트",         z:0,  size:7 },
+  Issue:    { color:"#be123c", icon:"⚠",    desc:"약점/병목",      z:3,  size:11 }
+};
+
+const ISSUE_CAUSE = {
+  Actor:    { color:"#1F6BFF", icon:"\u{1F464}", label:"사람 기인" },
+  Process:  { color:"#7c3aed", icon:"⚙",    label:"프로세스 기인" },
+  System:   { color:"#06b6d4", icon:"\u{1F5A5}", label:"시스템 기인" },
+  Data:     { color:"#0d9488", icon:"\u{1F4CA}", label:"데이터 기인" },
+  Event:    { color:"#d97706", icon:"⚡",    label:"이벤트 기인" },
+  Decision: { color:"#4a5568", icon:"\u{1F500}", label:"의사결정 기인" }
+};
+
+const REL_TYPES = {
+  FLOW:     { color:"#64748b", desc:"흐름"   },
+  INPUT:    { color:"#0d9488", desc:"입력"   },
+  OUTPUT:   { color:"#06b6d4", desc:"출력"   },
+  USES:     { color:"#7c3aed", desc:"사용"   },
+  CREATES:  { color:"#ea580c", desc:"생성"   },
+  DECIDES:  { color:"#4a5568", desc:"결정"   },
+  TRIGGERS: { color:"#d97706", desc:"트리거" },
+  CAUSES:   { color:"#be123c", desc:"원인"   },
+  BLOCKS:   { color:"#be123c", desc:"병목"   }
+};
+
+// ============================================================
+// GEO KPI 메타 + 매핑
+// ============================================================
+const KPI_META = {
+  visibility:  { name:'검색 가시성', icon:'\u{1F50D}', cause:'Process', blocks:'p_visi',   action:'메타 태그/타이틀 자동 최적화 → 핵심 키워드 + AI 의도 반영' },
+  velocity:    { name:'콘텐츠 생산력', icon:'\u{1F680}', cause:'Process', blocks:'p_cont',   action:'주 5회 콘텐츠 자동 발행 시스템 → 월 150건 블로그 자동' },
+  authority:   { name:'E-E-A-T 신뢰도', icon:'\u{1F396}', cause:'Actor',   blocks:'dc_cite',  action:'대표 프로필/인증서/사례 연구 → AI 신뢰도 +60%' },
+  citation:    { name:'AI 인용 가능성', icon:'\u{1F4DD}', cause:'Data',    blocks:'p_aicite', action:'FAQ + Schema.org JSON-LD 마크업 → AI 인용률 +80%' },
+  engagement:  { name:'고객 참여도', icon:'\u{1F4AC}', cause:'Process', blocks:'d_review', action:'리뷰 임베드 + SNS 인터랙션 → 체류시간 +120%' },
+  conversion:  { name:'전환 설계', icon:'\u{1F3AF}', cause:'Process', blocks:'p_visi',   action:'CTA 3중 노출 + 챗봇 + 카카오톡 → 전환율 +200%' },
+  channel:     { name:'채널 확장', icon:'\u{1F310}', cause:'System',  blocks:'p_dist',   action:'멀티채널 자동 배포 (블로그+SNS+유튜브 쇼츠) → 도달 +400%' },
+  brand:       { name:'브랜드 일관성', icon:'\u{1F3A8}', cause:'Data',    blocks:'d_meta',   action:'브랜드 가이드라인 + 톤앤매너 통일 → 인지도 +50%' },
+  competitive: { name:'경쟁 점유율', icon:'\u{1F3C6}', cause:'Event',   blocks:'p_visi',   action:'경쟁사 키워드/콘텐츠 갭 분석 → 점유율 +35%' },
+  aio:         { name:'AI 최적화 준비도', icon:'\u{1F916}', cause:'System',  blocks:'p_struct', action:'AI 최적화 풀스택 (Schema + LLM 친화 글쓰기) → AIO 100%' }
+};
+
+// ============================================================
+// GEO 베이스 그래프 (항상 표시)
+// ============================================================
+function buildBaseNodes() {
+  return [
+    // Actor
+    { id:'a_user',   name:'검색 사용자',     type:'Actor',   desc:'AI 검색을 통해 정보를 찾는 잠재 고객' },
+    { id:'a_ai',     name:'AI 엔진',         type:'Actor',   desc:'ChatGPT · Perplexity · Gemini 등 생성형 AI' },
+    { id:'a_comp',   name:'경쟁사',          type:'Actor',   desc:'동종업계 경쟁 기업 (이미 AI에 등장)' },
+
+    // Process
+    { id:'p_cont',   name:'콘텐츠 생산',     type:'Process', desc:'블로그/페이지/FAQ 등 마케팅 콘텐츠 제작' },
+    { id:'p_struct', name:'구조화 마크업',   type:'Process', desc:'Schema.org JSON-LD · OG 태그 · 시맨틱 HTML' },
+    { id:'p_dist',   name:'멀티채널 배포',   type:'Process', desc:'블로그 · 인스타 · 유튜브 · 네이버블로그 동시 발행' },
+    { id:'p_visi',   name:'검색 노출',       type:'Process', desc:'검색 결과 · AI 답변 카드 · 추천 영역 노출' },
+    { id:'p_aicite', name:'AI 인용',         type:'Process', desc:'AI가 귀사 콘텐츠를 답변에 인용/추천' },
+
+    // Data
+    { id:'d_site',   name:'사이트 콘텐츠',   type:'Data',    desc:'본문 · H1/H2 · 이미지 alt · 텍스트' },
+    { id:'d_meta',   name:'메타데이터',      type:'Data',    desc:'title · description · OG 태그' },
+    { id:'d_schema', name:'구조화 데이터',   type:'Data',    desc:'JSON-LD · FAQPage · Organization Schema' },
+    { id:'d_review', name:'리뷰/후기',       type:'Data',    desc:'구글 리뷰 · 네이버 리뷰 · 인스타 후기' },
+
+    // System
+    { id:'s_cms',    name:'CMS',             type:'System',  desc:'WordPress · 자체 빌더 · 헤드리스 CMS' },
+    { id:'s_search', name:'검색 엔진',       type:'System',  desc:'Google · 네이버 · Bing 크롤러' },
+    { id:'s_llm',    name:'LLM',             type:'System',  desc:'GPT-4 · Claude · Gemini 추론 엔진' },
+
+    // Decision
+    { id:'dc_cite',  name:'AI 인용 결정',    type:'Decision',desc:'LLM이 답변 생성 시 어떤 출처를 인용할지 판단' },
+
+    // Event
+    { id:'e_query',  name:'사용자 질의',     type:'Event',   desc:'검색창 · 챗봇에 질문 입력' }
+  ];
+}
+
+function buildBaseEdges() {
+  return [
+    { source:'a_user',   target:'e_query',  type:'TRIGGERS' },
+    { source:'e_query',  target:'a_ai',     type:'TRIGGERS' },
+    { source:'a_ai',     target:'s_llm',    type:'USES' },
+    { source:'s_llm',    target:'dc_cite',  type:'DECIDES' },
+
+    { source:'p_cont',   target:'d_site',   type:'CREATES' },
+    { source:'p_cont',   target:'s_cms',    type:'USES' },
+    { source:'p_struct', target:'d_schema', type:'CREATES' },
+    { source:'p_struct', target:'d_meta',   type:'CREATES' },
+
+    { source:'d_site',   target:'p_struct', type:'INPUT' },
+    { source:'d_meta',   target:'s_search', type:'INPUT' },
+    { source:'d_schema', target:'s_search', type:'INPUT' },
+    { source:'d_schema', target:'s_llm',    type:'INPUT' },
+
+    { source:'p_struct', target:'p_dist',   type:'FLOW' },
+    { source:'p_dist',   target:'p_visi',   type:'FLOW' },
+    { source:'s_search', target:'p_visi',   type:'TRIGGERS' },
+    { source:'p_visi',   target:'dc_cite',  type:'INPUT' },
+    { source:'dc_cite',  target:'p_aicite', type:'DECIDES' },
+    { source:'p_aicite', target:'a_user',   type:'OUTPUT' },
+
+    { source:'a_user',   target:'d_review', type:'CREATES' },
+    { source:'d_review', target:'dc_cite',  type:'INPUT' },
+
+    { source:'a_comp',   target:'p_visi',   type:'CAUSES' }
+  ];
+}
+
+// ============================================================
+// 진단 결과 → 동적 Issue + Action 노드 생성
+// ============================================================
+let currentResult = null;
+let currentRecommendation = null;
+
+function getScoreSeverity(value) {
+  if (value < 30) return { label:'치명적', color:'#be123c' };
+  if (value < 50) return { label:'위험',   color:'#dc2626' };
+  if (value < 70) return { label:'주의',   color:'#ea580c' };
+  return { label:'양호', color:'#16a34a' };
+}
+
+function buildIssueNodes(result) {
+  if (!result || !result.scores) return { nodes:[], edges:[] };
+  const nodes = [], edges = [];
+  Object.entries(result.scores).forEach(([kpiId, score]) => {
+    const meta = KPI_META[kpiId];
+    if (!meta) return;
+    const value = score.value || 0;
+    if (value >= 50) return; // 50점 이상은 약점 아님
+
+    const issueId = 'i_' + kpiId;
+    nodes.push({
+      id: issueId,
+      name: `${meta.icon} ${meta.name} (${value}점)`,
+      type: 'Issue',
+      desc: score.reason || `KPI 점수 ${value}점 — ${getScoreSeverity(value).label} 수준`,
+      cause: meta.cause,
+      ak: kpiId,
+      _score: value
+    });
+    // BLOCKS 엣지: Issue → 영향 받는 노드
+    edges.push({ source: issueId, target: meta.blocks, type: 'BLOCKS' });
+  });
+  return { nodes, edges };
+}
+
+function buildActionNodes(recommendation) {
+  if (!recommendation || !recommendation.priorityActions) return { nodes:[], edges:[] };
+  const nodes = [], edges = [];
+  recommendation.priorityActions.forEach((act, idx) => {
+    const actionId = 'act_' + act.kpiId;
+    const meta = KPI_META[act.kpiId];
+    nodes.push({
+      id: actionId,
+      name: `\u{1F4A1} 액션 ${act.rank}: ${act.action}`,
+      type: 'Process',
+      desc: `${act.detail} (${act.impact} · ${act.cost})`
+    });
+    // 액션이 약점 KPI를 해결 (CAUSES = 영향 관계)
+    edges.push({ source: actionId, target: 'i_' + act.kpiId, type: 'CAUSES' });
+    if (meta) {
+      edges.push({ source: actionId, target: meta.blocks, type: 'FLOW' });
+    }
+  });
+  return { nodes, edges };
+}
+
+function buildIssueAnalysis(result, recommendation) {
+  const analysis = {};
+  if (!result || !result.scores) return analysis;
+  const recMap = {};
+  if (recommendation && recommendation.priorityActions) {
+    recommendation.priorityActions.forEach(a => { recMap[a.kpiId] = a; });
+  }
+
+  Object.entries(result.scores).forEach(([kpiId, score]) => {
+    const meta = KPI_META[kpiId];
+    if (!meta || (score.value || 0) >= 50) return;
+
+    const value = score.value || 0;
+    const sev = getScoreSeverity(value);
+    const ci = ISSUE_CAUSE[meta.cause];
+    const rec = recMap[kpiId];
+
+    const solutions = [];
+    if (rec) {
+      solutions.push({
+        priority: 1,
+        title: rec.action,
+        desc: `${rec.detail} — 예상 효과: ${rec.impact}, 비용: ${rec.cost}`
+      });
+    } else {
+      solutions.push({
+        priority: 1,
+        title: meta.action.split(' → ')[0] || meta.action,
+        desc: meta.action
+      });
+    }
+    solutions.push({
+      priority: 2,
+      title: `${meta.name} 정기 모니터링`,
+      desc: `월간 KPI 트래킹 — 점수 추이 분석 + 알림 자동화로 재발 방지`
+    });
+    solutions.push({
+      priority: 3,
+      title: `벤치마크 분석 + 경쟁사 학습`,
+      desc: `상위 10% 기업 사례 분석 — ${meta.name} 영역의 베스트 프랙티스 도출`
+    });
+
+    analysis[kpiId] = {
+      rootCause: `${meta.name} 점수가 ${value}점으로 ${sev.label} 수준. ${ci.label} 영역의 구조적 약점이 원인. ${score.reason || ''}`.trim(),
+      chainDesc: `약점 KPI(${meta.name}) → ${meta.blocks} 노드 BLOCKS → ${kpiId === 'citation' || kpiId === 'aio' ? 'AI 인용' : '검색 노출'} 저하로 이어지는 인과 체인`,
+      affectedProcess: `${meta.name} 약점이 방치될 경우 AI 검색 시대에 경쟁사 대비 ${100 - value}점 격차로 시장 점유율 하락 위험. 종합 점수 ${result.totalScore}점 → 등급 ${result.grade?.label || ''}`,
+      solutions
+    };
+  });
+  return analysis;
+}
+
+function buildGeoSample(result, recommendation) {
+  const baseNodes = buildBaseNodes();
+  const baseEdges = buildBaseEdges();
+  const issue = buildIssueNodes(result);
+  const action = buildActionNodes(recommendation);
+
+  return {
+    nodes: [...baseNodes, ...issue.nodes, ...action.nodes],
+    edges: [...baseEdges, ...issue.edges, ...action.edges]
+  };
+}
+
+function buildGeoDescription(result) {
+  if (!result) {
+    return {
+      title: 'GEO Score AI 온톨로지 (샘플)',
+      industry: 'GEO/AIO',
+      color: '#1F6BFF',
+      body: '진단 결과를 받지 못해 샘플 온톨로지를 표시합니다. 진단을 먼저 실행해주세요.',
+      highlights: ['샘플 데이터']
+    };
+  }
+  const weakCount = Object.values(result.scores || {}).filter(s => (s.value || 0) < 50).length;
+  return {
+    title: `${result.companyName} — GEO 온톨로지 분석`,
+    industry: result.industry || 'GEO/AIO',
+    color: '#1F6BFF',
+    body: `${result.companyName}의 GEO Score 진단 결과를 AXOS 8노드 + 9관계 표준 스키마로 구조화한 3D 지식 그래프입니다. 종합 점수 ${result.totalScore}점(${result.grade?.label || ''}) 기준, 사용자 질의 → AI 엔진 → LLM → 인용 결정 → 사용자 노출의 AI 검색 인과 체인이 핵심 흐름입니다. 약점 KPI ${weakCount}개가 Issue 노드(빨강)로 표시되며 각각 BLOCKS 관계로 영향 받는 프로세스를 차단합니다. 우선순위 액션이 Process 노드(보라+💡)로 추가되어 약점을 해소하는 경로를 보여줍니다. Issue 노드를 클릭하면 근본 원인, 인과 체인, 우선순위별 해결책 3가지를 확인할 수 있습니다.`,
+    highlights: [
+      `약점 KPI ${weakCount}개`,
+      `종합 ${result.totalScore}점`,
+      result.grade?.label || '등급 미정'
+    ]
+  };
+}
+
+// ============================================================
+// 동적 데이터 (외부에서 주입)
+// ============================================================
+let SAMPLES = { geo: { nodes: buildBaseNodes(), edges: buildBaseEdges() } };
+let DESCRIPTIONS = { geo: buildGeoDescription(null) };
+let ISSUE_ANALYSIS = {};
+
+function applyDiagnosisResult(result, recommendation) {
+  currentResult = result;
+  currentRecommendation = recommendation;
+  SAMPLES.geo = buildGeoSample(result, recommendation);
+  DESCRIPTIONS.geo = buildGeoDescription(result);
+  ISSUE_ANALYSIS = buildIssueAnalysis(result, recommendation);
+  loadSample('geo');
+  document.getElementById('loadStatus').textContent = '진단 데이터 적용 완료';
+}
+
+// ============================================================
+// 부모 페이지(results.html)에 데이터 요청
+// ============================================================
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'diagnosis-result') {
+    applyDiagnosisResult(e.data.result, e.data.recommendation);
+  }
+});
+
+// 부모에게 요청
+function requestDiagnosis() {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'request-diagnosis' }, '*');
+  }
+}
+
+// ============================================================
+// 상태
+// ============================================================
+let graph = null;
+let rawData = null;
+let viewMode = 'cluster';
+let hiddenTypes = new Set();
+let highlightType = null;
+let issueMode = false;
+let autoRotating = false;
+let axesVisible = true;
+let gridVisible = true;
+let axesObjects = [];
+let gridObject = null;
+
+// ============================================================
+// 범례
+// ============================================================
+function buildLegends() {
+  updateNodeLegend();
+  updateIssueCauseLegend();
+  document.getElementById('relLegend').innerHTML = Object.entries(REL_TYPES).map(([k,v]) =>
+    `<div class="rel-item"><div class="rel-line" style="background:${v.color}"></div>${k} <span style="color:#94a3b8">${v.desc}</span></div>`
+  ).join('');
+}
+
+function updateNodeLegend() {
+  const counts = {};
+  if (rawData) rawData.nodes.forEach(n => { counts[n.type] = (counts[n.type]||0) + 1; });
+  const total = rawData ? rawData.nodes.length : 0;
+  document.getElementById('nodeLegend').innerHTML = Object.entries(NODE_TYPES).map(([k,v]) => {
+    const c = counts[k] || 0;
+    return `<div class="legend-item" onclick="toggleType('${k}')" id="leg-${k}">
+      <div class="legend-dot" style="background:${v.color};box-shadow:0 0 6px ${v.color}"></div>
+      <span>${v.icon} ${k} <span style="color:#1F6BFF;font-size:9px;font-weight:700;margin-left:2px">${c}</span> <span style="color:#94a3b8;font-size:9px">${v.desc}</span></span>
+    </div>`;
+  }).join('') +
+  `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.06);font-size:10px;color:#64748b;font-weight:600">전체: <span style="color:#1F6BFF;font-weight:700">${total}</span>개</div>`;
+}
+
+function updateIssueCauseLegend() {
+  const causeCounts = {};
+  if (rawData) rawData.nodes.filter(n => n.type === 'Issue').forEach(n => { if (n.cause) causeCounts[n.cause] = (causeCounts[n.cause]||0) + 1; });
+  document.getElementById('issueCauseLegend').innerHTML = Object.entries(ISSUE_CAUSE).map(([k,v]) => {
+    const c = causeCounts[k] || 0;
+    return `<div class="legend-item" style="padding:3px 0${c === 0 ? ';opacity:.4' : ''}">
+      <div style="width:14px;height:14px;border-radius:50%;border:2.5px solid ${v.color};flex-shrink:0;background:rgba(190,18,60,.12)"></div>
+      <span style="font-size:11px;font-weight:500">${v.icon} ${v.label} <span style="color:#be123c;font-size:9px;font-weight:700">${c > 0 ? c : ''}</span></span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// 라이브러리 로드
+// ============================================================
+function loadScript(url) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Failed: ' + url));
+    document.head.appendChild(s);
+  });
+}
+
+async function loadLibraries() {
+  const status = document.getElementById('loadStatus');
+  try {
+    status.textContent = 'Three.js 로딩...';
+    await loadScript('https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js');
+    status.textContent = 'SpriteText 로딩...';
+    await loadScript('https://cdn.jsdelivr.net/npm/three-spritetext@1.8.0/dist/three-spritetext.min.js');
+    status.textContent = '3D Force Graph 로딩...';
+    await loadScript('https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.3/dist/3d-force-graph.min.js');
+    status.textContent = '초기화 중...';
+    return true;
+  } catch(e) {
+    try {
+      if (!window.THREE) await loadScript('https://unpkg.com/three@0.152.2/build/three.min.js');
+      if (!window.SpriteText) await loadScript('https://unpkg.com/three-spritetext@1.8.0/dist/three-spritetext.min.js');
+      if (!window.ForceGraph3D) await loadScript('https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js');
+      return true;
+    } catch(e2) {
+      status.textContent = '라이브러리 로드 실패: ' + e2.message;
+      return false;
+    }
+  }
+}
+
+// ============================================================
+// 초기화
+// ============================================================
+async function init() {
+  buildLegends();
+  const ok = await loadLibraries();
+  if (!ok) return;
+
+  graph = ForceGraph3D()(document.getElementById('graph3d'))
+    .backgroundColor('#dfe3e8')
+    .showNavInfo(false)
+    .nodeRelSize(5)
+    .nodeVal(n => NODE_TYPES[n.type]?.size || 8)
+    .nodeColor(n => NODE_TYPES[n.type]?.color || '#475569')
+    .nodeOpacity(0.92)
+    .nodeLabel(n => '')
+    .nodeThreeObject(n => {
+      const group = new THREE.Group();
+      const isHighlighted = !highlightType || n.type === highlightType;
+      const dimOpacity = 0.12;
+      const geo = new THREE.SphereGeometry(NODE_TYPES[n.type]?.size * 0.6 || 5, 16, 16);
+      const mat = new THREE.MeshLambertMaterial({ color: NODE_TYPES[n.type]?.color || '#475569', transparent: true, opacity: isHighlighted ? 0.85 : dimOpacity });
+      group.add(new THREE.Mesh(geo, mat));
+      if (n.type === 'Issue') {
+        const ci = ISSUE_CAUSE[n.cause] || null;
+        const ringColor = ci ? ci.color : '#ff4444';
+        const ringGeo = new THREE.RingGeometry(NODE_TYPES[n.type].size * 0.8, NODE_TYPES[n.type].size * 1.0, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: ringColor, side: THREE.DoubleSide, transparent: true, opacity: isHighlighted ? 0.7 : dimOpacity });
+        group.add(new THREE.Mesh(ringGeo, ringMat));
+        const ringGeo2 = new THREE.RingGeometry(NODE_TYPES[n.type].size * 1.05, NODE_TYPES[n.type].size * 1.12, 32);
+        const ringMat2 = new THREE.MeshBasicMaterial({ color: '#be123c', side: THREE.DoubleSide, transparent: true, opacity: isHighlighted ? 0.35 : dimOpacity * 0.5 });
+        group.add(new THREE.Mesh(ringGeo2, ringMat2));
+      }
+      if (typeof SpriteText !== 'undefined') {
+        const sprite = new SpriteText(n.name);
+        sprite.color = isHighlighted ? '#0f172a' : 'rgba(15,23,42,0.15)';
+        sprite.textHeight = 5;
+        sprite.fontWeight = '800';
+        sprite.backgroundColor = isHighlighted ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.3)';
+        sprite.borderWidth = 0.3;
+        sprite.borderColor = isHighlighted ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.04)';
+        sprite.padding = 1.2;
+        sprite.borderRadius = 1.5;
+        sprite.position.y = -(NODE_TYPES[n.type]?.size * 0.7 || 5) - 3;
+        group.add(sprite);
+      }
+      return group;
+    })
+    .linkColor(l => {
+      if (!highlightType) return REL_TYPES[l.type]?.color || '#334155';
+      const s = typeof l.source === 'object' ? l.source : rawData?.nodes.find(n=>n.id===l.source);
+      const t = typeof l.target === 'object' ? l.target : rawData?.nodes.find(n=>n.id===l.target);
+      const connected = (s?.type === highlightType) || (t?.type === highlightType);
+      return connected ? (REL_TYPES[l.type]?.color || '#334155') : 'rgba(200,200,200,0.08)';
+    })
+    .linkOpacity(0.45)
+    .linkWidth(l => (l.type === 'BLOCKS' || l.type === 'CAUSES') ? 2.5 : 1)
+    .linkDirectionalArrowLength(3.5)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticles(l => (l.type === 'BLOCKS') ? 5 : 2)
+    .linkDirectionalParticleWidth(l => (l.type === 'BLOCKS' || l.type === 'CAUSES') ? 2.5 : 1.2)
+    .linkDirectionalParticleColor(l => REL_TYPES[l.type]?.color || '#334155')
+    .linkDirectionalParticleSpeed(0.005)
+    .onNodeClick(n => showDetail(n))
+    .onNodeHover(n => {
+      document.getElementById('graph3d').style.cursor = n ? 'pointer' : 'default';
+      const tip = document.getElementById('tooltip');
+      if (n) {
+        const nt = NODE_TYPES[n.type] || {};
+        tip.innerHTML = `<strong>${nt.icon || ''} ${n.name}</strong> <span style="opacity:.6">[${n.type}]</span>`;
+        tip.style.display = 'block';
+      } else {
+        tip.style.display = 'none';
+      }
+    })
+    .warmupTicks(80)
+    .cooldownTicks(50)
+    .d3AlphaDecay(0.04)
+    .d3VelocityDecay(0.3);
+
+  document.addEventListener('mousemove', e => {
+    const tip = document.getElementById('tooltip');
+    if (tip.style.display !== 'none') {
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top = (e.clientY + 14) + 'px';
+    }
+  });
+
+  loadSample('geo');
+  addCoordinateAxes();
+
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.add('fade');
+    setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 600);
+  }, 800);
+
+  // 부모에게 진단 데이터 요청
+  requestDiagnosis();
+}
+
+// ============================================================
+// 좌표계 축
+// ============================================================
+function addCoordinateAxes() {
+  const scene = graph.scene();
+  const L = 180;
+  const COL = { x:'#ef4444', y:'#22c55e', z:'#3b82f6' };
+  function add(obj) { axesObjects.push(obj); scene.add(obj); return obj; }
+  function axisLine(end, color, opacity) {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), end]);
+    return add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color, transparent:true, opacity })));
+  }
+  axisLine(new THREE.Vector3(L,0,0), COL.x, 0.7);
+  axisLine(new THREE.Vector3(0,L,0), COL.y, 0.7);
+  axisLine(new THREE.Vector3(0,0,L), COL.z, 0.7);
+  function arrow(pos, color, rot) {
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(2.5, 8, 12),
+      new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.8 })
+    );
+    cone.position.copy(pos);
+    if (rot) cone.rotation.set(rot.x||0, rot.y||0, rot.z||0);
+    add(cone);
+  }
+  arrow(new THREE.Vector3(L,0,0), COL.x, {z:-Math.PI/2});
+  arrow(new THREE.Vector3(0,L,0), COL.y, {});
+  arrow(new THREE.Vector3(0,0,L), COL.z, {x:Math.PI/2});
+  function label(text, pos, color, size) {
+    if (typeof SpriteText === 'undefined') return;
+    const s = new SpriteText(text);
+    s.color = color; s.textHeight = size || 3.5; s.fontWeight = '700';
+    s.backgroundColor = 'rgba(255,255,255,0.88)'; s.padding = 2;
+    s.borderRadius = 2; s.borderWidth = 0.5; s.borderColor = color;
+    s.position.copy(pos); add(s);
+  }
+  label('X: 프로세스 흐름', new THREE.Vector3(L+14, 0, 0), COL.x);
+  label('Y: 액터 계층', new THREE.Vector3(0, L+14, 0), COL.y);
+  label('Z: 데이터 깊이', new THREE.Vector3(0, 0, L+14), COL.z);
+
+  const grid = new THREE.GridHelper(L*2, 16, '#cbd5e1', '#e2e8f0');
+  grid.material.transparent = true; grid.material.opacity = 0.25;
+  grid.position.y = -L*0.5;
+  gridObject = grid; scene.add(grid);
+}
+
+// ============================================================
+// 데이터 적용 (loadSample, applyGraph, topoSort)
+// ============================================================
+function loadSample(key) {
+  rawData = SAMPLES[key];
+  if (!rawData) return;
+  applyGraph();
+  renderDescription(key);
+}
+
+function renderDescription(key) {
+  const d = DESCRIPTIONS[key];
+  const panel = document.getElementById('descPanel');
+  const content = document.getElementById('descContent');
+  if (!d) { panel.classList.add('hidden'); return; }
+  const data = SAMPLES[key];
+  const nCount = data.nodes.length;
+  const eCount = data.edges.length;
+  const typeCount = {};
+  data.nodes.forEach(n => { typeCount[n.type] = (typeCount[n.type]||0) + 1; });
+  const issueCount = typeCount['Issue'] || 0;
+  content.innerHTML = `
+    <h4>
+      <span class="tag" style="background:${d.color}22;color:${d.color};border:1px solid ${d.color}44">${d.industry}</span>
+      <span style="color:#0f172a">${d.title}</span>
+    </h4>
+    <p>${d.body}</p>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+      ${d.highlights.map(h => `<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:${d.color}15;color:${d.color};border:1px solid ${d.color}33">${h}</span>`).join('')}
+    </div>
+    <div class="meta">
+      <span style="color:#1F6BFF">&#x1F4CA; ${nCount} 노드</span>
+      <span style="color:#1F6BFF">&#x1F517; ${eCount} 관계</span>
+      <span style="color:#be123c">&#x26A0; ${issueCount} 약점</span>
+    </div>`;
+  panel.classList.remove('hidden');
+  document.getElementById('statIssues').textContent = issueCount;
+}
+
+function toggleDesc() { document.getElementById('descPanel').classList.toggle('hidden'); }
+
+function applyGraph() {
+  if (!rawData || !graph) return;
+  let nodes, nodeIds, links;
+  if (issueMode) {
+    const issueIds = new Set(rawData.nodes.filter(n => n.type === 'Issue').map(n => n.id));
+    const connectedIds = new Set(issueIds);
+    rawData.edges.forEach(e => {
+      if (issueIds.has(e.source) || issueIds.has(e.target)) {
+        connectedIds.add(e.source); connectedIds.add(e.target);
+      }
+    });
+    nodes = rawData.nodes.filter(n => connectedIds.has(n.id) && !hiddenTypes.has(n.type));
+    nodeIds = new Set(nodes.map(n => n.id));
+    links = rawData.edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target)).map(e => ({...e}));
+  } else {
+    nodes = rawData.nodes.filter(n => !hiddenTypes.has(n.type));
+    nodeIds = new Set(nodes.map(n => n.id));
+    links = rawData.edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target)).map(e => ({...e}));
+  }
+  if (viewMode === 'layer') {
+    nodes.forEach(n => { n.fy = (NODE_TYPES[n.type]?.z || 0) * -60; });
+  } else if (viewMode === 'timeline') {
+    const order = topoSort(nodes, rawData.edges);
+    nodes.forEach(n => { n.fx = order.indexOf(n.id) / Math.max(order.length-1,1) * 300 - 150; });
+  } else {
+    nodes.forEach(n => { delete n.fx; delete n.fy; delete n.fz; });
+  }
+  graph.graphData({ nodes, links });
+  document.getElementById('statNodes').textContent = nodes.length;
+  document.getElementById('statEdges').textContent = links.length;
+  document.getElementById('statView').textContent = issueMode ? '약점만' : (viewMode === 'cluster' ? '군집' : viewMode === 'layer' ? '레이어' : '타임라인');
+  updateNodeLegend();
+  updateIssueCauseLegend();
+  if (viewMode !== 'cluster') {
+    setTimeout(() => {
+      graph.graphData().nodes.forEach(n => { delete n.fx; delete n.fy; delete n.fz; });
+      graph.d3ReheatSimulation();
+    }, 4000);
+  }
+}
+
+function topoSort(nodes, edges) {
+  const visited = new Set(), order = [];
+  function dfs(id) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    edges.filter(e => e.target === id).forEach(e => dfs(e.source));
+    order.push(id);
+  }
+  nodes.forEach(n => dfs(n.id));
+  return order;
+}
+
+// ============================================================
+// 인터랙션
+// ============================================================
+function toggleType(type) {
+  if (highlightType === type) { highlightType = null; }
+  else { highlightType = type; }
+  Object.keys(NODE_TYPES).forEach(k => {
+    const el = document.getElementById('leg-' + k);
+    if (!el) return;
+    el.style.opacity = (!highlightType || k === highlightType) ? '1' : '0.4';
+    el.style.fontWeight = k === highlightType ? '700' : '';
+  });
+  graph.nodeThreeObject(graph.nodeThreeObject());
+  graph.linkColor(graph.linkColor());
+}
+
+function setViewMode(mode, btn) {
+  viewMode = mode;
+  document.querySelectorAll('#viewToggle button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (rawData) {
+    rawData.nodes.forEach(n => { delete n.fx; delete n.fy; delete n.fz; });
+    applyGraph();
+  }
+}
+
+function toggleAxes() {
+  axesVisible = !axesVisible;
+  document.getElementById('btnAxes').innerHTML = axesVisible ? '&#x1F4D0; 축 ON' : '&#x1F4D0; 축 OFF';
+  axesObjects.forEach(obj => { obj.visible = axesVisible; });
+}
+function toggleGrid() {
+  gridVisible = !gridVisible;
+  document.getElementById('btnGrid').innerHTML = gridVisible ? '&#x1F4CF; 그리드 ON' : '&#x1F4CF; 그리드 OFF';
+  if (gridObject) gridObject.visible = gridVisible;
+}
+function resetCamera() { if (graph) graph.cameraPosition({ x:0, y:0, z:350 }, { x:0, y:0, z:0 }, 1000); }
+function toggleIssueMode() {
+  issueMode = !issueMode;
+  const btn = document.getElementById('btnIssueMode');
+  if (issueMode) {
+    btn.innerHTML = '⚠ 전체 보기';
+    btn.style.background = 'rgba(190,18,60,.12)'; btn.style.color = '#be123c'; btn.style.borderColor = 'rgba(190,18,60,.3)';
+    openIssuePanel(null);
+  } else {
+    btn.innerHTML = '⚠ 약점 KPI만 보기';
+    btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+    closeIssuePanel();
+  }
+  applyGraph();
+}
+function toggleAutoRotate() {
+  if (!graph) return;
+  autoRotating = !autoRotating;
+  graph.controls().autoRotate = autoRotating;
+  graph.controls().autoRotateSpeed = 1.5;
+}
+function exportPNG() {
+  if (!graph) return;
+  const canvas = graph.renderer().domElement;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'geo-ontology-' + new Date().toISOString().slice(0,10) + '.png';
+  a.click();
+}
+
+// ============================================================
+// 상세 패널 / Issue 패널
+// ============================================================
+function showDetail(node) {
+  const nt = NODE_TYPES[node.type] || {};
+  const gd = graph.graphData();
+  const edges = gd.links.filter(l => {
+    const sid = typeof l.source === 'object' ? l.source.id : l.source;
+    const tid = typeof l.target === 'object' ? l.target.id : l.target;
+    return sid === node.id || tid === node.id;
+  });
+
+  let html = `
+    <div class="detail-type-badge" style="background:${nt.color||'#475569'}22;color:${nt.color||'#0f172a'};border:1px solid ${nt.color||'#475569'}44">
+      ${nt.icon||''} ${node.type}
+    </div>
+    <h2 style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:4px">${node.name}</h2>
+    <div class="detail-section"><h4>설명</h4><p>${node.desc||'없음'}</p></div>
+    <div class="detail-section"><h4>연결된 관계 (${edges.length})</h4>
+    ${edges.map(l => {
+      const sid = typeof l.source === 'object' ? l.source.id : l.source;
+      const tid = typeof l.target === 'object' ? l.target.id : l.target;
+      const isFrom = sid === node.id;
+      const otherId = isFrom ? tid : sid;
+      const other = gd.nodes.find(n => n.id === otherId);
+      const dir = isFrom ? '&rarr;' : '&larr;';
+      const rt = REL_TYPES[l.type] || {};
+      return `<div class="detail-rel">${dir} <strong style="color:${NODE_TYPES[other?.type]?.color||'#0f172a'}">${other?.name||'?'}</strong> <span style="color:${rt.color||'#64748b'};font-weight:600;margin-left:4px">[${l.type}]</span></div>`;
+    }).join('')}
+    </div>`;
+
+  if (node.type === 'Issue') {
+    const ci = ISSUE_CAUSE[node.cause] || null;
+    const analysis = ISSUE_ANALYSIS[node.ak] || null;
+    html += `<div class="detail-section" style="background:rgba(190,18,60,.05);padding:14px;border-radius:10px;border:1px solid rgba(190,18,60,.12)">
+      <h4 style="color:#be123c;font-size:12px;margin-bottom:8px">⚠ 약점 KPI 분석</h4>
+      ${ci ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:18px;height:18px;border-radius:50%;border:2.5px solid ${ci.color};background:rgba(190,18,60,.1);flex-shrink:0"></div>
+        <span style="font-size:13px;font-weight:700;color:${ci.color}">${ci.icon} ${ci.label}</span>
+      </div>` : ''}`;
+
+    if (analysis) {
+      html += `<div style="margin-bottom:12px"><div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">근본 원인</div><p style="font-size:12px;color:#1e293b;line-height:1.6">${analysis.rootCause}</p></div>`;
+      html += `<div style="margin-bottom:12px;background:rgba(31,107,255,.04);padding:10px;border-radius:6px;border:1px solid rgba(31,107,255,.1)"><div style="font-size:9px;font-weight:600;color:#1F6BFF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">인과 체인</div><p style="font-size:11px;color:#334155;line-height:1.6">${analysis.chainDesc}</p></div>`;
+      html += `<div style="margin-bottom:12px"><div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">영향 범위</div><p style="font-size:11px;color:#334155;line-height:1.6">${analysis.affectedProcess}</p></div>`;
+      html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(190,18,60,.1)"><div style="font-size:9px;font-weight:600;color:#be123c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">\u{1F4A1} 권장 해결책</div>${analysis.solutions.map(s => {
+        const pColor = s.priority === 1 ? '#16a34a' : s.priority === 2 ? '#1F6BFF' : '#64748b';
+        const pBg = s.priority === 1 ? 'rgba(22,163,74,.08)' : s.priority === 2 ? 'rgba(31,107,255,.06)' : 'rgba(0,0,0,.03)';
+        const pBorder = s.priority === 1 ? 'rgba(22,163,74,.15)' : s.priority === 2 ? 'rgba(31,107,255,.12)' : 'rgba(0,0,0,.06)';
+        const pLabel = s.priority === 1 ? '최우선' : s.priority === 2 ? '권장' : '보완';
+        return `<div style="background:${pBg};border:1px solid ${pBorder};border-radius:8px;padding:10px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#fff;background:${pColor};padding:1px 6px;border-radius:3px">${pLabel}</span><span style="font-size:12px;font-weight:700;color:#1e293b">${s.title}</span></div><p style="font-size:11px;color:#475569;line-height:1.6;margin:0">${s.desc}</p></div>`;
+      }).join('')}</div>`;
+    }
+    html += `</div>`;
+  }
+  document.getElementById('detailContent').innerHTML = html;
+  if (node.type === 'Issue') {
+    document.getElementById('detailPanel').classList.remove('open');
+    openIssuePanel(node);
+  } else {
+    document.getElementById('detailPanel').classList.add('open');
+    closeIssuePanel();
+  }
+  const { x, y, z } = node;
+  graph.cameraPosition({ x: x+60, y: y+30, z: z+60 }, { x, y, z }, 800);
+}
+
+function closeDetail() { document.getElementById('detailPanel').classList.remove('open'); }
+
+function openIssuePanel(selectedNode) {
+  const panel = document.getElementById('issuePanel');
+  const listArea = document.getElementById('issueListArea');
+  const detailArea = document.getElementById('issueDetailArea');
+  const issues = rawData ? rawData.nodes.filter(n => n.type === 'Issue') : [];
+  if (issues.length === 0) {
+    listArea.innerHTML = `<div style="padding:14px;color:#16a34a;font-size:12px;text-align:center;background:rgba(22,163,74,.06);border-radius:8px;border:1px solid rgba(22,163,74,.15)">✅ 약점 KPI(50점 미만)가 없습니다.<br>모든 영역이 양호한 수준입니다.</div>`;
+    detailArea.innerHTML = '';
+    panel.classList.remove('hidden');
+    return;
+  }
+  listArea.innerHTML = `<div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">발견된 약점 (${issues.length}건)</div>` +
+    issues.map(iss => {
+      const ci = ISSUE_CAUSE[iss.cause] || {};
+      const isActive = selectedNode && selectedNode.id === iss.id;
+      return `<button class="issue-name-btn${isActive ? ' active' : ''}" onclick="selectIssue('${iss.id}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:10px;height:10px;border-radius:50%;border:2px solid ${ci.color||'#be123c'};background:rgba(190,18,60,.12);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1e293b">${iss.name}</div>
+            <div style="font-size:10px;color:#64748b">${ci.icon||''} ${ci.label||'미분류'}</div>
+          </div>
+        </div>
+      </button>`;
+    }).join('');
+  if (selectedNode && selectedNode.type === 'Issue') {
+    renderIssueDetail(selectedNode, detailArea);
+  } else {
+    detailArea.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">약점을 클릭하면 상세 분석이 표시됩니다</div>`;
+  }
+  panel.classList.remove('hidden');
+}
+
+function selectIssue(nodeId) {
+  const node = rawData.nodes.find(n => n.id === nodeId);
+  if (!node) return;
+  openIssuePanel(node);
+  const gd = graph.graphData();
+  const graphNode = gd.nodes.find(n => n.id === nodeId);
+  if (graphNode) {
+    const { x, y, z } = graphNode;
+    graph.cameraPosition({ x: x+60, y: y+30, z: z+60 }, { x, y, z }, 800);
+  }
+}
+
+function renderIssueDetail(node, container) {
+  const ci = ISSUE_CAUSE[node.cause] || null;
+  const analysis = ISSUE_ANALYSIS[node.ak] || null;
+  let html = `<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(190,18,60,.1)">`;
+  if (ci) {
+    html += `<div class="issue-cause-badge" style="background:${ci.color}10;color:${ci.color};border:1px solid ${ci.color}30">
+      <div style="width:14px;height:14px;border-radius:50%;border:2.5px solid ${ci.color};background:rgba(190,18,60,.1);flex-shrink:0"></div>
+      ${ci.icon} ${ci.label}
+    </div>`;
+  }
+  if (analysis) {
+    html += `<div class="issue-section"><div class="issue-section-title" style="color:#be123c">근본 원인</div><p>${analysis.rootCause}</p></div>`;
+    html += `<div class="issue-section" style="background:rgba(31,107,255,.03);padding:10px;border-radius:8px;border:1px solid rgba(31,107,255,.08)"><div class="issue-section-title" style="color:#1F6BFF">인과 체인</div><p style="font-size:11px">${analysis.chainDesc}</p></div>`;
+    html += `<div class="issue-section"><div class="issue-section-title" style="color:#64748b">영향 범위</div><p style="font-size:11px">${analysis.affectedProcess}</p></div>`;
+    html += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,0,0,.06)"><div class="issue-section-title" style="color:#16a34a;margin-bottom:8px">\u{1F4A1} 권장 해결책</div>${analysis.solutions.map(s => {
+      const pColor = s.priority === 1 ? '#16a34a' : s.priority === 2 ? '#1F6BFF' : '#64748b';
+      const pBg = s.priority === 1 ? 'rgba(22,163,74,.06)' : s.priority === 2 ? 'rgba(31,107,255,.04)' : 'rgba(0,0,0,.02)';
+      const pBorder = s.priority === 1 ? 'rgba(22,163,74,.12)' : s.priority === 2 ? 'rgba(31,107,255,.1)' : 'rgba(0,0,0,.06)';
+      const pLabel = s.priority === 1 ? '최우선' : s.priority === 2 ? '권장' : '보완';
+      return `<div class="issue-solution" style="background:${pBg};border:1px solid ${pBorder}"><div class="issue-solution-head"><span class="issue-solution-badge" style="background:${pColor}">${pLabel}</span><span class="issue-solution-title">${s.title}</span></div><p>${s.desc}</p></div>`;
+    }).join('')}</div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function closeIssuePanel() { document.getElementById('issuePanel').classList.add('hidden'); }
+
+// ============================================================
+// 시작
+// ============================================================
+init();
+window.addEventListener('resize', () => { if (graph) graph.width(window.innerWidth).height(window.innerHeight); });
+</script>
+</body>
+</html>
