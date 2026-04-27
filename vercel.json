@@ -1,8 +1,9 @@
 {
   "version": 2,
+  "buildCommand": "echo Static site",
+  "outputDirectory": ".",
   "functions": {
     "api/*.js": {
-      "runtime": "@vercel/node@3.0.0",
       "maxDuration": 60
     }
   },
