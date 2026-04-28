@@ -990,11 +990,14 @@ export default async function handler(req, res) {
       }
     };
 
-    // Supabase 자동 저장 (fire-and-forget — 실패해도 진단 응답은 정상 반환)
+    // Supabase 자동 저장 — Vercel serverless는 응답 후 즉시 종료되므로 await 필수
+    // (저장 실패해도 응답은 정상 반환 — try/catch 내부 처리)
     if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      saveToSupabase(responseBody, mode, req).catch(err => {
+      try {
+        await saveToSupabase(responseBody, mode, req);
+      } catch (err) {
         console.error('[analyze] Supabase 저장 실패 (응답에는 영향 없음)', err.message);
-      });
+      }
     }
 
     return res.status(200).json(responseBody);
