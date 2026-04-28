@@ -158,7 +158,7 @@ window.GRADE_CONFIG = [
   { min: 70, max: 84,  key: 'growing',  label: 'B 보통',     desc: '보통',           emoji: '📈' },
   { min: 55, max: 69,  key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요', emoji: '⚠️' },
   { min: 40, max: 54,  key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요', emoji: '🚨' },
-  { min: 0,  max: 39,  key: 'critical', label: 'F 잠금',     desc: '신규 개발 필수', emoji: '🔒' }
+  { min: 0,  max: 39,  key: 'critical', label: 'F 위급',     desc: '신규 개발 필수', emoji: '🚨' }
 ];
 
 window.getGrade = function(score) {

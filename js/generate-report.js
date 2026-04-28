@@ -184,7 +184,7 @@
         : totalScore >= 70 ? { key: 'growing',  label: 'B 보통' }
         : totalScore >= 55 ? { key: 'weak',     label: 'C 미흡' }
         : totalScore >= 40 ? { key: 'poor',     label: 'D 부족' }
-        : { key: 'critical', label: 'F 잠금' };
+        : { key: 'critical', label: 'F 위급' };
     }
 
     // summary

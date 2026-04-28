@@ -161,7 +161,7 @@ export default async function handler(req, res) {
            : citationRate >= 0.3 ? { key: 'growing',  label: 'B 보통' }
            : citationRate >= 0.15? { key: 'weak',     label: 'C 미흡' }
            : citationRate >= 0.05? { key: 'poor',     label: 'D 부족' }
-           : { key: 'critical', label: 'F 잠금' },
+           : { key: 'critical', label: 'F 위급' },
       answers
     });
   } catch (e) {

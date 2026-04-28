@@ -928,7 +928,7 @@ export default async function handler(req, res) {
       if (totalScore >= 70) return { key: 'growing',  label: 'B 보통',     desc: '보통' };
       if (totalScore >= 55) return { key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요' };
       if (totalScore >= 40) return { key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요' };
-      return { key: 'critical', label: 'F 잠금', desc: '신규 개발 필수' };
+      return { key: 'critical', label: 'F 위급', desc: '신규 개발 필수' };
     })();
 
     // 옛 KPI alias (마이그레이션 호환)

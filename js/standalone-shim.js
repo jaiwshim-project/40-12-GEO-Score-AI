@@ -499,7 +499,7 @@
       if (totalScore >= 70) return { key: 'growing',  label: 'B 보통' };
       if (totalScore >= 55) return { key: 'weak',     label: 'C 미흡' };
       if (totalScore >= 40) return { key: 'poor',     label: 'D 부족' };
-      return                       { key: 'critical', label: 'F 잠금' };
+      return                       { key: 'critical', label: 'F 위급' };
     })();
 
     // topProblems: 점수 낮은 KPI 3개에서 동적 생성
@@ -1102,7 +1102,7 @@ A5. ① 업계 평균 대비 30% 빠른 처리, ② ${indSpecific.license} 보�
            : citationRate >= 0.3 ? { key: 'growing',  label: 'B 보통' }
            : citationRate >= 0.15? { key: 'weak',     label: 'C 미흡' }
            : citationRate >= 0.05? { key: 'poor',     label: 'D 부족' }
-           : { key: 'critical', label: 'F 잠금' },
+           : { key: 'critical', label: 'F 위급' },
       answers,
       mock: true
     };
