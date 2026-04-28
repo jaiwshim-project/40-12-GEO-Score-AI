@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 관리 대시보드 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E" />
+  <style>
+    .ad-login { max-width: 480px; margin: 96px auto; padding: 36px 32px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; text-align: center; }
+    .ad-login h2 { margin-bottom: 8px; }
+    .ad-login p { color: var(--text-secondary); margin-bottom: 24px; font-size: 0.9rem; }
+    .ad-login input { width: 100%; padding: 12px 14px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-primary); font-size: 1rem; margin-bottom: 12px; }
+    .ad-login button { width: 100%; padding: 12px; background: linear-gradient(135deg, #ff6b35, #ffa800); color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 1rem; cursor: pointer; }
+    .ad-login .err { color: #ef4444; margin-top: 8px; font-size: 0.85rem; }
+
+    .ad-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 32px; }
+    .ad-stat { padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; }
+    .ad-stat-val { font-size: 1.6rem; font-weight: 800; font-family: monospace; color: var(--color-accent); margin-bottom: 4px; }
+    .ad-stat-lbl { font-size: 0.78rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+    .ad-stat.gA  .ad-stat-val { color: #00d68f; }
+    .ad-stat.gB  .ad-stat-val { color: #ffa800; }
+    .ad-stat.gC  .ad-stat-val { color: #ff6b35; }
+    .ad-stat.gF  .ad-stat-val { color: #ff6b35; }
+
+    .ad-filter { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 16px; align-items: end; }
+    @media (max-width: 1024px) { .ad-filter { grid-template-columns: 1fr 1fr; } }
+    .ad-filter label { display: block; font-size: 0.72rem; color: var(--text-tertiary); margin-bottom: 4px; }
+    .ad-filter input, .ad-filter select { width: 100%; padding: 8px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 6px; color: var(--text-primary); font-size: 0.88rem; }
+    .ad-filter button { padding: 8px 16px; background: var(--color-accent); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
+
+    .ad-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 12px; overflow: hidden; }
+    .ad-table th, .ad-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-primary); font-size: 0.85rem; text-align: left; }
+    .ad-table th { background: var(--bg-tertiary); font-weight: 700; cursor: pointer; user-select: none; font-size: 0.78rem; text-transform: uppercase; }
+    .ad-table th:hover { background: rgba(255,107,53,0.08); }
+    .ad-table tr:hover td { background: rgba(255,107,53,0.04); }
+    .ad-grade { padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; display: inline-block; }
+    .ad-grade.dominant { background: rgba(0,214,143,0.15); color: #00d68f; }
+    .ad-grade.strong   { background: rgba(0,149,255,0.15); color: #0095ff; }
+    .ad-grade.growing  { background: rgba(255,168,0,0.15); color: #ffa800; }
+    .ad-grade.weak     { background: rgba(255,107,53,0.15); color: #ff6b35; }
+    .ad-grade.poor     { background: rgba(255,61,113,0.15); color: #ff3d71; }
+    .ad-grade.critical { background: rgba(255,136,0,0.18); color: #ff8800; }
+
+    .ad-pagination { display: flex; gap: 12px; justify-content: center; align-items: center; margin: 24px 0; color: var(--text-secondary); font-size: 0.88rem; }
+    .ad-pagination button { padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 6px; cursor: pointer; color: var(--text-primary); }
+    .ad-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .ad-actions { display: flex; gap: 8px; }
+    .ad-actions button { padding: 4px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 4px; cursor: pointer; font-size: 0.75rem; color: var(--text-secondary); }
+    .ad-actions button:hover { color: var(--color-accent); border-color: var(--color-accent); }
+
+    .ad-industry-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 24px; }
+    .ad-industry-card { padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 10px; }
+    .ad-industry-card .name { font-weight: 700; margin-bottom: 4px; }
+    .ad-industry-card .meta { font-size: 0.78rem; color: var(--text-tertiary); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="admin-dashboard.html" class="nav-link">📊 관리 대시보드</a>
+        <a href="result-tabs.html" class="nav-link">📋 통합 결과</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="section">
+    <div class="container">
+
+      <!-- 로그인 -->
+      <div id="adLogin" class="ad-login">
+        <h2>📊 관리 대시보드 로그인</h2>
+        <p>모든 진단 이력을 조회하려면 관리자 비밀번호가 필요합니다.</p>
+        <input type="password" id="adPassword" placeholder="관리자 비밀번호" />
+        <button id="adLoginBtn">로그인</button>
+        <div id="adLoginErr" class="err"></div>
+        <p style="margin-top: 16px; font-size: 0.78rem; color: var(--text-tertiary);">
+          환경 변수 <code>ADMIN_DASH_PASS</code> + <code>SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code> 가 Vercel에 설정되어 있어야 합니다.
+        </p>
+      </div>
+
+      <!-- 메인 대시보드 -->
+      <div id="adMain" class="hidden">
+        <div class="section-header">
+          <span class="section-tag">📊 관리 대시보드</span>
+          <h2 class="section-title">모든 진단 이력</h2>
+          <p class="section-subtitle">Supabase 저장 데이터 — 통계 + 필터 + CSV 다운로드</p>
+        </div>
+
+        <!-- 통계 -->
+        <div class="ad-stats" id="adStats"></div>
+
+        <!-- 업종별 평균 -->
+        <h3 style="margin-bottom: 12px; font-size: 1rem;">📈 업종별 평균 점수</h3>
+        <div class="ad-industry-list" id="adIndustry"></div>
+
+        <!-- 필터 -->
+        <h3 style="margin-bottom: 12px; font-size: 1rem;">🔍 필터 + 검색</h3>
+        <div class="ad-filter">
+          <div>
+            <label>회사명/URL 검색</label>
+            <input type="text" id="filSearch" placeholder="검색어..." />
+          </div>
+          <div>
+            <label>등급</label>
+            <select id="filGrade">
+              <option value="">전체</option>
+              <option value="dominant">A+ Premium</option>
+              <option value="strong">A 우수</option>
+              <option value="growing">B 보통</option>
+              <option value="weak">C 미흡</option>
+              <option value="poor">D 부족</option>
+              <option value="critical">F 위급</option>
+            </select>
+          </div>
+          <div>
+            <label>업종</label>
+            <select id="filIndustry">
+              <option value="">전체</option>
+            </select>
+          </div>
+          <div>
+            <label>최소점수</label>
+            <input type="number" id="filMin" min="0" max="100" placeholder="0" />
+          </div>
+          <div>
+            <label>최대점수</label>
+            <input type="number" id="filMax" min="0" max="100" placeholder="100" />
+          </div>
+          <div>
+            <button id="adApplyFil">적용</button>
+          </div>
+        </div>
+
+        <!-- 액션 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; justify-content: flex-end;">
+          <button id="adRefresh" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">🔄 새로고침</button>
+          <button id="adCsv" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">📥 CSV 다운로드</button>
+          <button id="adLogout" class="btn btn-ghost" style="padding: 6px 14px; font-size: 0.85rem;">🔓 로그아웃</button>
+        </div>
+
+        <!-- 진단 이력 테이블 -->
+        <div style="overflow-x: auto;">
+          <table class="ad-table">
+            <thead>
+              <tr>
+                <th>일시</th>
+                <th>회사명</th>
+                <th>URL</th>
+                <th>업종</th>
+                <th>모드</th>
+                <th>점수</th>
+                <th>등급</th>
+                <th>액션</th>
+              </tr>
+            </thead>
+            <tbody id="adTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div class="ad-pagination">
+          <button id="adPrev">← 이전</button>
+          <span id="adPageInfo">-</span>
+          <button id="adNext">다음 →</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">AI 검색 시대 기업의 존재(홈페이지, 블로그 등) 가능성을 점수로 진단하고,<br/><strong>존재하게 만드는</strong> 플랫폼.</p>
+        </div>
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="admin-dashboard.html">📊 관리 대시보드</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+            <li><a href="index.html#kpi">🔢 10대 KPI</a></li>
+            <li><a href="index.html#process">⚙️ 진단 프로세스</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+            <li><a href="proposal.html" target="_blank">📋 AI최적화 홈페이지 개발 제안서</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/kpi-config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/admin-dashboard.js"></script>
+</body>
+</html>

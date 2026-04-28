@@ -647,8 +647,7 @@ AI 인용 = EEAT × 데이터량 × 질문형 × 반복성 × 외부신호 × CT
 
 | 자산 | 위치 |
 |---|---|
-| 프로덕션 URL | https://40-12-geo-score-ai.vercel.app |
-| GitHub | https://github.com/jaiwshim-project/40-12-GEO-Score-AI |
+|
 | AX Biz Group 로고 | https://jaiwshim-project.github.io/01-2-AXBizGroup/로고-AX비즈그룹.jpg |
 | 대표 프로필 사진 | https://aitutorhub.com/ceo-profile.png |
 | 연락처 | jaiwshim@gmail.com · 010-2397-5734 |
@@ -682,4 +681,4 @@ curl -X POST https://40-12-geo-score-ai.vercel.app/api/analyze \
 
 **원저작: 심재우 | GEO Score AI v2.0 | AX Biz Group · 2026**
 
-> "문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다"
+> 

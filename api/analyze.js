@@ -962,9 +962,10 @@ export default async function handler(req, res) {
       analysis.summary.diagnosis = toneLine;
     }
 
-    return res.status(200).json({
+    const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const responseBody = {
       success: true,
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      id: responseId,
       companyName,
       websiteUrl: url,
       industry: industry || analysis.summary?.industryDetected || '미분류',
@@ -987,12 +988,71 @@ export default async function handler(req, res) {
         infraSignals,
         kpiVersion: '2.0-weighted-10kpi'
       }
-    });
+    };
+
+    // Supabase 자동 저장 (fire-and-forget — 실패해도 진단 응답은 정상 반환)
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      saveToSupabase(responseBody, mode, req).catch(err => {
+        console.error('[analyze] Supabase 저장 실패 (응답에는 영향 없음)', err.message);
+      });
+    }
+
+    return res.status(200).json(responseBody);
   } catch (e) {
     console.error('[analyze] 처리 실패', e);
     return res.status(500).json({
       error: '분석 중 오류가 발생했습니다',
       detail: e.message
     });
+  }
+}
+
+// Supabase 자동 저장 헬퍼 (fire-and-forget)
+async function saveToSupabase(result, mode, req) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+
+  const crypto = await import('crypto');
+  const xff = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '';
+  const ip = String(xff).split(',')[0].trim() || 'unknown';
+  const ipHash = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16);
+
+  const record = {
+    diagnosis_id:  result.id,
+    company_name:  String(result.companyName).slice(0, 200),
+    website_url:   result.websiteUrl ? String(result.websiteUrl).slice(0, 500) : null,
+    industry:      result.industry ? String(result.industry).slice(0, 50) : null,
+    mode:          mode || 'url',
+    total_score:   typeof result.totalScore === 'number' ? Math.round(result.totalScore) : null,
+    grade_key:     result.grade?.key || null,
+    grade_label:   result.grade?.label || null,
+    scores:        result.scores || null,
+    legacy_scores: result.legacyScores || null,
+    meta:          result.meta || null,
+    aiw_signals:   result.meta?.aiwSignals || null,
+    infra_signals: result.meta?.infraSignals || null,
+    weights:       result.weights || null,
+    summary:       result.summary || null,
+    competitors:   result.competitors || null,
+    analyzed_at:   result.analyzedAt || new Date().toISOString(),
+    user_agent:    (req.headers['user-agent'] || '').slice(0, 200),
+    ip_hash:       ipHash
+  };
+
+  const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/diagnostics`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(record)
+  });
+
+  if (!supaRes.ok) {
+    const text = await supaRes.text();
+    throw new Error(`Supabase ${supaRes.status}: ${text.slice(0, 100)}`);
   }
 }
