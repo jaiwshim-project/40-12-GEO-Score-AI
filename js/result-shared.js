@@ -155,6 +155,30 @@ window.ResultShared = (function() {
           _result.scores = Object.assign({}, _result.scores, _result.legacyScores);
         }
       }
+      // recommendation도 별도 fetch — Supabase에 저장 안 되어 있으므로 클라이언트에서 자동 생성
+      // (솔루션 탭 등 recommendation 의존 영역이 비어있던 문제 해결)
+      if (!_recommendation && _result && _result.scores) {
+        try {
+          const rr = await fetch('/api/recommend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scores: _result.scores,
+              totalScore: _result.totalScore,
+              companyName: _result.companyName,
+              industry: _result.industry,
+              target: _result.target || 'homepage'
+            })
+          });
+          if (rr.ok) {
+            const recData = await rr.json();
+            _recommendation = recData.recommendation || recData;
+          }
+        } catch (e) {
+          console.warn('[result-shared] recommendation fetch 실패', e);
+        }
+      }
+
       // sessionStorage에도 캐시 (같은 탭 내 다른 result-* 페이지 방문 시 재요청 방지)
       try {
         sessionStorage.setItem('current_result_' + id, JSON.stringify({ result: _result, recommendation: _recommendation }));
