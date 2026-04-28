@@ -138,8 +138,9 @@
           <td><strong style="font-family: monospace;">${it.total_score || 0}</strong></td>
           <td><span class="ad-grade ${escapeHtml(it.grade_key || '')}">${escapeHtml(it.grade_label || '-')}</span></td>
           <td>
-            <div class="ad-actions">
-              <button data-id="${escapeHtml(it.diagnosis_id)}" class="ad-view">📋 상세</button>
+            <div class="ad-actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button data-id="${escapeHtml(it.diagnosis_id)}" class="ad-view" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(0,149,255,0.12); color: #0095ff; border: 1px solid rgba(0,149,255,0.3); border-radius: 6px; cursor: pointer;">📋 상세</button>
+              <button data-id="${escapeHtml(it.diagnosis_id)}" data-company="${escapeHtml(it.company_name)}" class="ad-delete" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(255,61,113,0.12); color: #ff3d71; border: 1px solid rgba(255,61,113,0.3); border-radius: 6px; cursor: pointer;">🗑️ 삭제</button>
             </div>
           </td>
         </tr>`;
@@ -170,6 +171,128 @@
         sessionStorage.setItem('current_result_' + id, JSON.stringify({ result, recommendation: null }));
         window.open(`result-tabs.html?id=${id}`, '_blank');
       });
+    });
+
+    // 삭제 버튼 — 2단계 재확인 후 실행
+    document.querySelectorAll('.ad-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const company = btn.dataset.company || '-';
+        openDeleteConfirm({ ids: [id], label: `${company} (1건)` });
+      });
+    });
+  }
+
+  /**
+   * 2단계 재확인 모달 — 1단계 OK → 2단계: 회사명 또는 "삭제"를 직접 입력해야 활성화.
+   */
+  function openDeleteConfirm({ ids, label }) {
+    if (!ids || !ids.length) return;
+    const expected = '삭제';
+
+    // 모달 DOM 동적 생성 (한 번만 사용 후 제거)
+    const wrap = document.createElement('div');
+    wrap.id = 'adDeleteModal';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;padding:20px;';
+    wrap.innerHTML = `
+      <div style="background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 24px 64px rgba(0,0,0,0.4);">
+
+        <!-- Step 1 -->
+        <div id="adDelStep1">
+          <div style="font-size: 2.2rem; text-align: center; margin-bottom: 12px;">⚠️</div>
+          <h3 style="margin: 0 0 12px; text-align: center; font-size: 1.15rem;">진단 항목을 삭제하시겠습니까?</h3>
+          <div style="padding: 12px 14px; background: var(--bg-tertiary); border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <div style="font-size: 0.76rem; color: var(--text-tertiary); margin-bottom: 4px;">삭제 대상</div>
+            <strong style="color: #ff3d71;">${escapeHtml(label)}</strong>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 20px;">
+            삭제된 항목은 <strong style="color: #ff3d71;">복구할 수 없습니다.</strong> 정말 삭제하시려면 다음 단계로 진행하세요.
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button id="adDelCancel1" style="padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); color: var(--text-primary); border-radius: 10px; font-weight: 700; cursor: pointer;">취소</button>
+            <button id="adDelNext" style="padding: 12px; background: rgba(255,61,113,0.18); color: #ff3d71; border: 1px solid #ff3d71; border-radius: 10px; font-weight: 700; cursor: pointer;">다음 단계 →</button>
+          </div>
+        </div>
+
+        <!-- Step 2 (hidden 초기) -->
+        <div id="adDelStep2" style="display: none;">
+          <div style="font-size: 2.2rem; text-align: center; margin-bottom: 12px;">🗑️</div>
+          <h3 style="margin: 0 0 12px; text-align: center; font-size: 1.15rem;">최종 확인</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 16px; text-align: center;">
+            <strong style="color: #ff3d71;">${escapeHtml(label)}</strong>을(를) 영구 삭제합니다.<br/>
+            확인을 위해 아래 입력란에 <strong style="color: #ff3d71;">${expected}</strong>를 정확히 입력하세요.
+          </p>
+          <input id="adDelConfirmInput" type="text" placeholder='${expected} 입력' autocomplete="off"
+                 style="width: 100%; padding: 12px 14px; font-size: 1rem; background: var(--bg-tertiary); border: 1px solid var(--border-primary); border-radius: 10px; color: var(--text-primary); margin-bottom: 16px; box-sizing: border-box;" />
+          <div id="adDelErr" style="font-size: 0.82rem; color: #ff3d71; margin-bottom: 12px; min-height: 18px;"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button id="adDelCancel2" style="padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-primary); color: var(--text-primary); border-radius: 10px; font-weight: 700; cursor: pointer;">취소</button>
+            <button id="adDelExecute" disabled
+                    style="padding: 12px; background: #ff3d71; color: white; border: none; border-radius: 10px; font-weight: 800; cursor: not-allowed; opacity: 0.5;">🗑️ 영구 삭제</button>
+          </div>
+        </div>
+
+        <!-- Step 3: 진행 (hidden 초기) -->
+        <div id="adDelStep3" style="display: none; text-align: center; padding: 20px 0;">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">⏳</div>
+          <p style="margin: 0; color: var(--text-secondary);">삭제 중...</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    const close = () => wrap.remove();
+    wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+
+    document.getElementById('adDelCancel1').addEventListener('click', close);
+    document.getElementById('adDelCancel2').addEventListener('click', close);
+
+    document.getElementById('adDelNext').addEventListener('click', () => {
+      document.getElementById('adDelStep1').style.display = 'none';
+      document.getElementById('adDelStep2').style.display = 'block';
+      setTimeout(() => document.getElementById('adDelConfirmInput').focus(), 50);
+    });
+
+    const input = document.getElementById('adDelConfirmInput');
+    const exeBtn = document.getElementById('adDelExecute');
+    input.addEventListener('input', () => {
+      const ok = input.value.trim() === expected;
+      exeBtn.disabled = !ok;
+      exeBtn.style.cursor = ok ? 'pointer' : 'not-allowed';
+      exeBtn.style.opacity = ok ? '1' : '0.5';
+    });
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter' && !exeBtn.disabled) exeBtn.click();
+    });
+
+    exeBtn.addEventListener('click', async () => {
+      document.getElementById('adDelStep2').style.display = 'none';
+      document.getElementById('adDelStep3').style.display = 'block';
+      try {
+        const r = await fetch('/api/delete-diagnosis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: adminPass,
+            ids: ids,
+            confirm: 'YES_DELETE'
+          })
+        });
+        const data = await r.json();
+        if (!r.ok || !data.success) {
+          alert('삭제 실패: ' + (data.error || r.status));
+          close();
+          return;
+        }
+        close();
+        await fetchData();   // 테이블 갱신
+        // 토스트 (있으면)
+        if (window.toast) window.toast(`✅ ${data.deletedCount}건 삭제되었습니다`, 'success');
+        else console.log('[admin] 삭제 완료', data);
+      } catch (e) {
+        alert('삭제 중 오류: ' + e.message);
+        close();
+      }
     });
   }
 
