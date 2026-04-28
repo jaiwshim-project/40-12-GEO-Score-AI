@@ -374,10 +374,28 @@ export function detectBlogSignals(blogIndexHtml, articleSamples) {
   const postsLast90Days = dates.filter(d => (Date.now() - d.getTime()) <= 90 * 86400000).length;
 
   // 2) 누적 글 양
-  const articleLinks = (html.match(/<a[^>]+href=["'][^"']*\/(post|article|blog|read|view|\d{4})[^"']*["']/gi) || []).length;
+  //   (a) 명시적 카운트: "전체 글 5392" (티스토리), "Total Posts 1234", "글 1,234개" 등
+  const explicitTotalPatterns = [
+    /전체\s*글[^0-9]{0,200}([0-9,]{2,})/i,
+    /(?:total|posts?|articles?|entries?)[\s\S]{0,80}?<[^>]*>\s*([0-9,]{2,})/i,
+    /글\s*(?:수|개수|총)[^0-9]{0,30}([0-9,]{2,})/i,
+    /([0-9,]{2,})\s*(?:개의?\s*글|posts?|articles?)/i
+  ];
+  let explicitTotal = 0;
+  for (const re of explicitTotalPatterns) {
+    const m = html.match(re);
+    if (m) {
+      const n = parseInt((m[1] || '0').replace(/,/g, ''), 10);
+      if (n >= 2 && n <= 10000000) { explicitTotal = Math.max(explicitTotal, n); }
+    }
+  }
+  //   (b) 글 링크 추정: post/article/blog/read/view/year + 티스토리식 숫자 경로(/123)
+  const articleLinks = (html.match(/<a[^>]+href=["'][^"']*\/(?:post|article|blog|read|view|entry|\d{4,7})[^"']*["']/gi) || []).length;
+  //   (c) 페이지네이션: ?page=N 또는 /page/N
   const pageMatches = html.match(/page=(\d+)|\/page\/(\d+)/gi) || [];
   const maxPage = pageMatches.length > 0 ? Math.max(...pageMatches.map(p => parseInt(p.match(/\d+/)?.[0] || '0', 10))) : 0;
-  const estTotalArticles = Math.max(articleLinks, maxPage * 10);
+  //   (d) 최종: 명시적 카운트 우선 → 페이지×10 → 링크 수
+  const estTotalArticles = Math.max(explicitTotal, maxPage * 10, articleLinks);
 
   // 3) 카테고리
   const catLinks = [...html.matchAll(/<a[^>]+href=["']([^"']*(?:category|cate|tag)[^"']*)["'][^>]*>([^<]+)<\/a>/gi)];
@@ -437,7 +455,7 @@ export function detectBlogSignals(blogIndexHtml, articleSamples) {
 
   return {
     bl_publishFreq: { newest, daysSinceNewest, postsLast30Days, postsLast90Days, totalDates: dates.length },
-    bl_contentVolume: { articleLinks, maxPage, estTotalArticles },
+    bl_contentVolume: { articleLinks, maxPage, explicitTotal, estTotalArticles },
     bl_categoryDepth: { categoryCount, articlesPerCategory: samples.length / Math.max(1, categoryCount) },
     bl_internalLinks: { avgInternalLinks, sampleCount: samples.length },
     bl_authorAuthority: { samplesWithAuthor, totalSamples: samples.length, authorRatio, hasAboutPage },
@@ -474,7 +492,10 @@ export function scoreBlog(signals) {
     else if (n >= 50) v = 60;
     else if (n >= 20) v = 35;
     else v = Math.round(n * 1.5);
-    out.bl_contentVolume = { value: v, reason: `누적 추정 ${n}건` };
+    const src = (s.bl_contentVolume?.explicitTotal || 0) >= n ? '명시 표기'
+              : (s.bl_contentVolume?.maxPage || 0) * 10 >= n ? '페이지네이션'
+              : '링크 추정';
+    out.bl_contentVolume = { value: v, reason: `누적 ${n.toLocaleString()}건 (${src})` };
   }
   {
     const a = s.bl_categoryDepth || {};
