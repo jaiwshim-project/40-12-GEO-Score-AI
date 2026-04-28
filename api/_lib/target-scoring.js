@@ -12,16 +12,17 @@
 // HOMEPAGE (인프라 축, 10 KPI)
 // ============================================================
 export const HOMEPAGE_KPI_LIST = [
-  { id: 'hp_botAccess',         name: 'AI 봇 접근',     weight: 12 },
-  { id: 'hp_sitemap',           name: 'Sitemap 상태',   weight: 9 },
-  { id: 'hp_indexExposure',     name: '검색 색인',      weight: 11 },
-  { id: 'hp_schema',            name: '구조화 데이터',  weight: 12 },
-  { id: 'hp_pageInfo',          name: '페이지 정보',    weight: 8 },
-  { id: 'hp_externalAuthority', name: '외부 권위',      weight: 9 },
-  { id: 'hp_eeatPage',          name: 'E-E-A-T 페이지', weight: 9 },
-  { id: 'hp_cmsAutonomy',       name: 'CMS 자율성',     weight: 8 },
-  { id: 'hp_ctaDesign',         name: 'CTA 설계',       weight: 12 },
-  { id: 'hp_mobilePerf',        name: '모바일 성능',    weight: 10 }
+  { id: 'hp_botAccess',         name: 'AI 봇 접근',       weight: 12 },
+  { id: 'hp_sitemap',           name: 'Sitemap 상태',     weight: 9 },
+  { id: 'hp_indexExposure',     name: '검색 색인',        weight: 11 },
+  { id: 'hp_schema',            name: '구조화 데이터',    weight: 12 },
+  { id: 'hp_pageInfo',          name: '페이지 정보',      weight: 8 },
+  { id: 'hp_externalAuthority', name: '외부 권위',        weight: 9 },
+  { id: 'hp_eeatPage',          name: 'E-E-A-T 페이지',   weight: 9 },
+  { id: 'hp_cmsAutonomy',       name: 'CMS 자율성',       weight: 8 },
+  { id: 'hp_ctaDesign',         name: 'CTA 설계',         weight: 12 },
+  { id: 'hp_mobilePerf',        name: '모바일 성능',      weight: 10 },
+  { id: 'hp_aiCitability',      name: 'AI 인용 가능성',   weight: 12 }
 ];
 
 export const BLOG_KPI_LIST = [
@@ -34,7 +35,8 @@ export const BLOG_KPI_LIST = [
   { id: 'bl_engagement',       name: '사용자 참여',      weight: 9 },
   { id: 'bl_channelExpansion', name: '채널 확장',        weight: 11 },
   { id: 'bl_readability',      name: '가독성',           weight: 7 },
-  { id: 'bl_blogSchema',       name: '블로그 Schema',    weight: 10 }
+  { id: 'bl_blogSchema',       name: '블로그 Schema',    weight: 10 },
+  { id: 'bl_aiCitability',     name: 'AI 인용 가능성',   weight: 12 }
 ];
 
 export const ARTICLE_KPI_LIST = [
@@ -47,7 +49,8 @@ export const ARTICLE_KPI_LIST = [
   { id: 'ar_listStructure',    name: '구조화',          weight: 10 },
   { id: 'ar_summary',          name: '핵심답+TL;DR',    weight: 8 },
   { id: 'ar_faq',              name: 'FAQ 구조',        weight: 10 },
-  { id: 'ar_cepScene',         name: 'CEP 장면 매칭',   weight: 8 }
+  { id: 'ar_cepScene',         name: 'CEP 장면 매칭',   weight: 8 },
+  { id: 'ar_aiCitability',     name: 'AI 인용 가능성',  weight: 12 }
 ];
 
 const TARGET_KPI_LIST_MAP = {
@@ -71,6 +74,8 @@ export function computeTargetTotal(target, scores) {
   Object.entries(weights).forEach(([id, w]) => {
     const raw = scores?.[id];
     if (raw === undefined || raw === null) return;
+    // value가 명시적으로 null이면(측정 불가/스킵) 가중평균에서 제외
+    if (typeof raw === 'object' && raw.value === null) return;
     const v = (typeof raw === 'object') ? Number(raw.value) : Number(raw);
     if (!isFinite(v)) return;
     sum += v * w;

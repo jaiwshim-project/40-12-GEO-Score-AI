@@ -16,6 +16,31 @@ import {
   scoreBlog,
   getGrade as getGrade3Axis
 } from './_lib/target-scoring.js';
+import { runCitationTest, scoreCitationRate } from './_lib/citation-tester.js';
+
+// 진단 콘텐츠 기반 AI 인용 가능성 측정 → KPI 1개 점수 객체로 변환.
+// 실패/콘텐츠 부족/비활성 시 null value(NA) 반환.
+async function computeCitabilityKpi({ brand, industry, content }) {
+  if (process.env.DISABLE_AI_CITABILITY === '1') {
+    return { value: null, reason: 'AI 인용 측정 비활성' };
+  }
+  const cleanContent = (content || '').slice(0, 6000);
+  if (!cleanContent || cleanContent.length < 200) {
+    return { value: null, reason: '본문 부족 (200자 미만)' };
+  }
+  const r = await runCitationTest({ brand, industry, content: cleanContent, count: 6, timeoutMs: 25000 });
+  if (!r.ok) {
+    return { value: null, reason: `측정 실패: ${r.error || 'unknown'}` };
+  }
+  const v = scoreCitationRate(r.citationRate);
+  const pct = Math.round(r.citationRate * 100);
+  return {
+    value: v,
+    reason: `인용율 ${pct}% (${r.citedCount}/${r.total})`,
+    citationRate: r.citationRate,
+    answers: r.answers
+  };
+}
 
 // 새 10 KPI 명세 (가중치 합 100%)
 const KPI_LIST = [
@@ -732,12 +757,25 @@ export default async function handler(req, res) {
     }
     body = body || {};
 
-    if (body.companyName && /[^\x00-\x7F]/.test(body.companyName)) {
+    // 한글 인코딩 가드 — Vercel이 latin1로 보낸 utf8 바이트 복원.
+    // 정상 한글이 들어왔으면 건드리지 않음. mojibake 패턴(Ã/â/ê 등)이 있을 때만 변환,
+    // 변환 결과가 surrogate-pair(U+10000+)·치환문자(U+FFFD)면 원본 유지.
+    function fixEncoding(s) {
+      if (!s || typeof s !== 'string') return s;
+      // 이미 정상 한글이면 그대로
+      if (/[가-힣]/.test(s) && !/[ÃÂâêíîôû][\x80-\xFF]/.test(s)) return s;
+      if (!/[^\x00-\x7F]/.test(s)) return s;
       try {
-        const reEncoded = Buffer.from(body.companyName, 'latin1').toString('utf8');
-        if (!reEncoded.includes('�')) body.companyName = reEncoded;
-      } catch (e) {}
+        const r = Buffer.from(s, 'latin1').toString('utf8');
+        if (r.includes('�')) return s;
+        // surrogate pair (CJK Compat Ideographs 등) 등장 시 의심
+        if (/[\uD800-\uDBFF]/.test(r) && !/[가-힣A-Za-z0-9]/.test(r)) return s;
+        return r;
+      } catch (e) { return s; }
     }
+    body.companyName = fixEncoding(body.companyName);
+    body.industry = fixEncoding(body.industry);
+    if (typeof body.content === 'string') body.content = fixEncoding(body.content);
 
     const { companyName, websiteUrl, industry, mode, content } = body;
     // 진단 대상 (3축): homepage / blog / article. 후방호환을 위해 기본값 homepage.
@@ -772,6 +810,13 @@ export default async function handler(req, res) {
 
       const signals = detectArticleSignals(articleText, companyName);
       const scores = scoreArticle(signals);
+      // AI 인용 가능성 KPI — 본문 텍스트(태그 제거)로 인용율 측정
+      try {
+        const cleanText = (articleText || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        scores.ar_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText });
+      } catch (e) {
+        scores.ar_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
+      }
       const totalScore = computeTargetTotal('article', scores);
       const grade = getGrade3Axis(totalScore);
       const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -813,6 +858,16 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '블로그 URL이 필요합니다' });
       }
       const blogUrl = /^https?:\/\//i.test(websiteUrl) ? websiteUrl : 'https://' + websiteUrl;
+      // 카테고리·태그 서브페이지는 부분 통계만 산출됨 → 경고 (블로킹 X)
+      const blogWarnings = [];
+      if (/\/(category|cate|tag)\//i.test(blogUrl)) {
+        const rootHint = blogUrl.replace(/\/(category|cate|tag)\/.*/i, '/');
+        blogWarnings.push({
+          code: 'category-url',
+          message: '카테고리/태그 서브페이지 URL입니다. 블로그 전체 진단을 원하면 루트 URL을 입력하세요.',
+          hint: rootHint
+        });
+      }
       const indexRes = await fetchWebsiteContent(blogUrl);
       const indexHtml = indexRes.rawHtml || '';
       // 샘플 글 페이지 — 같은 도메인 내 글 링크 3개를 골라 fetch
@@ -833,6 +888,14 @@ export default async function handler(req, res) {
 
       const signals = detectBlogSignals(indexHtml, sampleArticles);
       const scores = scoreBlog(signals);
+      // AI 인용 가능성 KPI — 샘플 글 본문 합쳐서 인용율 측정
+      try {
+        const merged = sampleArticles.map(s => (s.html || '')).join('\n\n');
+        const cleanText = merged.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 6000);
+        scores.bl_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText });
+      } catch (e) {
+        scores.bl_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
+      }
       const totalScore = computeTargetTotal('blog', scores);
       const grade = getGrade3Axis(totalScore);
       const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -859,7 +922,8 @@ export default async function handler(req, res) {
           sampleArticleCount: sampleArticles.length,
           blogSignals: signals,
           kpiVersion: '3.0-3axis-blog'
-        }
+        },
+        warnings: blogWarnings
       };
       if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         try { await saveToSupabase(responseBody, mode || 'url', req, target); } catch (e) { console.error('[analyze:blog] save', e.message); }
@@ -1070,6 +1134,13 @@ export default async function handler(req, res) {
 
     // 3축 체계: homepage 축 점수(hp_*)를 legacy scores에서 파생
     const homepageScores = deriveHomepageScores(analysis.scores, infraSignals, fetchResult);
+    // AI 인용 가능성 KPI — 홈페이지 텍스트로 인용율 측정
+    try {
+      const hpContent = (fetchResult?.content || '').slice(0, 6000);
+      homepageScores.hp_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: hpContent });
+    } catch (e) {
+      homepageScores.hp_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
+    }
     const homepageTotal = computeTargetTotal('homepage', homepageScores);
     const homepageGrade = getGrade3Axis(homepageTotal);
 

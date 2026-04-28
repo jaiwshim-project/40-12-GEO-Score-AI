@@ -98,6 +98,15 @@ window.ARTICLE_KPIS = [
     insightHigh: '결정적 순간(CEP)을 정조준한 장면형 단락이 풍부합니다.',
     insightMid: '일부 CEP 장면을 다루고 있으나 장면 다양성 보강이 필요합니다.',
     insightLow: 'CEP 장면을 다룬 단락이 거의 없어 순간 점유 기회를 놓치고 있습니다.'
+  },
+  {
+    id: 'ar_aiCitability', name: 'AI 인용 가능성', nameEn: 'AI Citability',
+    icon: '🤖', color: '#ec4899', color2: '#be185d', weight: 12,
+    desc: 'Gemini 시뮬레이션 인용율 (실측)',
+    description: '본문 콘텐츠로 6개 가상 사용자 질문을 만들고 AI가 답변에 브랜드를 인용하는지 측정합니다. Perplexity·SearchGPT·AI Overview에서 실제 인용될 가능성의 대리 지표입니다. 80%↑ 인용율이면 AI 검색 답변에 안정적으로 등장합니다.',
+    insightHigh: 'AI가 다양한 사용자 질문에 이 글을 출처로 활용하고 있습니다.',
+    insightMid: '일부 질문 유형에서만 인용되고 있어 표현·구조 보강이 필요합니다.',
+    insightLow: 'AI가 거의 인용하지 않고 있어 콘텐츠 재구성이 시급합니다.'
   }
 ];
 

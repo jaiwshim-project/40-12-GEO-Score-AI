@@ -100,6 +100,15 @@ window.HOMEPAGE_KPIS = [
     insightHigh: '모바일 반응형 + viewport + 빠른 로딩이 모두 충족됩니다.',
     insightMid: '일부 모바일 신호만 충족되어 viewport·반응형 보강이 필요합니다.',
     insightLow: '모바일 미대응으로 검색·AI 추천에서 모두 불리합니다.'
+  },
+  {
+    id: 'hp_aiCitability', name: 'AI 인용 가능성', nameEn: 'AI Citability',
+    icon: '🤖', color: '#ec4899', color2: '#be185d', weight: 12,
+    desc: 'Gemini 시뮬레이션 인용율 (실측)',
+    description: '홈페이지 본문 텍스트로 6개 가상 사용자 질문을 만들고 AI가 답변에 브랜드를 인용하는지 측정합니다. Perplexity·SearchGPT·AI Overview에서 실제 인용될 가능성의 대리 지표입니다. 80%↑ 인용율이면 AI 검색 답변에 안정적으로 등장합니다.',
+    insightHigh: 'AI가 다양한 사용자 질문에 이 사이트를 출처로 활용하고 있습니다.',
+    insightMid: '일부 질문 유형에서만 인용되고 있어 표현·구조 보강이 필요합니다.',
+    insightLow: 'AI가 거의 인용하지 않고 있어 콘텐츠 재구성이 시급합니다.'
   }
 ];
 
