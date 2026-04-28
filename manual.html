@@ -63,7 +63,8 @@
       <a href="#workflow">6. 진단 워크플로</a>
       <a href="#solution">7. GEO-AIO 연결</a>
       <a href="#api">8. API 문서</a>
-      <a href="#faq">9. FAQ</a>
+      <a href="#tools">9. 통합 페이지 / 영업 도구</a>
+      <a href="#faq">10. FAQ</a>
     </aside>
 
     <article class="manual-content">
@@ -91,42 +92,65 @@
       </div>
 
       <h2 id="kpi-guide">3. 10대 KPI 가이드</h2>
-      <p>GEO Score AI는 AI가 인용하고 추천하는 기준에 맞춰 설계된 10가지 KPI를 측정합니다.</p>
+      <p>GEO Score AI는 AI가 인용하고 추천하는 기준에 맞춰 재설계된 <strong>10가지 KPI</strong>를 측정합니다. 각 KPI에는 가중치(합계 100%)가 부여되어 종합 점수가 산출됩니다. ⭐ 표시된 두 KPI(<strong>AI 인용 5신호</strong>, <strong>CEP 장면 점유</strong>)는 본 플랫폼의 자체 차별점입니다.</p>
 
-      <h3>① 검색 가시성 지수 (Search Visibility Index)</h3>
-      <p>구글·네이버 노출 수준, 키워드 점유율, AI Overview 노출 가능성을 종합 평가합니다.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem;">
+        <thead>
+          <tr style="background: var(--bg-tertiary);">
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">#</th>
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">KPI</th>
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: right;">가중치</th>
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">핵심 측정</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">①</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>botAccess</code> AI 봇 접근</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">14%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">robots.txt에서 7대 AI 봇 차단 여부</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">②</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>sitemapStatus</code> Sitemap 상태</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">10%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">sitemap.xml 존재·등록 URL 수</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">③</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>indexExposure</code> 검색 색인</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">13%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">실제 검색 색인된 페이지 수</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">④</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>structuredData</code> 구조화 데이터</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">12%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">Schema.org · FAQ JSON-LD 적용</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">⑤</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>pageInfo</code> 페이지 정보</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">8%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">메타 태그 · canonical · OG 이미지</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">⑥</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>contentDepth</code> 콘텐츠 깊이</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">10%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">블로그 발행 빈도 + 본문 분량/구조</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">⑦</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>externalAuthority</code> 외부 권위</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">9%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">백링크 · 언론 인용 휴리스틱</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);">⑧</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>eeat</code> E-E-A-T 신호</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">8%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">작성자·자격·연혁·연락처 노출</td></tr>
+          <tr style="background: rgba(0,214,143,0.05);"><td style="padding: 8px; border: 1px solid var(--border-primary);">⑨</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>aiCitation</code> AI 인용 5신호 ⭐</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">10%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">ai_writing 5신호 (자체 차별점)</td></tr>
+          <tr style="background: rgba(0,214,143,0.05);"><td style="padding: 8px; border: 1px solid var(--border-primary);">⑩</td><td style="padding: 8px; border: 1px solid var(--border-primary);"><code>cepScene</code> CEP 장면 점유 ⭐</td><td style="padding: 8px; border: 1px solid var(--border-primary); text-align: right;">6%</td><td style="padding: 8px; border: 1px solid var(--border-primary);">"순간(scene)" 콘텐츠 (자체 차별점)</td></tr>
+        </tbody>
+      </table>
 
-      <h3>② 콘텐츠 생산력 지수 (Content Velocity Index)</h3>
-      <p>블로그·웹 콘텐츠 발행 빈도, 최신성, 업데이트 주기를 측정합니다.</p>
+      <h3>① AI 봇 접근 (botAccess) — 가중치 14%</h3>
+      <p>AI 검색 엔진의 크롤러(GPTBot, ClaudeBot, PerplexityBot, Google-Extended 등 7대 AI 봇)가 사이트를 읽을 수 있는지 평가합니다. 사이트 루트의 <code>robots.txt</code> 파일에서 이들 봇이 차단되어 있다면 어떤 콘텐츠도 AI 답변에 인용될 수 없으므로 가장 높은 가중치를 가집니다. <strong>측정</strong>: <code>/robots.txt</code> 파싱 후 7봇 차단 여부 매핑.</p>
 
-      <h3>③ E-E-A-T 신뢰도 지수 (Authority Index)</h3>
-      <p>전문성, 경험 기반 콘텐츠, 저자 신뢰도를 평가합니다.</p>
+      <h3>② Sitemap 상태 (sitemapStatus) — 가중치 10%</h3>
+      <p>사이트의 모든 페이지를 AI·검색엔진이 효율적으로 발견하도록 안내하는 <code>sitemap.xml</code> 지도 파일의 유무와 품질을 평가합니다. 등록된 URL이 많고 최근 갱신일이 신선할수록 점수가 올라갑니다. <strong>측정</strong>: <code>/sitemap.xml</code> 직접 fetch 후 URL 노드 개수 + lastmod 분석.</p>
 
-      <h3>④ AI 인용 가능성 지수 (AI Citation Index)</h3>
-      <p>구조화된 콘텐츠, FAQ·Q&A 구조, LLM 친화적 형식을 평가합니다. <strong>가장 중요한 KPI</strong>입니다.</p>
+      <h3>③ 검색 색인 (indexExposure) — 가중치 13%</h3>
+      <p>구글·네이버에 실제 색인된 페이지 수를 측정합니다. 사이트 지도가 있어도 검색엔진이 색인하지 않으면 노출되지 않으므로 별도 KPI로 분리되어 있습니다. <strong>측정</strong>: <code>site:</code> 연산자 휴리스틱 + 외부 신호 추정으로 색인 페이지 수 산출.</p>
 
-      <h3>⑤ 고객 참여도 지수 (Engagement Index)</h3>
-      <p>댓글, 리뷰, SNS 반응, 체류 시간을 종합 측정합니다.</p>
+      <h3>④ 구조화 데이터 (structuredData) — 가중치 12%</h3>
+      <p>AI가 페이지 내용을 정확히 이해하도록 돕는 Schema.org 마크업(JSON-LD)의 적용도를 평가합니다. Organization, Article, FAQPage, LocalBusiness 등의 스키마가 있으면 AI 답변 인용 가능성이 크게 올라갑니다. <strong>측정</strong>: HTML 내 <code>application/ld+json</code> 블록 파싱 후 스키마 종류 카운트.</p>
 
-      <h3>⑥ 전환 설계 지수 (Conversion Architecture Index)</h3>
-      <p>CTA 존재 여부, 상담 유도 구조, 랜딩 페이지 완성도를 측정합니다.</p>
+      <h3>⑤ 페이지 정보 (pageInfo) — 가중치 8%</h3>
+      <p>각 페이지의 기본 메타 정보 - 제목 태그, 메타 설명, canonical URL, Open Graph 이미지 - 가 정확히 설정되어 있는지 평가합니다. 메타 정보가 부실하면 AI가 페이지를 요약·인용하기 어렵습니다. <strong>측정</strong>: <code>&lt;title&gt;</code> 길이, <code>meta description</code>, <code>rel=canonical</code>, <code>og:image</code> 존재 여부.</p>
 
-      <h3>⑦ 채널 확장 지수 (Channel Diversification Index)</h3>
-      <p>블로그, 유튜브, SNS 등 멀티채널 활용도를 평가합니다.</p>
+      <h3>⑥ 콘텐츠 깊이 (contentDepth) — 가중치 10%</h3>
+      <p>블로그 등 콘텐츠 발행 빈도와 각 글의 본문 분량·구조를 측정합니다. AI는 신선하고 깊이 있는 콘텐츠를 우선 인용하므로 정기 발행이 핵심입니다. <strong>측정</strong>: 블로그 글 개수 + 평균 글자 수 + 헤딩(H2/H3) 구조 점수.</p>
 
-      <h3>⑧ 브랜드 일관성 지수 (Brand Consistency Index)</h3>
-      <p>메시지 통일성, 디자인·톤앤매너의 일관성을 측정합니다.</p>
+      <h3>⑦ 외부 권위 (externalAuthority) — 가중치 9%</h3>
+      <p>다른 사이트에서 우리 사이트를 인용·링크하는 정도(백링크)와 언론 보도 노출을 평가합니다. 외부에서 인정받는 사이트일수록 AI가 신뢰합니다. <strong>측정</strong>: 백링크 휴리스틱(공개 데이터) + 언론 보도 키워드 매칭.</p>
 
-      <h3>⑨ 경쟁 대비 점유율 지수 (Competitive Position Index)</h3>
-      <p>경쟁사 대비 콘텐츠량, 키워드 경쟁력을 분석합니다.</p>
+      <h3>⑧ E-E-A-T 신호 (eeat) — 가중치 8%</h3>
+      <p>구글이 강조하는 4가지 신뢰도 신호 - 경험(Experience), 전문성(Expertise), 권위(Authority), 신뢰성(Trust) - 의 페이지 노출도를 평가합니다. 작성자 프로필, 자격 정보, 회사 연혁, 연락처가 명시되어야 합니다. <strong>측정</strong>: 작성자 박스, 자격 라이선스 텍스트, 회사 연혁 페이지, 연락처 푸터 검출.</p>
 
-      <h3>⑩ AI 최적화 준비도 (AIO Readiness Index)</h3>
-      <p>GEO 구조, AI 검색 대응 구조, 콘텐츠 구조화 수준을 종합합니다.</p>
+      <h3>⑨ AI 인용 5신호 (aiCitation) ⭐ — 가중치 10%</h3>
+      <p>본 플랫폼의 핵심 자체 차별점입니다. <strong>ai_writing 스킬</strong>의 5가지 정량 신호(질문형 H2 비율, 정의문 H2 비율, 브랜드 반복, 외부 인용, CTA 도달률)를 콘텐츠에서 직접 측정해 AI가 발췌하기 좋은 형태인지 점수화합니다. <strong>측정</strong>: 본문 텍스트 정규식 + 패턴 매칭으로 5신호 비율 계산 후 가중 평균.</p>
+
+      <h3>⑩ CEP 장면 점유 (cepScene) ⭐ — 가중치 6%</h3>
+      <p>본 플랫폼의 또 다른 자체 차별점입니다. CEP(Category Entry Point - 카테고리 진입 순간) 이론에 따라 "사람"이 아닌 <strong>"순간(scene)"</strong>을 표적으로 한 콘텐츠 비율을 측정합니다. "아침에 갑자기 ○○할 때", "야근 후 ○○가 필요할 때" 같은 장면 표적이 많을수록 AI 답변에 등장할 확률이 올라갑니다. <strong>측정</strong>: 콘텐츠 내 "○○할 때/순간/상황" 패턴 검출 비율.</p>
 
       <h2 id="ai-writing">4. AI 인용 글쓰기 6원칙 ⭐</h2>
       <p>
         Perplexity·SearchGPT·AI Overview 같은 LLM이 답변에 발췌하기 좋은 콘텐츠의 6가지 원칙입니다.
-        <strong>KPI 4 (AI 인용 가능성)</strong>는 이 원칙 중 4개 측정 신호로 직접 산출됩니다.
+        <strong>KPI ⑨ AI 인용 5신호 (aiCitation)</strong>는 이 원칙의 5개 측정 신호로 직접 산출됩니다.
       </p>
 
       <div class="info-box">
@@ -144,8 +168,8 @@
         <li><strong>원칙 5. 행동 유도</strong> — 핵심 답 + CTA 솔루션 + TL;DR.</li>
       </ol>
 
-      <h3>📊 측정 5신호 — KPI 4 직접 산출</h3>
-      <p>다음 5가지 신호는 입력 콘텐츠에서 정량적으로 측정되어 KPI 4 (AI 인용 가능성) 점수에 직접 반영됩니다. (ai_writing 4 측정 신호 + 원칙 2 정의문 H2)</p>
+      <h3>📊 측정 5신호 — KPI ⑨ aiCitation 직접 산출</h3>
+      <p>다음 5가지 신호는 입력 콘텐츠에서 정량적으로 측정되어 <strong>KPI ⑨ AI 인용 5신호 (aiCitation, 가중치 10%)</strong> 점수에 직접 반영됩니다. (ai_writing 4 측정 신호 + 원칙 2 정의문 H2)</p>
 
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
         <thead>
@@ -254,58 +278,163 @@ CTA X? → "[X 문제]는 [브랜드]로 해결" 패턴
       </div>
 
       <h2 id="workflow">6. 진단 워크플로</h2>
-      <p>입력 한 번으로 8단계 프로세스가 자동 실행됩니다.</p>
+      <p>URL 또는 직접 콘텐츠 입력 한 번으로 <strong>8단계 자동 진단</strong>이 실행됩니다.</p>
       <ol>
-        <li>정보 입력 (기업명 + URL)</li>
-        <li>자동 크롤링 (HTML 메타 + 본문 추출)</li>
-        <li>구조 분석 (FAQ, Schema, CTA, 리뷰, SNS 신호 검출)</li>
-        <li>Gemini AI 분석 (10대 KPI 점수 + 근거)</li>
-        <li>레이더 차트 생성</li>
-        <li>강점·약점 자동 도출</li>
-        <li>GEO-AIO 솔루션 추천 (우선순위 액션 + 패키지)</li>
-        <li>계약 전환 CTA</li>
+        <li><strong>정보 입력</strong> — URL 또는 직접 콘텐츠 텍스트를 입력합니다. 업종은 자동 감지되거나 수동 선택 가능.</li>
+        <li><strong>자동 크롤링</strong> — 메인 페이지 HTML + <code>/robots.txt</code> + <code>/sitemap.xml</code>을 병렬로 가져옵니다.</li>
+        <li><strong>외부 측정</strong> — 검색 색인된 페이지 수와 백링크 휴리스틱을 외부 신호 기반으로 추정합니다.</li>
+        <li><strong>구조 분석</strong> — Schema.org JSON-LD, FAQ 마크업, 메타 태그, OG 이미지를 검출·정규화합니다.</li>
+        <li><strong>Gemini AI 분석</strong> — 10대 KPI 점수를 산출하고, 가중치(합 100%)로 가중 평균 종합 점수를 계산합니다.</li>
+        <li><strong>페널티 매트릭스 적용</strong> — 구조화 데이터 부재 시 -15%, AI 봇 차단 시 -30% 등 임계 페널티를 적용합니다.</li>
+        <li><strong>AXOS 온톨로지 인과 분석</strong> — 약점 KPI들의 근본 원인(root cause)을 8종 노드 + 9종 관계 그래프로 추적합니다.</li>
+        <li><strong>솔루션 + 권장 경로</strong> — 5단계 권장 경로(A+ 운영 유지부터 F 신규 개발 필수까지)와 견적을 자동 매칭합니다.</li>
       </ol>
 
+      <div class="info-box">
+        💡 <strong>병렬 크롤링:</strong> 메인 페이지 + robots.txt + sitemap.xml + 외부 색인을 동시에 가져와 30초 내로 진단을 완료합니다.
+      </div>
+
       <h2 id="solution">7. GEO-AIO 솔루션 연결</h2>
-      <p>진단 결과에 따라 자동으로 맞춤 패키지가 추천됩니다.</p>
-      <h3>패키지 4단계</h3>
-      <ul>
-        <li><strong>AI Maintain (월 100만원)</strong> — 70점 이상 운영 유지</li>
-        <li><strong>AI Boost (월 200만원)</strong> — 50~69점 약점 집중 보강</li>
-        <li><strong>AI Growth (월 500만원)</strong> — 30~49점 핵심 KPI 우선 보강</li>
-        <li><strong>AI Dominance (월 1000만원)</strong> — 30점 미만 풀스택 즉시 도입</li>
-      </ul>
+      <p>진단 등급에 따라 <strong>5단계 권장 경로</strong>가 자동 매칭됩니다. 등급별로 부분 개선·전면 개선·신규 개발 중 가장 효율적인 옵션을 제시합니다.</p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem;">
+        <thead>
+          <tr style="background: var(--bg-tertiary);">
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">등급</th>
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">권장 경로</th>
+            <th style="padding: 10px; border: 1px solid var(--border-primary); text-align: left;">견적 / 기간</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#00d68f;">A+ Premium</strong> (95~100)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">운영 유지 — 모니터링 + 미세 조정</td><td style="padding: 8px; border: 1px solid var(--border-primary);">월 50~150만원</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#0095ff;">A 우수</strong> (85~94)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">콘텐츠 강화 — 약점 KPI 1~2개 보강</td><td style="padding: 8px; border: 1px solid var(--border-primary);">월 50~150만원</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#ffa800;">B 보통</strong> (70~84)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">부분 개선 — 약점 KPI 2~3개 집중 투자</td><td style="padding: 8px; border: 1px solid var(--border-primary);">200~500만원, 2~4주</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#ff6b35;">C 미흡</strong> (55~69)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">전면 개선 vs 신규 개발 비교 — 현행 시스템 수정 가능성 먼저 진단</td><td style="padding: 8px; border: 1px solid var(--border-primary);">200~400만원</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#ff3d71;">D 부족</strong> (40~54)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">신규 개발 권장 — 도메인 유지, 시스템 교체</td><td style="padding: 8px; border: 1px solid var(--border-primary);">400만원, 3주</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid var(--border-primary);"><strong style="color:#be123c;">F 위급</strong> (0~39)</td><td style="padding: 8px; border: 1px solid var(--border-primary);">신규 개발 필수 — 즉시 착수</td><td style="padding: 8px; border: 1px solid var(--border-primary);">400만원, 3주, 즉시</td></tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        💡 <strong>도메인은 유지:</strong> 신규 개발 권장 등급(D, F)에서도 기존 도메인은 그대로 유지합니다. 시스템 구조만 AI 친화적으로 교체하므로 SEO 자산 손실이 없습니다.
+      </div>
 
       <h2 id="api">8. API 문서</h2>
+      <p>모든 API는 Vercel Edge에서 동작하며 JSON 요청·응답을 사용합니다. 응답에는 새 10대 KPI 키가 포함됩니다.</p>
+
       <h3>POST /api/analyze</h3>
-      <p>진단 분석을 실행합니다.</p>
-      <pre><code>{
+      <p>진단 분석을 실행합니다. 새 KPI 응답 형식.</p>
+      <pre><code>// Request
+{
   "companyName": "디지털스마일치과",
   "websiteUrl": "https://example.com",
-  "industry": "dental"
+  "industry": "dental",
+  "rawContent": "(선택) 직접 콘텐츠 텍스트"
+}
+
+// Response (새 KPI 형식)
+{
+  "totalScore": 78,
+  "grade": "B",
+  "scores": {
+    "botAccess": 95, "sitemapStatus": 80, "indexExposure": 70,
+    "structuredData": 60, "pageInfo": 85, "contentDepth": 72,
+    "externalAuthority": 55, "eeat": 68,
+    "aiCitation": 74, "cepScene": 40
+  },
+  "rationale": { ... },
+  "penalties": [{ "key": "structuredData", "amount": -15 }]
 }</code></pre>
 
       <h3>POST /api/recommend</h3>
-      <p>진단 결과 기반 솔루션을 추천합니다.</p>
+      <p>진단 점수 기반 5단계 권장 경로와 견적을 반환합니다.</p>
       <pre><code>{
   "scores": { ... },
   "totalScore": 42,
+  "grade": "D",
   "companyName": "...",
   "industry": "..."
 }</code></pre>
 
       <h3>POST /api/chat</h3>
-      <p>AI 상담사와 대화합니다.</p>
+      <p>진단 컨텍스트 기반 AI 상담사 대화.</p>
       <pre><code>{
-  "message": "GEO가 SEO와 어떻게 다른가요?",
+  "message": "AI 봇 접근 점수를 어떻게 올리나요?",
   "history": [],
-  "diagnosisContext": null
+  "diagnosisContext": { /* 진단 결과 */ }
+}</code></pre>
+
+      <h3>POST /api/cep-discover</h3>
+      <p>CEP(Category Entry Point) <strong>5단계 발굴</strong>을 실행합니다. 업종별 "순간(scene)"을 자동 발굴해 콘텐츠 표적을 제시합니다.</p>
+      <pre><code>{
+  "industry": "dental",
+  "brand": "디지털스마일치과",
+  "region": "강남"
+}</code></pre>
+
+      <h3>🆕 POST /api/rewrite-content</h3>
+      <p><strong>90점 글 자동 재작성</strong>. 입력 글의 부족 신호를 자동 보강해 GEO Score 90점 이상으로 재작성합니다. 자가 검증 루프 최대 3회.</p>
+      <pre><code>{
+  "originalContent": "...",
+  "brand": "디지털스마일치과",
+  "industry": "dental",
+  "targetScore": 90
+}</code></pre>
+
+      <h3>🆕 POST /api/derive-30</h3>
+      <p>마스터 글 1개를 입력하면 <strong>30개 질문형 파생</strong>을 자동 생성합니다. AI 인용량 확장용.</p>
+      <pre><code>{
+  "masterContent": "...",
+  "brand": "...",
+  "count": 30
+}</code></pre>
+
+      <h3>🆕 POST /api/citation-test</h3>
+      <p><strong>AI 인용성 실제 검증</strong>. 콘텐츠를 Perplexity·SearchGPT·Claude·Gemini 등에 직접 질의해 실제 인용 여부를 확인합니다.</p>
+      <pre><code>{
+  "content": "...",
+  "queries": ["○○ 추천", "○○ 비용"],
+  "engines": ["perplexity", "searchgpt", "claude", "gemini"]
+}</code></pre>
+
+      <h3>🆕 POST /api/generate-report</h3>
+      <p><strong>영업용 단일 HTML 리포트</strong> 생성. AX Biz Group 브랜드의 단일 HTML 파일로 진단 결과 + 솔루션 + 견적을 통합 출력합니다.</p>
+      <pre><code>{
+  "diagnosis": { ... },
+  "clientName": "...",
+  "salesperson": "심재우"
 }</code></pre>
 
       <h3>GET /api/health</h3>
-      <p>서비스 상태와 환경 변수 설정 여부를 확인합니다.</p>
+      <p>서비스 상태와 환경 변수(GEMINI_API_KEY 등) 설정 여부를 반환합니다.</p>
 
-      <h2 id="faq">9. 자주 묻는 질문 (FAQ)</h2>
+      <h2 id="tools">9. 통합 페이지 / 영업 도구</h2>
+      <p>분산된 결과 화면을 한 번에 보거나 영업·제안 단계로 바로 연결할 수 있는 통합 페이지를 제공합니다.</p>
+
+      <h3>📋 통합 결과 페이지 (result-tabs.html)</h3>
+      <p>8개 결과 탭 - 개요(overview)·KPI 상세·문제·솔루션·재작성(rewrite)·CEP·온톨로지·비교 - 을 한 페이지에서 탭 전환으로 모두 확인할 수 있는 통합 뷰입니다. 진단 후 결과를 빠르게 훑어보거나 영업 미팅에서 화면 전환 없이 한 흐름으로 설명할 때 사용합니다.</p>
+      <ul>
+        <li><strong>접근:</strong> 상단 내비게이션 "📋 통합 결과" 메뉴</li>
+        <li><strong>탭 구성:</strong> overview / kpi / problems / solution / rewrite / cep / ontology / comparison</li>
+        <li><strong>활용:</strong> 진단 직후 + 영업 프레젠테이션</li>
+      </ul>
+
+      <h3>🎁 영업 리포트 생성기 (generate-report.html)</h3>
+      <p>AX Biz Group 영업팀이 고객에게 전달할 <strong>단일 HTML 리포트 파일</strong>을 자동 생성합니다. 진단 결과 + 권장 경로 + 견적 + 솔루션 매트릭스가 1개 HTML 파일로 패키징되어 이메일·슬랙으로 즉시 전달 가능합니다.</p>
+      <ul>
+        <li><strong>API:</strong> <code>POST /api/generate-report</code></li>
+        <li><strong>출력:</strong> 인쇄·PDF 변환 가능한 단일 HTML 파일</li>
+        <li><strong>브랜딩:</strong> AX Biz Group 로고·컬러 적용</li>
+      </ul>
+
+      <h3>📋 AI최적화 홈페이지 개발 제안서 (proposal.html)</h3>
+      <p>D·F 등급 진단 후 신규 개발이 권장된 고객에게 즉시 제시할 수 있는 <strong>AI최적화 홈페이지 개발 제안서</strong> 템플릿입니다. 5단계 권장 경로·견적·기간·산출물이 미리 정리되어 있습니다.</p>
+      <ul>
+        <li><strong>경로:</strong> 푸터 "📋 AI최적화 홈페이지 개발 제안서" 링크</li>
+        <li><strong>구성:</strong> 진단 요약 → 문제 정의 → 솔루션 → 일정 → 견적 → CTA</li>
+      </ul>
+
+      <h2 id="faq">10. 자주 묻는 질문 (FAQ)</h2>
 
       <div class="faq-item">
         <div class="faq-q">Q. 왜 GEO가 SEO보다 중요한가요?</div>
@@ -335,6 +464,21 @@ CTA X? → "[X 문제]는 [브랜드]로 해결" 패턴
       <div class="faq-item">
         <div class="faq-q">Q. Gemini API 키가 없어도 사용 가능한가요?</div>
         <div class="faq-a">가능합니다. API 키가 없으면 휴리스틱(규칙 기반) 점수가 제공되며, 개인화 메시지 일부 기능은 제한됩니다.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. 결과 페이지가 8개로 나뉘어 있는데 한번에 보고 싶어요</div>
+        <div class="faq-a">상단 내비게이션의 <strong>"📋 통합 결과"</strong> 메뉴(<code>result-tabs.html</code>)를 사용하세요. 개요·KPI·문제·솔루션·재작성·CEP·온톨로지·비교 8개 탭을 한 페이지에서 전환하며 확인할 수 있습니다. 영업 프레젠테이션이나 빠른 훑어보기에 최적화되어 있습니다.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. 영업용 리포트는 어떻게 만드나요?</div>
+        <div class="faq-a"><strong>영업 리포트 생성 페이지</strong>(<code>generate-report.html</code>)에서 진단 결과를 입력하면 AX Biz Group 브랜드의 단일 HTML 파일로 리포트가 자동 생성됩니다. 이메일이나 슬랙으로 즉시 전달 가능하고, 인쇄·PDF 변환도 지원합니다. API 엔드포인트는 <code>POST /api/generate-report</code>입니다.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. AI 인용성을 실제로 검증할 수 있나요?</div>
+        <div class="faq-a">가능합니다. <strong>"🔍 인용성 검증"</strong> 메뉴(<code>citation-test.html</code>)에서 콘텐츠를 입력하면 Perplexity·SearchGPT·Claude·Gemini 같은 실제 AI 검색에 자동으로 질의를 보내 인용 여부를 검증합니다. API는 <code>POST /api/citation-test</code>이며, 점수 예측이 아니라 실제 결과 기반 측정이 특징입니다.</div>
       </div>
 
     </article>

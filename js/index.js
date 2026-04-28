@@ -3,15 +3,16 @@
  */
 
 (function() {
-  // KPI Grid 렌더링
+  // KPI Grid 렌더링 (새 10 KPI: 외부 인프라 8 + 자체 차별점 2)
   function renderKpiGrid() {
     const grid = document.getElementById('kpiGrid');
     if (!grid || !window.KPI_DEFINITIONS) return;
 
+    const NUM = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
     grid.innerHTML = window.KPI_DEFINITIONS.map((kpi, idx) => `
       <div class="kpi-card" style="--accent-color: ${kpi.color}; --accent-color-2: ${kpi.color2};">
         <div class="kpi-icon">${kpi.icon}</div>
-        <div class="kpi-name">${String(idx + 1).padStart(2, '0')}. ${kpi.name}</div>
+        <div class="kpi-name"><span style="color: var(--accent-color); font-weight: 800; margin-right: 4px;">${NUM[idx] || (idx + 1)}</span> ${kpi.name} <span style="font-size: 0.78rem; color: var(--text-tertiary); font-weight: 600;">(${kpi.weight}%)</span></div>
         <div class="kpi-desc">${kpi.desc}</div>
       </div>
     `).join('');
