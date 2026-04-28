@@ -19,7 +19,7 @@
   --grade-strong: linear-gradient(135deg, #0095ff 0%, #0073cc 100%);
   --grade-growing: linear-gradient(135deg, #ffa800 0%, #ff8800 100%);
   --grade-weak: linear-gradient(135deg, #ff6b35 0%, #ff4500 100%);
-  --grade-critical: linear-gradient(135deg, #ff3d71 0%, #cc1f4d 100%);
+  --grade-critical: linear-gradient(135deg, #ff8800 0%, #ff6b35 100%);
 
   /* Neutral - Dark Theme */
   --bg-primary: #0a0e1a;

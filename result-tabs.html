@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📋 통합 분석 결과 - GEO Score AI</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E" />
+  <style>
+    /* 통합 페이지 sub-nav */
+    .tabs-subnav {
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-primary);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      z-index: 50;
+      padding: 12px 0;
+      margin: 32px 0 0;
+    }
+    .tabs-subnav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .tabs-subnav a {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .tabs-subnav a:hover {
+      background: rgba(255, 107, 53, 0.08);
+      color: var(--color-accent);
+      border-color: rgba(255, 107, 53, 0.3);
+      transform: translateY(-1px);
+    }
+    /* 섹션별 anchor */
+    .tab-section {
+      scroll-margin-top: 80px;
+      margin-top: 64px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border-primary);
+    }
+    .tab-section:first-of-type { margin-top: 32px; border-top: none; padding-top: 0; }
+    .tab-section h2.tab-section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 1.5rem;
+    }
+    .tab-section-meta {
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+      margin-bottom: 24px;
+    }
+    .tab-section-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 12px;
+      padding: 4px 10px;
+      background: rgba(255, 107, 53, 0.08);
+      color: var(--color-accent);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .tab-section-link:hover { background: rgba(255, 107, 53, 0.15); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="index.html#process" class="nav-link">진단 프로세스</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="result-tabs.html" class="nav-link">📋 통합 결과</a>
+        <a href="result-overview.html" class="nav-link">진단 결과</a>
+        <a href="rewrite.html" class="nav-link">✨ 90점 글</a>
+        <a href="derive.html" class="nav-link">🌳 30개 파생</a>
+        <a href="citation-test.html" class="nav-link">🔍 인용성 검증</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 결과 화면 -->
+  <section id="resultSection" class="section">
+    <div class="container">
+
+      <!-- 종합 점수 (상단 그래프 — 그대로 유지) -->
+      <div class="score-hero">
+        <div class="hero-badge">
+          <span class="pulse"></span>
+          <span id="resultMeta">진단 완료</span>
+        </div>
+
+        <h1 style="margin-bottom: 16px;" id="companyTitle">-</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 40px;" id="urlSubtitle">-</p>
+
+        <div class="score-circle">
+          <svg viewBox="0 0 280 280">
+            <defs>
+              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff6b35" />
+                <stop offset="50%" stop-color="#ffa800" />
+                <stop offset="100%" stop-color="#00d68f" />
+              </linearGradient>
+            </defs>
+            <circle class="score-circle-bg" cx="140" cy="140" r="120" />
+            <circle class="score-circle-fg" id="scoreFg" cx="140" cy="140" r="120"
+                    stroke-dasharray="753.98" stroke-dashoffset="753.98"
+                    transform="rotate(-90 140 140)" />
+          </svg>
+          <div class="score-content">
+            <div class="score-value" id="scoreValue">0</div>
+            <div class="score-total">/ 100</div>
+          </div>
+        </div>
+
+        <div class="score-grade" id="scoreGrade">-</div>
+
+        <div class="shock-message" id="shockMessage">분석 결과를 준비 중입니다</div>
+
+        <p style="color: var(--text-secondary); max-width: 720px; margin: 0 auto;" id="diagnosisText">-</p>
+      </div>
+
+      <!-- 8개 탭 sub-nav (sticky) -->
+      <nav class="tabs-subnav">
+        <div class="tabs-subnav-inner">
+          <a href="#tab-overview">📊 종합 분석</a>
+          <a href="#tab-kpi">🔢 10대 KPI</a>
+          <a href="#tab-problems">⚠️ 문제 영역</a>
+          <a href="#tab-comparison">📈 경쟁사 비교</a>
+          <a href="#tab-solution">🚀 솔루션 제안</a>
+          <a href="#tab-ontology">🕸️ 온톨로지 분석</a>
+          <a href="#tab-cep">🎯 CEP 좌표</a>
+          <a href="#tab-rewrite">✨ 90점 글 생성</a>
+        </div>
+      </nav>
+
+      <!-- 탭 1: 종합 분석 -->
+      <section id="tab-overview" class="tab-section">
+        <h2 class="tab-section-title">📊 종합 분석
+          <a class="tab-section-link" data-href="result-overview.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">10대 KPI 레이더 차트 + 강점/약점/즉시 개선 가능 영역</p>
+        <div class="radar-container">
+          <h3 style="margin-bottom: 24px; text-align: center;">10대 KPI 레이더 차트</h3>
+          <div class="radar-wrapper" id="radarChart"></div>
+        </div>
+        <div class="kpi-detail-grid">
+          <div class="kpi-detail-card">
+            <div class="kpi-detail-header">
+              <div class="kpi-detail-name"><span class="kpi-icon-mini">💪</span>강점 영역</div>
+            </div>
+            <div id="strengthsList" style="font-size: 0.95rem; color: var(--text-secondary);"></div>
+          </div>
+          <div class="kpi-detail-card">
+            <div class="kpi-detail-header">
+              <div class="kpi-detail-name"><span class="kpi-icon-mini">⚠️</span>약점 영역</div>
+            </div>
+            <div id="weaknessesList" style="font-size: 0.95rem; color: var(--text-secondary);"></div>
+          </div>
+          <div class="kpi-detail-card">
+            <div class="kpi-detail-header">
+              <div class="kpi-detail-name"><span class="kpi-icon-mini">💡</span>즉시 개선 가능</div>
+            </div>
+            <div id="quickWinsList" style="font-size: 0.95rem; color: var(--text-secondary);"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 탭 2: 10대 KPI -->
+      <section id="tab-kpi" class="tab-section">
+        <h2 class="tab-section-title">🔢 10대 KPI 상세
+          <a class="tab-section-link" data-href="result-kpi.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">KPI별 점수 + 진단 인사이트 + KPI 4 (AI 인용)에는 ai_writing 5신호 세부 패널</p>
+        <div class="kpi-detail-grid" id="kpiDetailGrid"></div>
+      </section>
+
+      <!-- 탭 3: 문제 영역 -->
+      <section id="tab-problems" class="tab-section">
+        <h2 class="tab-section-title">⚠️ 문제 영역
+          <a class="tab-section-link" data-href="result-problems.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">치명적 문제 + 즉시 실행 시 큰 효과를 볼 수 있는 기회 영역</p>
+        <div class="section-header"><h3>치명적 문제 영역</h3></div>
+        <div class="problem-grid" id="problemGrid"></div>
+        <div class="section-header" style="margin-top: 32px;"><h3>기회 영역</h3></div>
+        <div class="problem-grid" id="opportunityGrid"></div>
+      </section>
+
+      <!-- 탭 4: 경쟁사 비교 -->
+      <section id="tab-comparison" class="tab-section">
+        <h2 class="tab-section-title">📈 경쟁사 비교
+          <a class="tab-section-link" data-href="result-comparison.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">업계 평균 / 상위 10% 기업 대비 귀사 위치</p>
+        <div id="comparisonChart"></div>
+      </section>
+
+      <!-- 탭 5: 솔루션 제안 -->
+      <section id="tab-solution" class="tab-section">
+        <h2 class="tab-section-title">🚀 솔루션 제안
+          <a class="tab-section-link" data-href="result-solution.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">권장 경로 자동 판정 + 4 Phase 액션 + 견적</p>
+        <div id="solutionContent"></div>
+      </section>
+
+      <!-- 탭 6: 온톨로지 분석 -->
+      <section id="tab-ontology" class="tab-section">
+        <h2 class="tab-section-title">🕸️ AXOS 온톨로지 인과 분석
+          <a class="tab-section-link" data-href="result-ontology.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">10 KPI + 5 ai_writing 신호 + 인프라 신호의 AXOS 8노드/9관계 인과 그래프 + Root Cause 자동 추적</p>
+        <div id="axosPanel" style="margin-bottom: 24px;"></div>
+      </section>
+
+      <!-- 탭 7: CEP 좌표 -->
+      <section id="tab-cep" class="tab-section">
+        <h2 class="tab-section-title">🎯 CEP 좌표
+          <a class="tab-section-link" data-href="result-cep.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">소비자 결정적 순간(CEP) 발굴 + 표적 콘텐츠 아이디어</p>
+        <div id="cepContent"></div>
+      </section>
+
+      <!-- 탭 8: 90점 글 생성 -->
+      <section id="tab-rewrite" class="tab-section">
+        <h2 class="tab-section-title">✨ 90점 글 자동 생성
+          <a class="tab-section-link" data-href="result-rewrite.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">진단된 약점 신호를 자동 보강하여 GEO Score 90점 이상의 글로 재작성</p>
+        <div id="rewriteTabContent"></div>
+      </section>
+
+      <!-- 최종 CTA -->
+      <div class="cta-section" style="margin-top: 64px;">
+        <h2 class="cta-title">
+          지금 시작하지 않으면<br />
+          <span style="color: var(--color-accent);">경쟁사에게 AI 인용&amp;추천 시장을 뺏깁니다</span>
+        </h2>
+        <p class="cta-subtitle">GEO-AIO 솔루션으로 3개월 내 AI 추천 기업으로 전환하세요.</p>
+        <div class="cta-buttons">
+          <a href="#" id="ctaPrimary" class="btn btn-primary btn-large" style="width: auto;">🚀 GEO-AIO 솔루션 시작</a>
+          <a href="generate-report.html" class="btn btn-primary btn-large" style="width: auto;">🎁 영업 리포트 생성</a>
+          <a href="chatbot.html" class="btn btn-ghost btn-large" style="width: auto;">💬 전문가 상담 예약</a>
+          <button id="saveReport" class="btn btn-secondary btn-large" style="width: auto;">📥 JSON 저장</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 에러 화면 -->
+  <section id="errorSection" class="section hidden">
+    <div class="container">
+      <div style="text-align: center; padding: 80px 24px; max-width: 560px; margin: 0 auto;">
+        <div style="font-size: 4rem; margin-bottom: 24px;">😕</div>
+        <h2 style="margin-bottom: 16px;">진단 중 오류가 발생했습니다</h2>
+        <p id="errorMessage" style="color: var(--text-secondary); margin-bottom: 32px;">-</p>
+        <a href="index.html" class="btn btn-primary">처음으로 돌아가기</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">AI 검색 시대 기업의 존재 가능성을 점수로 진단하고,<br/><strong>존재하게 만드는</strong> 플랫폼.</p>
+          <div class="premium-footer-badges">
+            <span class="pf-badge">🤖 Gemini AI</span>
+            <span class="pf-badge">🔒 Vercel Edge</span>
+            <span class="pf-badge">⚡ 30초 진단</span>
+          </div>
+        </div>
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="result-tabs.html">📋 통합 결과</a></li>
+            <li><a href="result-overview.html">📈 결과 분석</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+            <li><a href="index.html#kpi">🔢 10대 KPI</a></li>
+            <li><a href="index.html#process">⚙️ 진단 프로세스</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+            <li><a href="chatbot.html">💬 실시간 상담</a></li>
+            <li><a href="proposal.html" target="_blank">📋 AI최적화 홈페이지 개발 제안서</a></li>
+          </ul>
+          <div class="premium-footer-cta">
+            <a href="index.html#diag" class="pf-cta-btn">무료 진단 시작 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="premium-footer-bottom">
+        <div class="pf-bottom-left">
+          <span>© 2026 <strong>GEO Score AI</strong></span>
+          <span class="pf-divider">·</span>
+          <span>심재우</span>
+          <span class="pf-divider">·</span>
+          <a href="mailto:jaiwshim@gmail.com">jaiwshim@gmail.com</a>
+        </div>
+        <div class="pf-bottom-right">
+          <em>"문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다"</em>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/kpi-config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/standalone-shim.js"></script>
+  <script src="js/chart.js"></script>
+
+  <script src="js/result-shared.js"></script>
+  <!-- 8개 탭 JS 모두 로드 — 각 JS는 자기 컨테이너 ID를 찾아 자동 렌더 -->
+  <script src="js/result-overview.js"></script>
+  <script src="js/result-kpi.js"></script>
+  <script src="js/result-problems.js"></script>
+  <script src="js/result-comparison.js"></script>
+  <script src="js/result-solution.js"></script>
+  <script src="js/result-ontology.js"></script>
+  <script src="js/result-cep.js"></script>
+  <script src="js/result-rewrite.js"></script>
+</body>
+</html>
