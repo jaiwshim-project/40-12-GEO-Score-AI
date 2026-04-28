@@ -6,8 +6,9 @@
  */
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-function buildQuestionsPrompt({ brand, industry, content }) {
-  return `당신은 한국의 일반 사용자 검색 행태 전문가입니다. 다음 콘텐츠를 기반으로, AI 검색(Perplexity·SearchGPT·AI Overview)에서 실제 사용자가 물을 만한 자연스러운 질문 ${'${count}'}개를 생성합니다.
+function buildQuestionsPrompt({ brand, industry, content, count }) {
+  const half = Math.ceil(count / 2);
+  return `당신은 한국의 일반 사용자 검색 행태 전문가입니다. 다음 콘텐츠를 기반으로, AI 검색(Perplexity·SearchGPT·AI Overview)에서 실제 사용자가 물을 만한 자연스러운 질문 정확히 ${count}개를 생성합니다.
 
 # 콘텐츠 (출처)
 브랜드: ${brand}
@@ -19,14 +20,11 @@ ${(content || '').slice(0, 4000)}
 
 # 규칙
 - 질문은 일반 사용자 어투 (전문 용어 X)
-- 브랜드명을 명시하지 않은 일반 질문 (절반) + 브랜드명 명시 질문 (절반)
+- general(브랜드명 미언급) ${half}개 + branded(브랜드명 언급) ${count - half}개
 - 모두 다른 의도/장면
 
-# 출력 형식 (JSON 배열만, 다른 텍스트 금지)
-[
-  { "id": 1, "type": "general", "question": "..." },
-  { "id": 2, "type": "branded", "question": "..." }
-]`;
+# 출력 (JSON 배열만, 다른 텍스트·설명·코드펜스 모두 금지)
+배열 길이 정확히 ${count}, 각 원소는 { "id": 정수, "type": "general"|"branded", "question": "..." } 형식.`;
 }
 
 function buildAnswerPrompt({ content, question }) {
@@ -51,11 +49,25 @@ function extractJSONArray(text) {
   if (!text) return null;
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const candidate = fence ? fence[1] : text;
+  // 1) 직접 JSON.parse 시도 (responseMimeType: 'application/json' 응답)
+  try {
+    const parsed = JSON.parse(candidate);
+    if (Array.isArray(parsed)) return parsed;
+    // 객체 안에 배열 프로퍼티가 있으면 그거 사용
+    if (parsed && typeof parsed === 'object') {
+      for (const v of Object.values(parsed)) {
+        if (Array.isArray(v) && v.length > 0) return v;
+      }
+    }
+  } catch (e) {}
+  // 2) 첫 [ ... ] 슬라이스
   const start = candidate.indexOf('[');
   const end = candidate.lastIndexOf(']');
   if (start === -1 || end === -1) return null;
-  try { return JSON.parse(candidate.slice(start, end + 1)); }
-  catch (e) { return null; }
+  try {
+    const arr = JSON.parse(candidate.slice(start, end + 1));
+    return Array.isArray(arr) ? arr : null;
+  } catch (e) { return null; }
 }
 
 function isBrandCited(answer, brand) {
@@ -84,7 +96,7 @@ export async function runCitationTest({ brand, industry, content, count = 6, tim
       generationConfig: { temperature: 0.6, maxOutputTokens: 4096 }
     });
 
-    const promptText = buildQuestionsPrompt({ brand, industry, content }).replace('${count}', count);
+    const promptText = buildQuestionsPrompt({ brand, industry, content, count });
 
     const qResult = await Promise.race([
       model.generateContent({
@@ -93,9 +105,15 @@ export async function runCitationTest({ brand, industry, content, count = 6, tim
       }),
       new Promise((_, rj) => setTimeout(() => rj(new Error('q-timeout')), timeoutMs))
     ]);
-    const questions = extractJSONArray(qResult.response.text());
+    const rawText = qResult.response.text() || '';
+    const questions = extractJSONArray(rawText);
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
-      return { ok: false, error: 'no questions', citationRate: 0, citedCount: 0, total: 0, generalRate: 0, brandedRate: 0, answers: [] };
+      return {
+        ok: false,
+        error: 'no questions',
+        rawSnippet: rawText.slice(0, 200),
+        citationRate: 0, citedCount: 0, total: 0, generalRate: 0, brandedRate: 0, answers: []
+      };
     }
 
     const remainingMs = timeoutMs;

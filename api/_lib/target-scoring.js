@@ -504,10 +504,29 @@ export function scoreBlog(signals) {
   }
   {
     const a = s.bl_categoryDepth || {};
+    const cats = a.categoryCount || 0;
+    // 카테고리당 글 수 — 샘플(3개)/카테고리는 의미 없음.
+    // 명시 카운트(전체 글 N) 또는 estTotalArticles 사용.
+    const totalArticles = s.bl_contentVolume?.explicitTotal || s.bl_contentVolume?.estTotalArticles || 0;
+    const realDepth = cats > 0 ? totalArticles / cats : 0;
     let v = 0;
-    v += Math.min(60, (a.categoryCount || 0) * 12);
-    v += Math.min(40, Math.round((a.articlesPerCategory || 0) * 4));
-    out.bl_categoryDepth = { value: Math.min(100, v), reason: `카테고리 ${a.categoryCount || 0}개, 카테고리당 ${(a.articlesPerCategory || 0).toFixed(1)}개` };
+    // 카테고리 수 (50점) — 깊은 분류일수록 토픽 권위↑
+    if (cats >= 30) v += 50;
+    else if (cats >= 15) v += 42;
+    else if (cats >= 8) v += 32;
+    else if (cats >= 4) v += 22;
+    else v += cats * 5;
+    // 카테고리당 평균 글 수 (50점) — 분류가 풍부함을 증명
+    if (realDepth >= 30) v += 50;
+    else if (realDepth >= 15) v += 42;
+    else if (realDepth >= 8) v += 32;
+    else if (realDepth >= 3) v += 22;
+    else if (realDepth >= 1) v += 12;
+    else v += Math.round(realDepth * 8);
+    out.bl_categoryDepth = {
+      value: Math.min(100, v),
+      reason: `카테고리 ${cats}개${realDepth > 0 ? `, 카테고리당 ${realDepth.toFixed(1)}건` : ''}`
+    };
   }
   {
     const avg = s.bl_internalLinks?.avgInternalLinks || 0;
