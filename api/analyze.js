@@ -53,7 +53,9 @@ async function fetchWebsiteContent(url) {
     }
 
     const html = await res.text();
-    const truncated = html.slice(0, 30000);
+    // 메타데이터 추출용(LLM 프롬프트로 가는 본문 아님): 정규식으로 사이드바/카테고리 등 잡으려면
+    // 큰 블로그(예: 티스토리 14만자)에서 30k는 너무 작음 → 150k로 확대.
+    const truncated = html.slice(0, 150000);
 
     const titleMatch = truncated.match(/<title[^>]*>([^<]*)<\/title>/i);
     const descMatch = truncated.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
