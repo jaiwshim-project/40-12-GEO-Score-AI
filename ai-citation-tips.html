@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 인용 비법 - GEO Score AI</title>
+  <meta name="description" content="AI 검색(Perplexity·SearchGPT·AI Overview)이 인용을 좋아하는 콘텐츠의 5대 원리와 11개 KPI별 점수 향상 팁 — 홈페이지 / 블로그 두 축." />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💡%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --aci-sky: #0ea5e9;
+      --aci-sky-2: #38bdf8;
+      --aci-sky-bg: rgba(14, 165, 233, 0.08);
+    }
+    .aci-hero {
+      max-width: 1100px; margin: 0 auto;
+      padding: 56px 24px 32px;
+      text-align: center;
+    }
+    .aci-hero h1 {
+      font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      margin-bottom: 16px;
+    }
+    .aci-hero p { color: var(--text-secondary); font-size: 1.05rem; line-height: 1.7; max-width: 720px; margin: 0 auto; }
+    .aci-wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+    .aci-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-primary); margin: 40px 0 32px; }
+    .aci-tab {
+      flex: 1; padding: 16px 20px;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text-tertiary); font-size: 1.05rem; font-weight: 700;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .aci-tab:hover { color: var(--text-secondary); background: var(--aci-sky-bg); }
+    .aci-tab.active { color: var(--aci-sky); border-bottom-color: var(--aci-sky); background: var(--aci-sky-bg); }
+    .aci-panel { display: none; }
+    .aci-panel.active { display: block; }
+    .aci-section { margin-bottom: 56px; }
+    .aci-section h2 {
+      font-size: 1.5rem; font-weight: 800;
+      padding-bottom: 12px; border-bottom: 2px solid var(--aci-sky-2);
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .aci-section h2 .num {
+      width: 36px; height: 36px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--aci-sky), var(--aci-sky-2));
+      color: white; border-radius: 50%;
+      font-size: 1.05rem; font-weight: 800;
+    }
+    .aci-card {
+      background: var(--bg-card); border: 1px solid var(--border-primary);
+      border-radius: 14px; padding: 24px; margin-bottom: 16px;
+    }
+    .aci-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
+    .aci-card .why { color: var(--aci-sky); font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; }
+    .aci-card p, .aci-card li { color: var(--text-secondary); line-height: 1.7; }
+    .aci-card ul, .aci-card ol { margin: 8px 0 12px 24px; }
+    .aci-card li { margin-bottom: 6px; }
+    .aci-card pre, .aci-card code { font-family: var(--font-mono); }
+    .aci-card pre { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 10px; padding: 14px; overflow-x: auto; font-size: 0.85rem; }
+    .aci-card code { background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--aci-sky); }
+    .aci-formula { background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(20, 184, 166, 0.06)); border-left: 3px solid var(--aci-sky); padding: 12px 16px; border-radius: 8px; margin: 12px 0; font-size: 0.9rem; color: var(--text-secondary); }
+    .aci-check { background: rgba(16, 185, 129, 0.06); border-left: 3px solid #10b981; padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 0.9rem; color: var(--text-secondary); }
+    .aci-check::before { content: "✓ 빠른 체크: "; font-weight: 700; color: #10b981; }
+    .aci-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92rem; }
+    .aci-table th, .aci-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-primary); }
+    .aci-table th { background: var(--bg-tertiary); font-weight: 700; color: var(--text-primary); }
+    .aci-table td { color: var(--text-secondary); }
+    .aci-priority {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.10), rgba(20, 184, 166, 0.06));
+      border: 1px solid var(--aci-sky-2); border-radius: 14px;
+      padding: 24px; margin-top: 32px;
+    }
+    .aci-priority h3 { color: var(--aci-sky); font-size: 1.15rem; margin-bottom: 12px; }
+    .aci-principle {
+      display: grid; grid-template-columns: 80px 1fr; gap: 16px;
+      align-items: start; margin-bottom: 24px;
+    }
+    .aci-principle .ord {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--aci-sky), var(--aci-sky-2));
+      color: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 800;
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.30);
+    }
+    .aci-principle h3 { margin-bottom: 8px; font-size: 1.1rem; }
+    .aci-principle p { color: var(--text-secondary); margin-bottom: 8px; }
+    .good-bad { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; font-size: 0.9rem; }
+    .good-bad .col { padding: 12px 14px; border-radius: 8px; }
+    .good-bad .good { background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; }
+    .good-bad .bad { background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; }
+    .good-bad strong { display: block; margin-bottom: 6px; font-size: 0.85rem; }
+    .good-bad .good strong { color: #10b981; }
+    .good-bad .bad strong { color: #ef4444; }
+    @media (max-width: 720px) {
+      .aci-hero h1 { font-size: 1.8rem; }
+      .aci-tab { padding: 14px 12px; font-size: 0.95rem; }
+      .aci-section h2 { font-size: 1.25rem; }
+      .good-bad { grid-template-columns: 1fr; }
+      .aci-principle { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-nav" /></a>
+      <div class="nav-links">
+        <a href="index.html#kpi" class="nav-link">10대 KPI</a>
+        <a href="index.html#process" class="nav-link">진단 프로세스</a>
+        <a href="manual.html" class="nav-link">매뉴얼</a>
+        <a href="ai-citation-tips.html" class="nav-link" style="color:#0ea5e9;font-weight:700;">💡 AI 인용 비법</a>
+        <a href="dashboard.html" class="nav-link">대시보드</a>
+        <a href="chatbot.html" class="nav-link">AI 상담</a>
+        <a href="index.html#diag" class="nav-link nav-cta">무료 진단 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="aci-hero">
+    <h1>💡 AI 인용 비법</h1>
+    <p>
+      Perplexity · SearchGPT · AI Overview · Claude · Gemini가 답변에 발췌하는 콘텐츠는 공통점이 있습니다.<br/>
+      AI가 인용하기 좋아하는 5대 원리와, GEO Score AI 11개 KPI별 점수 향상 실전 팁을 정리했습니다.
+    </p>
+  </section>
+
+  <main class="aci-wrap">
+
+    <div class="aci-tabs" role="tablist">
+      <button class="aci-tab active" data-tab="homepage" role="tab">🏠 홈페이지 축 (10 KPI)</button>
+      <button class="aci-tab" data-tab="blog" role="tab">📝 블로그 축 (10 KPI)</button>
+    </div>
+
+    <!-- ============ HOMEPAGE TAB ============ -->
+    <div class="aci-panel active" data-panel="homepage">
+
+      <div class="aci-section">
+        <h2><span class="num">★</span>홈페이지에서 AI가 인용을 좋아하는 5대 원리</h2>
+
+        <div class="aci-principle">
+          <div class="ord">1</div>
+          <div>
+            <h3>정적 HTML + 즉시 노출</h3>
+            <p>AI 봇 대부분(GPTBot · ClaudeBot · PerplexityBot)은 JavaScript를 실행하지 않습니다. 콘텐츠가 raw HTML에 그대로 박혀 있어야 인식됩니다.</p>
+            <div class="good-bad">
+              <div class="col good"><strong>좋은 예</strong>워드프레스 · Hugo · Astro · Jekyll · Next.js SSR</div>
+              <div class="col bad"><strong>나쁜 예</strong>React SPA · 네이버블로그 · Wix · 단순 클라이언트 렌더링</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">2</div>
+          <div>
+            <h3>JSON-LD Schema가 raw HTML에 박혀 있음</h3>
+            <p>Organization · WebSite · BreadcrumbList · FAQPage · Article Schema가 페이지 소스에 직접 들어가야 AI가 메타데이터를 이해합니다. JS로 주입된 Schema는 자주 누락됩니다.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">3</div>
+          <div>
+            <h3>E-E-A-T 신호 가시성</h3>
+            <p>실명 운영자 · 자격 · 경력 · 연락처 · 사업자번호 · 회사 연혁 — 6대 신뢰 신호가 홈페이지 표면에 노출되어야 AI가 "신뢰할 만한 출처"로 가산.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">4</div>
+          <div>
+            <h3>구체적 데이터·수치 명시</h3>
+            <p>"10년 경력 · 1,247건 시술 · 평균 만족도 4.8/5.0" 같은 구체 수치가 본문·메타에 등장해야 AI 답변에 포함될 가능성이 높아집니다.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">5</div>
+          <div>
+            <h3>CTA·연락처가 명확</h3>
+            <p>"상담 예약" · "전화 02-1234-5678" · "예약 폼" 같은 행동 유도 요소가 페이지마다 명확해야 AI가 답변 끝에 출처로 추천하기 쉽습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 1 -->
+      <div class="aci-section">
+        <h2><span class="num">1</span>AI 봇 접근 (가중치 12)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 봇이 사이트 진입을 차단당하면 콘텐츠가 학습·인용 풀에 들어가지 못합니다.</div>
+          <div class="aci-formula">점수 = robots.txt에서 GPTBot · ClaudeBot · PerplexityBot · Google-Extended · Bingbot 등 7대 봇 허용율</div>
+          <ul>
+            <li><strong>robots.txt에 7대 AI 봇 모두 Allow</strong> 명시: <code>User-agent: GPTBot</code> + <code>Allow: /</code></li>
+            <li>특정 봇만 막고 싶으면 <code>Disallow: /private/</code>로 경로만 제한 (전체 차단 X)</li>
+            <li>Cloudflare · Vercel WAF 봇 차단 설정 점검 — 기본값으로 AI 봇 차단되는 경우 多</li>
+            <li>방화벽/CDN 레벨에서 IP 차단 풀기</li>
+          </ul>
+          <div class="aci-check">/robots.txt 접속 후 7대 봇 모두 Allow인지 확인</div>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="aci-section">
+        <h2><span class="num">2</span>Sitemap 상태 (가중치 9)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 크롤러가 사이트 전체 페이지를 발견하는 진입점.</div>
+          <div class="aci-formula">점수 = sitemap.xml URL 개수 (5,000+ 풍부 / 1,000+ 양호 / 100+ 충분)</div>
+          <ul>
+            <li><strong>sitemap.xml 자동 생성</strong>: 워드프레스 → Yoast SEO · Rank Math, 정적 사이트 → 빌드 시 자동</li>
+            <li>robots.txt 마지막 줄에 <code>Sitemap: https://example.com/sitemap.xml</code> 명시</li>
+            <li>대형 사이트(10,000+)는 <strong>sitemap-index.xml</strong>로 분할</li>
+            <li>각 URL에 <code>&lt;lastmod&gt;</code> 포함 — 신선도 신호</li>
+            <li>Google Search Console · Bing Webmaster에 sitemap 제출</li>
+          </ul>
+          <div class="aci-check">/sitemap.xml 직접 열어 URL 100건 이상 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="aci-section">
+        <h2><span class="num">3</span>검색 색인 (가중치 11)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 색인 안 된 페이지는 AI 답변에 절대 등장 못 함.</div>
+          <div class="aci-formula">점수 = sitemap × 0.6 + 내부 링크 다양성 × 1.2 (추정 색인 페이지 수)</div>
+          <ul>
+            <li><strong>모든 페이지에 내부 링크 3개 이상</strong> — orphan 페이지 제거</li>
+            <li>핵심 페이지는 푸터·사이드바에서 링크</li>
+            <li>새 콘텐츠는 메인 페이지에서 직접 링크 → 빠른 색인</li>
+            <li><code>noindex</code> 메타 점검 — 실수로 색인 차단된 페이지 확인</li>
+            <li>중복 콘텐츠는 <code>canonical</code> 태그로 정리</li>
+          </ul>
+          <div class="aci-check">Google에서 <code>site:example.com</code> 검색 시 충분히 많은 결과 나오는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="aci-section">
+        <h2><span class="num">4</span>구조화 데이터 Schema (가중치 12)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 인용에서 가장 강력한 신호. JSON-LD가 메타데이터를 명시적으로 제공.</div>
+          <div class="aci-formula">점수 = JSON-LD 적용 + 5대 Schema 타입 (Organization · WebSite · BreadcrumbList · FAQPage · LocalBusiness)</div>
+          <pre><code>&lt;script type="application/ld+json"&gt;
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "메타비즈101",
+  "url": "https://example.com",
+  "logo": "https://example.com/logo.png",
+  "founder": { "@type": "Person", "name": "심재우" },
+  "sameAs": ["https://blog.naver.com/...", "https://youtube.com/..."]
+}
+&lt;/script&gt;</code></pre>
+          <ul>
+            <li>홈페이지: <code>Organization</code> + <code>WebSite</code> 필수</li>
+            <li>지역 사업자: <code>LocalBusiness</code> 추가 (주소·영업시간·전화)</li>
+            <li>FAQ 페이지: <code>FAQPage</code> — AI Overview에 직접 발췌</li>
+            <li>모든 페이지 상단: <code>BreadcrumbList</code></li>
+            <li>Schema 검증: <a href="https://validator.schema.org/" target="_blank">validator.schema.org</a></li>
+          </ul>
+          <div class="aci-check">페이지 소스 보기 → <code>application/ld+json</code> 검색 → 5개 이상 Schema 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 5 -->
+      <div class="aci-section">
+        <h2><span class="num">5</span>페이지 정보 (가중치 8)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 답변 카드의 제목·요약은 메타 태그에서 추출.</div>
+          <div class="aci-formula">점수 = 7대 메타 신호 (title · description · OG title · OG description · OG image · canonical · viewport)</div>
+          <ul>
+            <li><code>&lt;title&gt;</code>: 50~60자 + 핵심 키워드 + 브랜드명</li>
+            <li><code>meta description</code>: 130~160자 + 차별점 명확히</li>
+            <li><code>og:title · og:description · og:image</code> 별도 작성 (SNS 공유 카드용)</li>
+            <li><code>og:image</code>는 1200×630, 핵심 메시지 텍스트 포함</li>
+            <li><code>canonical</code>로 URL 정규화 — 중복 노출 방지</li>
+            <li><code>viewport</code> 모바일 반응형 필수</li>
+          </ul>
+          <div class="aci-check">7개 메타 태그 모두 채워져 있나</div>
+        </div>
+      </div>
+
+      <!-- KPI 6 -->
+      <div class="aci-section">
+        <h2><span class="num">6</span>외부 권위 (가중치 9)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 다른 사이트가 우리를 인용·언급할수록 AI가 권위 있는 출처로 인식.</div>
+          <ul>
+            <li><strong>SNS 5개 이상 활성 운영</strong>: YouTube · Instagram · Facebook · X(트위터) · LinkedIn 등</li>
+            <li>홈페이지에서 SNS 채널로 양방향 링크</li>
+            <li>언론 기사 게재 → "보도된 매체 로고" 섹션에 노출</li>
+            <li>업계 협회·인증 로고 표시 (가능한 경우)</li>
+            <li>고객사·파트너 로고 표시</li>
+            <li>Wikipedia 등재 추진 — 가장 강력한 권위 신호</li>
+          </ul>
+          <div class="aci-check">홈페이지 푸터·사이드바에 SNS 5개 이상 + 외부 인정 로고 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 7 -->
+      <div class="aci-section">
+        <h2><span class="num">7</span>E-E-A-T 페이지 (가중치 9)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI는 신뢰할 수 있는 정보 출처를 우선 인용. 실명·자격·경력·연락처가 핵심.</div>
+          <div class="aci-formula">점수 = 6대 신뢰 신호 (저자/자격/연혁/연락처/회사명/사업자) 합산</div>
+          <ul>
+            <li><strong>/about · /소개 페이지</strong>: 운영자 실명 · 사진 · 약력 · 자격증</li>
+            <li>"전문의 · 박사 · 석사 · 인증 · MD · PhD" 같은 자격 키워드 노출</li>
+            <li>회사 연혁: "2015년 설립 · 11년차 운영"</li>
+            <li>전화 · 이메일 · 주소 명확히 (footer)</li>
+            <li>사업자등록번호 · 통신판매신고번호 (전자상거래법)</li>
+            <li>고객 후기 · 평점 · 사례 페이지</li>
+          </ul>
+          <div class="aci-check">/about 페이지 클릭하면 실명 + 자격 + 경력 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 8 -->
+      <div class="aci-section">
+        <h2><span class="num">8</span>CMS 자율성 (가중치 8)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 자율형 CMS(워드프레스 등)는 Schema·robots·sitemap 자유 수정 가능. 임대형(네이버·Wix)은 제약.</div>
+          <div class="aci-formula">자율형 = 90점 / 하이브리드 = 60점 / 임대형 = 30점</div>
+          <ul>
+            <li><strong>자율형 추천</strong>: 워드프레스 · Hugo · Astro · Next.js · Jekyll</li>
+            <li>임대형 비추천: 네이버블로그 · Wix · Cafe24 · 카페 · imweb (Schema 자유 수정 X)</li>
+            <li>이미 임대형이라면 → 핵심 콘텐츠는 별도 자율형 도메인에 미러링</li>
+            <li>도메인은 <strong>자기 소유</strong>로 (서브도메인 X, 고유 도메인 ✓)</li>
+          </ul>
+          <div class="aci-check">현재 CMS가 robots.txt · Schema · sitemap 모두 자유 수정 가능한가</div>
+        </div>
+      </div>
+
+      <!-- KPI 9 -->
+      <div class="aci-section">
+        <h2><span class="num">9</span>CTA 설계 (가중치 12)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 명확한 행동 유도가 있어야 AI가 답변 끝에 "여기서 상담받으세요"로 자연스럽게 추천.</div>
+          <ul>
+            <li><strong>CTA 버튼 페이지당 35개 이상</strong> 노출 (네비게이션 · 사이드바 · 본문 · 푸터)</li>
+            <li>CTA 문구는 <strong>구체적 동사</strong>: "상담 예약" · "무료 진단" · "30초 견적" — "더 알아보기" 같은 모호한 표현 X</li>
+            <li>전화번호: <code>tel:</code> 링크로 클릭 가능하게</li>
+            <li>이메일 폼: 이름 + 연락처 + 메시지만 (긴 폼 X)</li>
+            <li>모바일 하단 고정 CTA 바 권장</li>
+            <li>FAQ 섹션 끝마다 CTA</li>
+          </ul>
+          <div class="aci-check">홈페이지 스크롤 시 어디서든 CTA 버튼 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 10 -->
+      <div class="aci-section">
+        <h2><span class="num">10</span>모바일 성능 (가중치 10)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: Google 모바일 우선 색인 + AI 답변 사용자 70%+ 모바일.</div>
+          <div class="aci-formula">점수 = 4대 신호 (viewport 메타 · 반응형 CSS · 이미지 최적화 · 빠른 로딩)</div>
+          <ul>
+            <li><code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code> 필수</li>
+            <li>이미지: WebP 또는 AVIF 포맷 + lazy loading (<code>loading="lazy"</code>)</li>
+            <li>Core Web Vitals 최적화: LCP &lt; 2.5초, CLS &lt; 0.1, FID &lt; 100ms</li>
+            <li>폰트: Pretendard 같은 한국어 최적화 폰트 + <code>font-display: swap</code></li>
+            <li>JS 번들 분할 · 비동기 로딩</li>
+            <li>CDN 사용 (Cloudflare · Vercel · Netlify)</li>
+          </ul>
+          <div class="aci-check"><a href="https://pagespeed.web.dev/" target="_blank">pagespeed.web.dev</a>에서 모바일 90점 이상</div>
+        </div>
+      </div>
+
+      <!-- KPI 11 -->
+      <div class="aci-section">
+        <h2><span class="num">11</span>AI 인용 가능성 — 실측 (가중치 12)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 위 1~10번이 잘 되면 자동으로 올라가는 통합 지표. 실제 Gemini가 가상 질문에 답할 때 브랜드 인용율.</div>
+          <div class="aci-formula">인용율 80%+ = 100점 / 50%+ = 85 / 30%+ = 65 / 15%+ = 40</div>
+          <ul>
+            <li><strong>브랜드명 자연 반복</strong>: 본문에 5~10회 자연스럽게 등장</li>
+            <li><strong>고유 용어 정의</strong>: "GEO Score · 5C1S · AIO SEO" — 자기 사이트가 정의한 용어가 다른 곳에서 재인용될 때 출처가 됨</li>
+            <li><strong>구체 수치</strong>: "1,247건 시술 · 만족도 4.8" → AI 답변에 그대로 인용</li>
+            <li><strong>FAQ 섹션 필수</strong> + <code>FAQPage</code> Schema → AI Overview 직접 발췌</li>
+            <li><strong>외부 인용 표기</strong>: 통계 출처 · 논문 인용 → 권위 신호</li>
+          </ul>
+          <div class="aci-check">홈페이지에서 자기 브랜드명 10회 이상, 고유 용어 1개 이상 등장하나</div>
+        </div>
+      </div>
+
+      <div class="aci-priority">
+        <h3>🎯 홈페이지 ROI 우선순위</h3>
+        <ol>
+          <li><strong>JSON-LD Schema 5종 적용</strong> (Organization · WebSite · LocalBusiness · BreadcrumbList · FAQPage) — 단번에 +20~25점</li>
+          <li><strong>robots.txt에 7대 AI 봇 Allow</strong> — 단번에 +12점</li>
+          <li><strong>/about 페이지 + E-E-A-T 신호 6종</strong> — +9점</li>
+          <li><strong>CTA 35개 이상 + 명확한 동사</strong> — +12점</li>
+          <li><strong>sitemap.xml 자동 생성 + Search Console 등록</strong> — +9점</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <!-- ============ BLOG TAB ============ -->
+    <div class="aci-panel" data-panel="blog">
+
+      <div class="aci-section">
+        <h2><span class="num">★</span>블로그에서 AI가 인용을 좋아하는 5대 원리</h2>
+
+        <div class="aci-principle">
+          <div class="ord">1</div>
+          <div>
+            <h3>정의문(Definition Sentence) 구조</h3>
+            <p>"X는 ~이다" 형식의 단정적 문장이 가장 자주 발췌됩니다.</p>
+            <div class="good-bad">
+              <div class="col good"><strong>좋은 예</strong>"AIO SEO는 생성형 AI 검색엔진에서 콘텐츠가 우선 인용되도록 최적화하는 전략이다."</div>
+              <div class="col bad"><strong>나쁜 예</strong>"오늘은 AIO SEO에 대해 알아볼까요? 여러 가지 방법이 있는데..."</div>
+            </div>
+            <p>→ 모든 H2 다음 첫 문단을 정의문으로.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">2</div>
+          <div>
+            <h3>질문 → 즉답 패턴</h3>
+            <p>H2를 질문 형태로, 본문 첫 줄에 답을 주면 AI가 그대로 인용합니다.</p>
+            <div class="good-bad">
+              <div class="col good"><strong>좋은 예</strong>H2: "AIO SEO와 일반 SEO는 무엇이 다른가?"<br/>본문: "일반 SEO는 검색 순위 최적화이고, AIO SEO는 AI 답변 생성 시 출처로 인용되도록 최적화하는 것이다."</div>
+              <div class="col bad"><strong>나쁜 예</strong>H2: "AIO SEO 알아보기"<br/>본문: "안녕하세요 여러분..."</div>
+            </div>
+            <p>→ 글 안 H2의 50% 이상을 질문형으로.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">3</div>
+          <div>
+            <h3>권위 신호 (E-E-A-T)</h3>
+            <p>Experience(경험) · Expertise(전문성) · Authoritativeness(권위) · Trustworthiness(신뢰). AI는 권위 있는 출처를 우선 인용합니다.</p>
+            <ul>
+              <li>"10년간 50개 사이트 진단 결과" → Experience</li>
+              <li>"박사 · 전문의 · 자격증" 명시 → Expertise</li>
+              <li>논문 · 기관 출처 인용 → Authoritativeness</li>
+              <li>실명 · 약력 · 연락처 → Trustworthiness</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">4</div>
+          <div>
+            <h3>구체적 수치·데이터</h3>
+            <p>AI는 수치 · 비율 · 날짜 · 통계가 있는 문장을 발췌 우선.</p>
+            <div class="good-bad">
+              <div class="col good"><strong>좋은 예</strong>"AI 검색 인용율은 정적 HTML 사이트가 JS 사이트보다 5~10배 높다."</div>
+              <div class="col bad"><strong>나쁜 예</strong>"정적 사이트가 JS 사이트보다 더 잘 인용된다."</div>
+            </div>
+            <p>→ 각 글에 핵심 수치 3개 이상.</p>
+          </div>
+        </div>
+
+        <div class="aci-principle">
+          <div class="ord">5</div>
+          <div>
+            <h3>정적 HTML + Schema</h3>
+            <p>JSON-LD Schema가 raw HTML에 박혀야 인식. JS 주입 Schema는 AI 봇이 못 봅니다.</p>
+            <ul>
+              <li>워드프레스 · 티스토리 · Hugo · Astro 추천</li>
+              <li>네이버블로그 · Wix · React SPA 비추천</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 1 -->
+      <div class="aci-section">
+        <h2><span class="num">1</span>발행 빈도·최신성 (가중치 14)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 검색 엔진은 최신 정보를 우선 인용. 70일 정체 = 죽은 사이트.</div>
+          <div class="aci-formula">최신성 50점 (7일내=50, 30일내=35, 90일내=20) + 30일 발행량 30점 + 90일 발행량 20점</div>
+          <ul>
+            <li><strong>주 1회 정기 발행</strong> 절대 사수 — 짧아도 됨</li>
+            <li>신규 발행 어려우면 <strong>기존 글 업데이트</strong> (datePublished 갱신)</li>
+            <li>분기별 "트렌드 리포트" 발행 — 시즌성 질문 답변에 인용</li>
+            <li>연도/월을 글 제목에 포함: "2026년 AIO SEO 가이드" → "2025년" 글보다 우선</li>
+          </ul>
+          <div class="aci-check">마지막 글이 7일 이내인가</div>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="aci-section">
+        <h2><span class="num">2</span>누적 글 양 (가중치 8)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI 학습 데이터 풀에 들어가려면 일정 임계량 필요.</div>
+          <div class="aci-formula">1000+ = 100 / 500+ = 92 / 200+ = 85 / 100+ = 72 / 50+ = 60</div>
+          <ul>
+            <li><strong>200건이 1차 임계</strong> — AI 인용 풀 안정 진입</li>
+            <li>한 토픽을 50건씩 깊게 (분산보다 효과적)</li>
+            <li><strong>연재(Series) 글</strong>로 양 늘리기 — 1편씩 짧게, 연결 링크</li>
+            <li>파생 콘텐츠: 1글 → Q&A · 요약 · 인포그래픽 변환으로 3~5배</li>
+          </ul>
+          <div class="aci-check">1년 누적 200건 = 주 4건 페이스</div>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="aci-section">
+        <h2><span class="num">3</span>카테고리 깊이 (가중치 10)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 카테고리 구조 = 토픽 권위의 시각적 증명. AI가 "이 사이트는 X 전문" 인식.</div>
+          <div class="aci-formula">카테고리 수 50점 + 카테고리당 글 수 50점 (30글/카테고리=만점)</div>
+          <ul>
+            <li><strong>8~15개 핵심 카테고리</strong> — 너무 많으면(50+) 분산 페널티</li>
+            <li><strong>카테고리당 최소 8건</strong> 누적 — 빈 카테고리 = 약한 신호</li>
+            <li><strong>3단계 계층</strong>: 대분류 → 중분류 → 세분류</li>
+            <li>카테고리 이름은 <strong>검색어 형태</strong>: "AI 검색 최적화" &gt; "기술 노트"</li>
+            <li>사이드바에 글 수 명시: "AI SEO (47)"</li>
+          </ul>
+          <div class="aci-check">가장 적은 카테고리도 8건 이상인가</div>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="aci-section">
+        <h2><span class="num">4</span>내부 링크망 (가중치 10)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI는 "관련 글들이 서로 연결된" 사이트를 깊이 있다고 평가.</div>
+          <div class="aci-formula">글당 평균 링크 수: 10+ = 100 / 5+ = 85 / 3+ = 70 / 1+ = 40</div>
+          <ul>
+            <li><strong>글마다 관련 글 5개+ 링크</strong> — 본문 자연스러운 인용</li>
+            <li><strong>하단 "관련 글" 박스</strong> — 같은 카테고리 + 다른 카테고리 섞기</li>
+            <li>본문 중간 <strong>앵커 텍스트</strong>는 키워드: "[AI 봇 차단 설정](...)" &gt; "[여기](...)"</li>
+            <li><strong>주제 클러스터</strong>: 허브 글(개론) + 스포크 글(세부) 양방향 링크</li>
+            <li>오래된 글에서 새 글로 링크 추가 → 신글 indexing 가속</li>
+          </ul>
+          <div class="aci-check">마지막 글에 다른 글로 가는 링크 5개 이상 있나</div>
+        </div>
+      </div>
+
+      <!-- KPI 5 -->
+      <div class="aci-section">
+        <h2><span class="num">5</span>작성자 권위 (가중치 11)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI는 익명 콘텐츠보다 실명·권위 있는 작성자를 우선 인용.</div>
+          <div class="aci-formula">작성자 노출률 70점 + about 페이지 30점</div>
+          <ul>
+            <li><strong>모든 글 하단에 작성자 박스</strong> — 사진 + 실명 + 1줄 약력 + SNS</li>
+            <li><code>/about</code> 페이지 필수 — 경력 · 자격 · 출판물 · 인터뷰</li>
+            <li><strong>JSON-LD <code>author</code> Schema</strong> 적용</li>
+            <li>작성자 페이지 별도: <code>/author/심재우</code></li>
+            <li><strong>외부 인용 · 인터뷰</strong> 모음 페이지 → 권위 누적</li>
+          </ul>
+          <div class="aci-check">글 하단 작성자 정보 + /about 약력 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 6 -->
+      <div class="aci-section">
+        <h2><span class="num">6</span>토픽 권위 (가중치 10)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI가 "이 사이트는 X 분야 전문"이라 판단하는 근거.</div>
+          <div class="aci-formula">최상위 카테고리 비율 40~70%=만점 / 70%+ → 75 / 25~40% → 65 / &lt;25% → 40</div>
+          <ul>
+            <li><strong>메인 토픽이 40~70% 차지</strong> — "이 블로그는 X 전문" 인식</li>
+            <li>너무 분산(&lt;25%): 잡블로그 → 카테고리 통합</li>
+            <li>너무 집중(&gt;70%): 보조 토픽 1~2개 추가</li>
+            <li><strong>First-party 정의</strong>: "5C1S 모델" · "GEO Score" — 내가 먼저 정의한 용어</li>
+            <li>다른 사이트가 우리 용어 쓰면 → 권위 비행기 시동</li>
+          </ul>
+          <div class="aci-check">메인 카테고리 글이 전체의 40~70%인가</div>
+        </div>
+      </div>
+
+      <!-- KPI 7 -->
+      <div class="aci-section">
+        <h2><span class="num">7</span>사용자 참여 (가중치 9)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI는 댓글·공유 수가 많은 글을 "사회적 검증된" 콘텐츠로 가산.</div>
+          <div class="aci-formula">충족 신호/4 × 100 (댓글 · 좋아요 · 공유 · 소셜 버튼)</div>
+          <ul>
+            <li><strong>댓글 시스템</strong> 필수 (기본 + Disqus + 카카오톡 댓글)</li>
+            <li><strong>글 페이지 + 인덱스</strong> 양쪽에 좋아요/공유 버튼</li>
+            <li><strong>공유 버튼</strong> 카카오 · 페이스북 · X · 링크드인 4종 + 복사</li>
+            <li>댓글 수 카운트 노출 ("댓글 23")</li>
+            <li>댓글에 <strong>저자 답글</strong> — engagement + 활성 사이트 인식</li>
+          </ul>
+          <div class="aci-check">4개 신호 모두 있는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 8 -->
+      <div class="aci-section">
+        <h2><span class="num">8</span>채널 확장 (가중치 11)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 멀티채널 운영자는 "실제 활동하는 권위자"로 인식.</div>
+          <div class="aci-formula">6개 채널=100 / 5개=90 / 4개=75 / 3개=60</div>
+          <ul>
+            <li><strong>사이드바에 SNS 아이콘 6개+</strong>: YouTube · Instagram · X · Facebook · LinkedIn · 네이버 · 티스토리 · 브런치 중 6개</li>
+            <li>각 채널마다 <strong>본 블로그 링크</strong> — 양방향 신호</li>
+            <li>푸터 · about 페이지에도 SNS 링크 반복</li>
+            <li>링크 텍스트: "YouTube 채널" &gt; "여기"</li>
+            <li><strong>활성 운영 중인 채널만</strong> — 죽은 SNS는 페널티</li>
+          </ul>
+          <div class="aci-check">사이드바 · 푸터에 SNS 아이콘 6개 이상</div>
+        </div>
+      </div>
+
+      <!-- KPI 9 -->
+      <div class="aci-section">
+        <h2><span class="num">9</span>가독성 (가중치 7)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: AI는 충분히 길고 잘 분리된 본문을 의미 단위로 추출하기 쉬움.</div>
+          <div class="aci-formula">길이 60점(1500자=만점) + 단락 수 40점(10개=만점)</div>
+          <ul>
+            <li><strong>글당 최소 1500자</strong>, 권장 3000~5000자</li>
+            <li><strong>단락마다 2~4줄</strong> — 모바일 가독성</li>
+            <li><code>&lt;p&gt;</code> 태그 사용 (10개+) — <code>&lt;br&gt;</code> 남발 금지</li>
+            <li><strong>H2-H3 계층</strong> 명확히: 글당 H2 5개+ + H3 10개+</li>
+            <li><strong>리스트(<code>&lt;ul&gt;</code>/<code>&lt;ol&gt;</code>)</strong> 적극 활용 — AI 발췌 쉬움</li>
+            <li><strong>TL;DR · 핵심 요약</strong> 글 상단 배치</li>
+          </ul>
+          <div class="aci-check">본문 1500자+ + 단락 10개+</div>
+        </div>
+      </div>
+
+      <!-- KPI 10 -->
+      <div class="aci-section">
+        <h2><span class="num">10</span>블로그 Schema (가중치 10)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: JSON-LD Schema는 AI가 글 메타데이터(저자 · 날짜 · 제목)를 정확히 파악하는 핵심.</div>
+          <div class="aci-formula">샘플 글 적용율 80점 + 인덱스 적용 20점</div>
+          <pre><code>&lt;script type="application/ld+json"&gt;
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "...",
+  "datePublished": "2026-04-28",
+  "dateModified": "2026-04-28",
+  "author": { "@type": "Person", "name": "..." },
+  "image": "...",
+  "publisher": { "@type": "Organization", "name": "...",
+    "logo": { "@type": "ImageObject", "url": "..." } }
+}
+&lt;/script&gt;</code></pre>
+          <ul>
+            <li>모든 글 페이지에 <code>BlogPosting</code> 또는 <code>Article</code> Schema</li>
+            <li>인덱스 페이지에 <code>Blog</code> Schema + <code>mainEntity</code>로 최근 글 리스트</li>
+            <li>FAQ 글에는 <code>FAQPage</code> Schema → AI Overview 직접 발췌</li>
+            <li>워드프레스: Yoast SEO · Rank Math · SEOPress 자동 적용</li>
+            <li>티스토리: 스킨 코드에 직접 삽입</li>
+            <li>검증: <a href="https://validator.schema.org/" target="_blank">validator.schema.org</a></li>
+          </ul>
+          <div class="aci-check">글 페이지 소스에서 BlogPosting 보이는가</div>
+        </div>
+      </div>
+
+      <!-- KPI 11 -->
+      <div class="aci-section">
+        <h2><span class="num">11</span>AI 인용 가능성 — 실측 (가중치 12)</h2>
+        <div class="aci-card">
+          <div class="why">왜 중요: 위 1~10번이 잘 되면 자동으로 올라가는 통합 지표. Gemini가 가상 질문 6개에 답할 때 브랜드 인용율.</div>
+          <div class="aci-formula">인용율 80%+ = 100 / 50%+ = 85 / 30%+ = 65 / 15%+ = 40</div>
+          <ul>
+            <li><strong>브랜드명 자연 반복</strong>: 본문에 5~10회 등장 (첫 문단 · 결론 · 사례)</li>
+            <li><strong>고유 용어 만들기</strong>: "5C1S 모델" · "GEO Score AI" — 자기 정의 용어</li>
+            <li><strong>명확한 정의문</strong>: H2 + 첫 문단</li>
+            <li><strong>구체적 수치</strong>: "정적 HTML이 JS보다 5~10배 인용율 높음"</li>
+            <li><strong>Q&A 구조</strong>: FAQ 섹션 + 질문형 H2 50%+</li>
+            <li><strong>외부 인용 표기</strong>: 통계 · 논문 · 언론 출처</li>
+            <li><strong>CTA</strong>: 글 하단 "더 알아보기 · 문의" — AI가 출처 추천</li>
+          </ul>
+          <div class="aci-check">본문에 자기 브랜드명 5회+ + 고유 용어 1개+</div>
+        </div>
+      </div>
+
+      <div class="aci-priority">
+        <h3>🎯 블로그 ROI 우선순위</h3>
+        <table class="aci-table">
+          <thead><tr><th>순위</th><th>작업</th><th>영향 KPI</th><th>예상 점수</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>주 1회 발행 + 작성자 표기</td><td>발행빈도 · 작성자</td><td>+10~15</td></tr>
+            <tr><td>2</td><td>모든 글에 BlogPosting Schema</td><td>블로그 Schema</td><td>+8~10</td></tr>
+            <tr><td>3</td><td>정의문 H2 + 질문형 H2 50%+</td><td>AI 인용 가능성</td><td>+10~15</td></tr>
+            <tr><td>4</td><td>카테고리 8~15개로 통합</td><td>카테고리 깊이 · 토픽 권위</td><td>+5~8</td></tr>
+            <tr><td>5</td><td>SNS 6개 채널 노출</td><td>채널 확장 · 작성자</td><td>+5~7</td></tr>
+            <tr><td>6</td><td>댓글 · 좋아요 · 공유 4종</td><td>사용자 참여</td><td>+5</td></tr>
+            <tr><td>7</td><td>글당 관련 글 링크 5개+</td><td>내부 링크망</td><td>+3~5</td></tr>
+            <tr><td>8</td><td>글당 1500자+ 단락 10개+</td><td>가독성</td><td>+2~3</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:12px;color:var(--text-secondary);"><strong>1~3번만 잡아도 30~40점 상승</strong>. 70~80점대 진입 가능.</p>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    document.querySelectorAll('.aci-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.aci-tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.aci-panel').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.querySelector(`.aci-panel[data-panel="${t.dataset.tab}"]`).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  </script>
+
+  <!-- ========== PREMIUM FOOTER ========== -->
+  <footer class="premium-footer">
+    <div class="premium-footer-glow"></div>
+    <div class="container">
+      <div class="premium-footer-grid">
+        <div class="premium-footer-brand">
+          <img src="assets/logo.png" alt="GEO Score AI" class="brand-logo brand-logo-footer" />
+          <p class="premium-footer-tagline">
+            AI 검색 시대 기업의 존재(홈페이지, 블로그 등) 가능성을 점수로 진단하고,<br/>
+            <strong>존재하게 만드는</strong> 플랫폼.
+          </p>
+          <div class="premium-footer-badges">
+            <span class="pf-badge">🤖 Gemini AI</span>
+            <span class="pf-badge">🔒 Vercel Edge</span>
+            <span class="pf-badge">⚡ 30초 진단</span>
+          </div>
+        </div>
+        <div class="premium-footer-col">
+          <h5>플랫폼</h5>
+          <ul>
+            <li><a href="index.html#diag">🎯 무료 진단</a></li>
+            <li><a href="dashboard.html">📋 대시보드</a></li>
+            <li><a href="results.html">📈 결과 분석</a></li>
+            <li><a href="chatbot.html">💬 AI 상담</a></li>
+            <li><a href="admin-dashboard.html">📊 관리 대시보드</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>리소스</h5>
+          <ul>
+            <li><a href="manual.html">📖 사용 매뉴얼</a></li>
+            <li><a href="ai-citation-tips.html">💡 AI 인용 비법</a></li>
+            <li><a href="architecture.html">🗺️ 시스템 아키텍처</a></li>
+            <li><a href="ontology.html">🕸️ 3D 온톨로지</a></li>
+            <li><a href="index.html#kpi">🔢 10대 KPI</a></li>
+          </ul>
+        </div>
+        <div class="premium-footer-col">
+          <h5>연결</h5>
+          <ul>
+            <li><a href="https://geo-aio.vercel.app" target="_blank" rel="noopener">🚀 GEO-AIO 솔루션</a></li>
+            <li><a href="mailto:jaiwshim@gmail.com">✉️ 이메일 문의</a></li>
+            <li><a href="chatbot.html">💬 실시간 상담</a></li>
+            <li><a href="proposal.html" target="_blank">📋 AI최적화 홈페이지 개발 제안서</a></li>
+          </ul>
+          <div class="premium-footer-cta">
+            <a href="index.html#diag" class="pf-cta-btn">무료 진단 시작 →</a>
+            <a href="ai-citation-tips.html" class="pf-cta-btn-sky">💡 AI 인용 비법</a>
+          </div>
+        </div>
+      </div>
+      <div class="premium-footer-bottom">
+        <div class="pf-bottom-left">
+          <span>© 2026 <strong>GEO Score AI</strong></span>
+          <span class="pf-divider">·</span>
+          <span>심재우</span>
+          <span class="pf-divider">·</span>
+          <a href="mailto:jaiwshim@gmail.com">jaiwshim@gmail.com</a>
+        </div>
+        <div class="pf-bottom-right">
+          <em>"문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다"</em>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
