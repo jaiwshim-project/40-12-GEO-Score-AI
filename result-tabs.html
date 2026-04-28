@@ -141,6 +141,7 @@
           <a href="#tab-cep">🎯 CEP 좌표</a>
           <a href="#tab-rewrite">✨ 90점 글 생성</a>
           <a href="#tab-upgrade" style="background: linear-gradient(135deg, rgba(255,107,53,0.18), rgba(255,168,0,0.18)); border: 1px solid rgba(255,107,53,0.45); color: #ff8800; font-weight: 800;">🚀 업그레이드 제안</a>
+          <a href="#tab-proposal" style="background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18)); border: 1px solid rgba(168,85,247,0.45); color: #c084fc; font-weight: 800;">🎁 고객사 제안서</a>
         </div>
       </nav>
 
@@ -249,13 +250,22 @@
         <div id="rewriteTabContent"></div>
       </section>
 
-      <!-- 탭 9: 업그레이드 제안 (신규) -->
+      <!-- 탭 9: 업그레이드 제안 (시공팀·운영자용 기술 사양) -->
       <section id="tab-upgrade" class="tab-section">
         <h2 class="tab-section-title">🚀 업그레이드 제안
           <a class="tab-section-link" data-href="result-upgrade.html">단독 페이지 →</a>
         </h2>
         <p class="tab-section-meta">현재 홈페이지의 한계점 + 90점 도달 경로 + 업그레이드 vs 신규 개발 자동 판단 + Claude Code 바이브 코딩 마스터 프롬프트 자동 생성</p>
         <div id="upgradeTabContent"></div>
+      </section>
+
+      <!-- 탭 10: 고객사 제안서 (의뢰자용 비즈니스 언어) -->
+      <section id="tab-proposal" class="tab-section">
+        <h2 class="tab-section-title">🎁 고객사 제안서
+          <a class="tab-section-link" data-href="result-proposal.html">단독 페이지 →</a>
+        </h2>
+        <p class="tab-section-meta">의뢰자에게 그대로 전달 가능한 비즈니스 제안서 — 핵심 문제점 · 부작용 · 해결 방안 · 기대 효과 · 행동 유도 (기술 용어 없이 비즈니스 가치 중심)</p>
+        <div id="proposalTabContent"></div>
       </section>
 
       <!-- 최종 CTA -->
@@ -369,5 +379,6 @@
   <script src="js/result-cep.js"></script>
   <script src="js/result-rewrite.js"></script>
   <script src="js/result-upgrade.js"></script>
+  <script src="js/result-proposal.js"></script>
 </body>
 </html>
