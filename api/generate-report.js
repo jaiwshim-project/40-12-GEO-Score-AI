@@ -1,10 +1,10 @@
 /**
  * GEO Score AI - 영업용 단일 HTML 리포트 생성 API
  *
- * 카카오톡 받은 파일(삼일자동차운전전문학원 제안서) 양식을 베이스로
+ * AX Biz Group 영업 리포트 양식 (삼일자동차운전전문학원 사례) 을 베이스로
  * GEO Score AI 진단 결과를 단일 HTML 영업 리포트로 패키징한다.
  *
- * 카카오톡 양식 보존 요소
+ * AX Biz Group 양식 보존 요소
  *  - CSS 변수: --bg #f5f1e8(아이보리), --ink-darkest #0a0e1a, --gold #b8945a, --critical #8b1f1f 등
  *  - 폰트: Pretendard / Noto Serif KR / Cormorant Garamond
  *  - 레이아웃: 1100px 컨테이너 + 다크 헤더(#0a0e1a → #14213d) + 골드 라인
@@ -467,7 +467,7 @@ function buildHTML(result, recommendation, brand, industry) {
       </div>
     </div>`;
 
-  // 견적표 (카카오톡 양식 그대로 — 400만원/3주)
+  // 견적표 (AX Biz Group 양식 그대로 — 400만원/3주)
   const quoteHTML = path.showQuote ? `
     <h2>견적 (총 400만원 / VAT 별도)</h2>
     <table>
@@ -730,7 +730,7 @@ function buildHTML(result, recommendation, brand, industry) {
   p { margin-bottom: 14px; color: var(--ink-soft); font-size: 15px; line-height: 1.8; }
   strong { color: var(--ink-darkest); font-weight: 600; }
 
-  /* SCORE GRID — 카카오톡 양식 그대로 */
+  /* SCORE GRID — AX Biz Group 양식 그대로 */
   .score-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

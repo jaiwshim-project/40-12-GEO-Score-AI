@@ -1,14 +1,14 @@
 /**
  * GEO Score AI - 영업 리포트 생성 페이지 JS
  *
- * 카카오톡 양식 기반(api/generate-report.js 출력) 단일 HTML 영업 리포트를
+ * AX Biz Group 양식 기반(api/generate-report.js 출력) 단일 HTML 영업 리포트를
  * 폼 입력 + sessionStorage 자동 로드 → 서버 호출 → 미리보기/다운로드한다.
  *
  * 역할:
  *  1) URL ?id=... 가 있으면 sessionStorage('current_result_<id>')에서 자동 로드
  *  2) 폼 값 → POST /api/generate-report → { html } 응답 받음
  *  3) iframe 미리보기 + Blob 다운로드 + 새 탭 열기 + 인쇄
- *  4) 서버 실패 시 클라이언트에서 카카오톡 양식 호환 단순 폴백 HTML 생성
+ *  4) 서버 실패 시 클라이언트에서 AX Biz Group 양식 호환 단순 폴백 HTML 생성
  *
  * 의존: 없음 (단독 페이지)
  */
@@ -225,7 +225,7 @@
     };
   }
 
-  // ===== 클라이언트 폴백 (서버 실패 시 카카오톡 양식 호환 단순 버전) =====
+  // ===== 클라이언트 폴백 (서버 실패 시 AX Biz Group 양식 호환 단순 버전) =====
   function clientSideHTML(payload) {
     const { result, brand, industry } = payload;
     const total = result.totalScore || 0;
