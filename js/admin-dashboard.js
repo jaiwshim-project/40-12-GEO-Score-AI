@@ -144,14 +144,15 @@
       $('adTableBody').innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 40px; color: var(--text-tertiary);">데이터 없음</td></tr>`;
       return;
     }
-    // 모드 라벨 변환 — v3.x(target_type 필드) + 옛 진단(mode 필드) 모두 호환
+    // 모드 라벨 변환 — mode='content'는 무조건 '글' (target_type이 잘못 저장된 옛 데이터 호환)
     function getModeBadge(it) {
       const t = it.target_type || it.target;
       const m = it.mode;
-      if (t === 'homepage') return { label: '🏠 홈페이지', color: '#0095ff' };
-      if (t === 'blog')     return { label: '📝 블로그',  color: '#a855f7' };
-      if (t === 'article')  return { label: '📄 글',      color: '#ff8800' };
+      // mode='content'는 본문 직접 입력이므로 무조건 '글'
       if (m === 'content')  return { label: '📄 글',      color: '#ff8800' };
+      if (t === 'article')  return { label: '📄 글',      color: '#ff8800' };
+      if (t === 'blog')     return { label: '📝 블로그',  color: '#a855f7' };
+      if (t === 'homepage') return { label: '🏠 홈페이지', color: '#0095ff' };
       if (m === 'url' || m === 'site') return { label: '🏠 홈페이지', color: '#0095ff' };
       return { label: escapeHtml(m || '-'), color: 'var(--text-tertiary)' };
     }

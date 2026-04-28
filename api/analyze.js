@@ -1191,9 +1191,15 @@ async function saveToSupabase(result, mode, req, target) {
   const ip = String(xff).split(',')[0].trim() || 'unknown';
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16);
 
+  // target_type 보정: mode='content'(본문 직접 입력)는 항상 'article'
+  // — 옛 코드에서 mode='content'인데 target='homepage'로 저장되던 버그 차단
+  const resolvedTarget = (mode === 'content')
+    ? 'article'
+    : (target || result.target || 'homepage');
+
   const record = {
     diagnosis_id:  result.id,
-    target_type:   target || result.target || 'homepage',
+    target_type:   resolvedTarget,
     company_name:  String(result.companyName).slice(0, 200),
     website_url:   result.websiteUrl ? String(result.websiteUrl).slice(0, 500) : null,
     industry:      result.industry ? String(result.industry).slice(0, 50) : null,
