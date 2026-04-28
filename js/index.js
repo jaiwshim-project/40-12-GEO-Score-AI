@@ -13,7 +13,7 @@
       <div class="kpi-card" style="--accent-color: ${kpi.color}; --accent-color-2: ${kpi.color2};">
         <div class="kpi-icon">${kpi.icon}</div>
         <div class="kpi-name"><span style="color: var(--accent-color); font-weight: 800; margin-right: 4px;">${NUM[idx] || (idx + 1)}</span> ${kpi.name} <span style="font-size: 0.78rem; color: var(--text-tertiary); font-weight: 600;">(${kpi.weight}%)</span></div>
-        <div class="kpi-desc">${kpi.desc}</div>
+        <div class="kpi-desc" style="font-size: 0.82rem; line-height: 1.65;">${kpi.description || kpi.desc}</div>
       </div>
     `).join('');
   }
