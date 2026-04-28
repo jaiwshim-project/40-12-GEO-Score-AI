@@ -92,7 +92,7 @@ window.ResultShared = (function() {
 
     set('companyTitle', result.companyName);
     set('urlSubtitle', `${extractDomain(result.websiteUrl)} · ${result.industry || '미분류'}`);
-    set('resultMeta', `${formatDate(Date.parse(result.analyzedAt) || Date.now())} · ${result.meta?.usedGemini ? 'Gemini AI' : '기본 분석'}`);
+    set('resultMeta', `${formatDate(Date.parse(result.analyzedAt) || Date.now())} · ${result.meta?.usedGemini ? 'Gemini AI' : '상세 분석'}`);
 
     animateScore(result.totalScore);
 

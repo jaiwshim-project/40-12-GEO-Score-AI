@@ -107,15 +107,16 @@
   <section id="resultSection" class="section">
     <div class="container">
 
-      <!-- 페이지 헤더 (점수 hero는 result-overview에 있으므로 여기서는 간단한 헤더만) -->
-      <div style="text-align: center; padding: 32px 16px 16px;">
-        <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(255,107,53,0.12); border: 1px solid rgba(255,107,53,0.3); border-radius: 999px;">
+      <!-- 페이지 헤더: 회사명을 큰 타이틀로 (점수 hero는 result-overview에 있으므로 중복 제거) -->
+      <div style="text-align: center; padding: 48px 16px 24px;">
+        <p id="resultMeta" style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 12px; font-weight: 500;">진단 완료</p>
+        <h1 id="companyTitle" style="font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 800; margin-bottom: 12px; line-height: 1.2;">-</h1>
+        <p id="urlSubtitle" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 16px;">-</p>
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(255,107,53,0.12); border: 1px solid rgba(255,107,53,0.3); border-radius: 999px; margin-bottom: 12px;">
           <span class="pulse"></span>
-          <span id="resultMeta" style="font-size: 0.78rem; font-weight: 600; color: var(--color-accent);">📋 통합 분석</span>
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-accent);">📋 통합 분석 페이지</span>
         </div>
-        <h1 style="margin: 16px 0 8px;" id="companyTitle">-</h1>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;" id="urlSubtitle">-</p>
-        <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-top: 8px;">
+        <p style="color: var(--text-tertiary); font-size: 0.85rem;">
           <a href="result-overview.html" data-href="result-overview.html" style="color: var(--color-accent); text-decoration: none;">← 점수 요약 페이지로 돌아가기</a>
         </p>
         <!-- 점수 hero에 있던 hidden id 컨테이너 (result-shared.js 의존성 보존) -->
