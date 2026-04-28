@@ -1,11 +1,11 @@
-# 📊 GEO Score AI (v3.0 — 3축 독립 KPI)
+# 📊 GEO Score AI (v3.1 — 3축 30 KPI)
 
 > AI 검색 시대 기업의 존재력을 진단하고, 존재하게 만드는 플랫폼
 
 **슬로건**: "AI가 당신을 선택하게 만드십시오"
 **철학**: 문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다
 
-**v3.0 주요 변경**: 진단 대상을 **홈페이지 / 블로그 / 글** 3축으로 분리하여 각 축에 독립된 KPI 세트를 적용합니다.
+**v3.1 변경**: 진단 대상을 **홈페이지 / 블로그 / 글** 3축으로 분리, **각 축 10 KPI = 총 30 KPI** 독립 적용.
 
 ---
 
@@ -34,42 +34,54 @@
 
 ---
 
-## 📐 3축 18 KPI (GEO Score Framework v3.0)
+## 📐 3축 30 KPI (GEO Score Framework v3.1)
 
-진단 대상에 따라 **독립된 KPI 세트**가 적용됩니다. 각 KPI는 0~100점, 가중치 합 100% → 가중평균이 종합 점수.
+진단 대상에 따라 **독립된 KPI 세트**가 적용됩니다. 각 KPI는 0~100점, 가중치 합 100% → 가중평균이 종합 점수. 모든 KPI는 결정적(deterministic) 신호 함수로 산출됩니다 (같은 입력 → 같은 점수).
 
-### 🏠 홈페이지 KPI (인프라 축, 7개)
+### 🏠 홈페이지 KPI (인프라 축, 10개) — 합 100
 
-| ID | KPI | 가중치 | 핵심 신호 |
-|---|---|---|---|
-| hp_botAccess | AI 봇 접근 | 18 | robots.txt + 7종 AI 봇 (GPTBot/ClaudeBot/PerplexityBot 등) 허용 |
-| hp_sitemap | Sitemap 상태 | 12 | sitemap.xml 정상 + URL 50+ + lastmod 갱신 |
-| hp_schema | 구조화 데이터 | 16 | JSON-LD / Schema.org / FAQPage / Organization / Article |
-| hp_indexExposure | 검색 색인 | 14 | 구글/네이버 색인 페이지 수 |
-| hp_cmsAutonomy | CMS 자율성 | 12 | 운영자 직접 글/페이지 추가·수정 가능 여부 |
-| hp_ctaDesign | CTA 설계 | 14 | 상담/예약/문의 CTA + 랜딩 페이지 완비도 |
-| hp_eeatPage | E-E-A-T 페이지 | 14 | 대표/자격/연혁/연락처/오시는길 등 신뢰 페이지 |
+| # | ID | KPI | 가중치 | 출처 |
+|---|---|---|---|---|
+| 1 | hp_botAccess | AI 봇 접근 | 12 | 원본 ① — robots.txt + 7종 AI 봇 |
+| 2 | hp_sitemap | Sitemap 상태 | 9 | 원본 ② — URL 50+ + lastmod |
+| 3 | hp_indexExposure | 검색 색인 | 11 | 원본 ③ — 구글/네이버 색인 |
+| 4 | hp_schema | 구조화 데이터 | 12 | 원본 ④ — JSON-LD/FAQPage/Organization |
+| 5 | hp_pageInfo | 페이지 정보 | 8 | 원본 ⑤ — title/desc/canonical/OG/H1 |
+| 6 | hp_externalAuthority | 외부 권위 | 9 | 원본 ⑦ — 백링크/언론 |
+| 7 | hp_eeatPage | E-E-A-T 페이지 | 9 | 원본 ⑧ — 대표/자격/연혁/연락처 |
+| 8 | hp_cmsAutonomy | CMS 자율성 | 8 | AXOS 페널티 — 임대형 시스템 위험 |
+| 9 | hp_ctaDesign | CTA 설계 | 12 | conversion 신호 — 문의/예약/상담 + 폼/전화 |
+| 10 | hp_mobilePerf | 모바일 성능 | 10 | Google Core Web Vitals + 반응형 |
 
-### 📝 블로그 KPI (운영 축, 5개)
+### 📝 블로그 KPI (운영 축, 10개) — 합 100
 
-| ID | KPI | 가중치 | 핵심 신호 |
-|---|---|---|---|
-| bl_publishFreq | 발행 빈도·최신성 | 25 | 30일 주기 발행 + 최신 글 1주 이내 |
-| bl_categoryDepth | 카테고리 깊이 | 18 | 카테고리 5+ × 카테고리당 글 10+ |
-| bl_internalLinks | 내부 링크망 | 18 | 글당 내부 링크 3+ + 토픽 클러스터 |
-| bl_authorAuthority | 작성자 권위 | 19 | 저자 프로필 + 자격 + E-E-A-T 신호 |
-| bl_channelExpansion | 채널 확장 | 20 | 블로그 + 유튜브 + SNS 멀티채널 |
+| # | ID | KPI | 가중치 | 출처 |
+|---|---|---|---|---|
+| 1 | bl_publishFreq | 발행 빈도·최신성 | 14 | contentDepth 분리 — 30일 주기 + 최신 글 |
+| 2 | bl_contentVolume | 누적 글 양 | 8 | contentDepth 분리 — AI 학습 데이터 양 |
+| 3 | bl_categoryDepth | 카테고리 깊이 | 10 | 카테고리 5+ × 글 10+/카테고리 |
+| 4 | bl_internalLinks | 내부 링크망 | 10 | Pillar-Cluster (Hubspot SEO) |
+| 5 | bl_authorAuthority | 작성자 권위 | 11 | eeat 블로그 적용 — 글당 저자 박스 + about |
+| 6 | bl_topicAuthority | 토픽 권위 | 10 | Google Semantic SEO — 단일 주제 집중도 |
+| 7 | bl_engagement | 사용자 참여 | 9 | 댓글/좋아요/공유 신호 |
+| 8 | bl_channelExpansion | 채널 확장 | 11 | 블로그 + 유튜브 + SNS 멀티 |
+| 9 | bl_readability | 가독성 | 7 | 글당 평균 1500자+ + 단락 분리 |
+| 10 | bl_blogSchema | 블로그 Schema | 10 | BlogPosting/Article Schema 적용 |
 
-### 📄 글 KPI (본문 축, 6개) — ai_writing 5신호 + FAQ
+### 📄 글 KPI (본문 축, 10개) — 합 100, ai_writing 6원칙 매핑
 
-| ID | KPI | 가중치 | 핵심 신호 |
-|---|---|---|---|
-| ar_definitionH2 | 정의문 H2 | 17 | H2 첫 문장 "X는 ~이다" 패턴 ≥ 50% |
-| ar_questionH2 | 질문형 H2 | 18 | H2에 ?/어떻게/왜/언제/무엇 ≥ 50% |
-| ar_brandRepetition | 브랜드 반복 | 15 | H2 섹션 중 브랜드명 등장 ≥ 50% |
-| ar_externalCitation | 외부 인용 | 17 | 후기/언론/"~에 따르면" ≥ 30% |
-| ar_ctaReach | CTA 도달률 | 17 | 800자 블록당 CTA 등장 ≥ 50% |
-| ar_faq | FAQ 구조 | 16 | FAQ 섹션 + Q&A 5+ + Schema FAQPage |
+| # | ID | KPI | 가중치 | 출처 |
+|---|---|---|---|---|
+| 1 | ar_definitionH2 | 정의문 H2 | 12 | ai_writing **원칙 2** ("X는 ~이다") |
+| 2 | ar_questionH2 | 질문형 H2 | 12 | ai_writing **4-1** (질문형 ≥50%) |
+| 3 | ar_brandRepetition | 브랜드 반복 | 10 | ai_writing **4-2** (브랜드 ≥50%) |
+| 4 | ar_externalCitation | 외부 인용 | 11 | ai_writing **4-3** (외부 신호 ≥30%) |
+| 5 | ar_ctaReach | CTA 도달률 | 11 | ai_writing **4-4** (CTA ≥50%) |
+| 6 | ar_authorBox | 작성자 단락 | 8 | ai_writing **원칙 1** (도입+결론 작성자) |
+| 7 | ar_listStructure | 구조화 (리스트/표) | 10 | ai_writing **원칙 3** (번호 리스트/표/Q:A:) |
+| 8 | ar_summary | 핵심답+TL;DR | 8 | ai_writing **원칙 5** (도입 핵심답 + 결론 요약) |
+| 9 | ar_faq | FAQ 구조 | 10 | FAQPage Schema + 5+ Q&A |
+| 10 | ar_cepScene | CEP 장면 매칭 | 8 | 원본 ⑩ cepScene 글 적용 |
 
 ### 등급 체계
 

@@ -1,4 +1,4 @@
-# GEO Score AI — 통합 자료집 (v3.0 — 3축 독립 KPI)
+# GEO Score AI — 통합 자료집 (v3.1 — 3축 30 KPI)
 
 > AI 검색 시대 기업의 존재(홈페이지·블로그·글) 가능성을 **3축으로 분리하여** 점수화하고, 존재하게 만드는 플랫폼.
 >
@@ -8,19 +8,21 @@
 
 ---
 
-## ⭐ v3.0 핵심 변경: 3축 독립 KPI 체계
+## ⭐ v3.1 핵심 변경: 3축 30 KPI 체계
 
-기존 단일 10 KPI를 폐지하고, 진단 대상에 따라 **독립된 KPI 세트**가 적용됩니다.
+기존 단일 10 KPI를 폐지하고, 진단 대상에 따라 **각 축 10 KPI = 총 30 KPI** 독립 적용됩니다.
 
 | 축 | 진단 대상 | KPI 수 | 측정의 결 |
 |---|---|---|---|
-| 🏠 홈페이지 | 회사·기관 메인 사이트 | 7개 | **인프라** — AI 봇 접근, sitemap, schema, 색인, CMS 자율성, CTA, E-E-A-T 페이지 |
-| 📝 블로그 | 블로그/콘텐츠 허브 | 5개 | **운영** — 발행 빈도, 카테고리 깊이, 내부 링크, 작성자 권위, 채널 확장 |
-| 📄 글 | 단일 포스트/페이지 | 6개 | **본문** — 정의문 H2, 질문형 H2, 브랜드 반복, 외부 인용, CTA 도달률, FAQ |
+| 🏠 홈페이지 | 회사·기관 메인 사이트 | **10개** | **인프라+기술+신뢰** — botAccess/sitemap/indexExposure/schema/pageInfo/externalAuthority/eeatPage/cmsAutonomy/ctaDesign/mobilePerf |
+| 📝 블로그 | 블로그/콘텐츠 허브 | **10개** | **운영** — publishFreq/contentVolume/categoryDepth/internalLinks/authorAuthority/topicAuthority/engagement/channelExpansion/readability/blogSchema |
+| 📄 글 | 단일 포스트/페이지 | **10개** | **본문 (ai_writing 6원칙 매핑)** — definitionH2/questionH2/brandRepetition/externalCitation/ctaReach/authorBox/listStructure/summary/faq/cepScene |
 
-각 축의 가중치 합은 100, 종합 점수는 가중평균. 3축 모두 진단하면 종합 비교 리포트(3축 레이더)가 자동 생성됩니다.
+각 축의 가중치 합은 100, 종합 점수는 가중평균. 모든 KPI는 결정적(deterministic) 신호 함수로 산출.
 
-세부 명세는 `README.md`의 "3축 18 KPI" 섹션 또는 `js/kpi-{homepage,blog,article}.js` 파일을 참고하세요.
+**검증 출처**: 원본 단일 10 KPI (`§4`) + ai_writing 6원칙·4신호 (`90upgrade.md PART 1.4`) + E-E-A-T 4축 + Schema.org + Google Core Web Vitals + AXOS 페널티 매트릭스 + Topical Authority (Google Semantic SEO) + Pillar-Cluster (Hubspot SEO).
+
+세부 명세는 `README.md`의 "3축 30 KPI" 섹션 또는 `js/kpi-{homepage,blog,article}.js` 파일을 참고하세요.
 
 ---
 

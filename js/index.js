@@ -30,21 +30,21 @@
     homepage: {
       icon: '🏠',
       label: '홈페이지',
-      hint: '🏠 <strong>홈페이지 축</strong>: AI 봇 접근 / sitemap / schema / 색인 / CMS 자율성 / CTA / E-E-A-T 페이지 (인프라 7 KPI)',
+      hint: '🏠 <strong>홈페이지 축</strong> (10 KPI): AI 봇 접근 · Sitemap · 검색 색인 · 구조화 데이터 · 페이지 정보 · 외부 권위 · E-E-A-T · CMS 자율성 · CTA · 모바일 성능',
       urlLabel: '홈페이지 URL',
       urlPlaceholder: 'https://example.com'
     },
     blog: {
       icon: '📝',
       label: '블로그',
-      hint: '📝 <strong>블로그 축</strong>: 발행 빈도/최신성 · 카테고리 깊이 · 내부 링크망 · 작성자 권위 · 채널 확장 (운영 5 KPI)',
+      hint: '📝 <strong>블로그 축</strong> (10 KPI): 발행 빈도 · 누적 글 양 · 카테고리 깊이 · 내부 링크 · 작성자 권위 · 토픽 권위 · 사용자 참여 · 채널 확장 · 가독성 · 블로그 Schema',
       urlLabel: '블로그 메인 URL',
       urlPlaceholder: 'https://example.com/blog 또는 https://blog.naver.com/xxx'
     },
     article: {
       icon: '📄',
       label: '글(콘텐츠)',
-      hint: '📄 <strong>글 축</strong>: 정의문 H2 · 질문형 H2 · 브랜드 반복 · 외부 인용 · CTA 도달률 · FAQ (본문 6 KPI)',
+      hint: '📄 <strong>글 축</strong> (10 KPI): 정의문 H2 · 질문형 H2 · 브랜드 반복 · 외부 인용 · CTA 도달률 · 작성자 단락 · 구조화(리스트/표) · 핵심답+TL;DR · FAQ · CEP 장면',
       urlLabel: '글 URL (또는 아래에서 본문 직접 붙여넣기)',
       urlPlaceholder: 'https://example.com/post/123'
     }
