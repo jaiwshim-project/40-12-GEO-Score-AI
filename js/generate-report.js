@@ -179,11 +179,11 @@
 
     // grade
     if (!result.grade || totalScoreInput != null) {
-      result.grade = totalScore >= 90 ? { key: 'dominant', label: 'A+ Premium' }
-        : totalScore >= 75 ? { key: 'strong',   label: 'A 우수' }
-        : totalScore >= 60 ? { key: 'growing',  label: 'B 보통' }
-        : totalScore >= 45 ? { key: 'weak',     label: 'C 미흡' }
-        : totalScore >= 30 ? { key: 'poor',     label: 'D 부족' }
+      result.grade = totalScore >= 95 ? { key: 'dominant', label: 'A+ Premium' }
+        : totalScore >= 85 ? { key: 'strong',   label: 'A 우수' }
+        : totalScore >= 70 ? { key: 'growing',  label: 'B 보통' }
+        : totalScore >= 55 ? { key: 'weak',     label: 'C 미흡' }
+        : totalScore >= 40 ? { key: 'poor',     label: 'D 부족' }
         : { key: 'critical', label: 'F 잠금' };
     }
 

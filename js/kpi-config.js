@@ -152,12 +152,13 @@ window.KPI_WEIGHTS = {
 
 // 6단계 등급 체계
 window.GRADE_CONFIG = [
-  { min: 90, max: 100, key: 'dominant', label: 'A+ Premium', desc: '최상위', emoji: '👑' },
-  { min: 75, max: 89,  key: 'strong',   label: 'A 우수',     desc: '우수',   emoji: '💪' },
-  { min: 60, max: 74,  key: 'growing',  label: 'B 보통',     desc: '보통',   emoji: '📈' },
-  { min: 45, max: 59,  key: 'weak',     label: 'C 미흡',     desc: '미흡',   emoji: '⚠️' },
-  { min: 30, max: 44,  key: 'poor',     label: 'D 부족',     desc: '부족',   emoji: '🚨' },
-  { min: 0,  max: 29,  key: 'critical', label: 'F 잠금',     desc: '잠금',   emoji: '🔒' }
+  // [옵션 4] 임계값 상향 — 60점대 사각지대 제거 (영업 동기 발생 구간 확장)
+  { min: 95, max: 100, key: 'dominant', label: 'A+ Premium', desc: '최상위',         emoji: '👑' },
+  { min: 85, max: 94,  key: 'strong',   label: 'A 우수',     desc: '우수',           emoji: '💪' },
+  { min: 70, max: 84,  key: 'growing',  label: 'B 보통',     desc: '보통',           emoji: '📈' },
+  { min: 55, max: 69,  key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요', emoji: '⚠️' },
+  { min: 40, max: 54,  key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요', emoji: '🚨' },
+  { min: 0,  max: 39,  key: 'critical', label: 'F 잠금',     desc: '신규 개발 필수', emoji: '🔒' }
 ];
 
 window.getGrade = function(score) {

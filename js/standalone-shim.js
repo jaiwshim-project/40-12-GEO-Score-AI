@@ -492,13 +492,13 @@
     });
     const totalScore = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : 0;
 
-    // 6단계 등급
+    // 6단계 등급 (새 임계값 95/85/70/55/40)
     const grade = (() => {
-      if (totalScore >= 90) return { key: 'dominant', label: 'A+ Premium' };
-      if (totalScore >= 75) return { key: 'strong',   label: 'A 우수' };
-      if (totalScore >= 60) return { key: 'growing',  label: 'B 보통' };
-      if (totalScore >= 45) return { key: 'weak',     label: 'C 미흡' };
-      if (totalScore >= 30) return { key: 'poor',     label: 'D 부족' };
+      if (totalScore >= 95) return { key: 'dominant', label: 'A+ Premium' };
+      if (totalScore >= 85) return { key: 'strong',   label: 'A 우수' };
+      if (totalScore >= 70) return { key: 'growing',  label: 'B 보통' };
+      if (totalScore >= 55) return { key: 'weak',     label: 'C 미흡' };
+      if (totalScore >= 40) return { key: 'poor',     label: 'D 부족' };
       return                       { key: 'critical', label: 'F 잠금' };
     })();
 

@@ -538,18 +538,28 @@ function detectAIWritingSignals(content, companyName) {
 function fallbackResult({ companyName, websiteUrl, fetchResult, infraSignals, hasGeminiKey }) {
   const meta = fetchResult.meta || {};
   const infra = infraSignals || {};
-  const baseScore = fetchResult.ok ? 35 : 22;
+  // [옵션 1] base score 엄격화: 35→25 (측정 안 한 항목은 default 25)
+  const baseScore = fetchResult.ok ? 25 : 15;
   const adjust = (cond, delta) => cond ? delta : 0;
 
   const scores = {};
 
   // 1. botAccess: robotsScore(0~5) → 0~95
-  const botAccessVal = infra.robotsTxtFound !== undefined
-    ? Math.max(10, Math.min(95, 30 + (infra.robotsScore || 0) * 13))
-    : baseScore;
+  // [옵션 2] Generosity 보정: robots.txt 단순 허용만으로는 70점, sitemap도 정상이어야 95점
+  let botAccessVal;
+  if (infra.robotsTxtFound !== undefined) {
+    const robotsBase = 25 + (infra.robotsScore || 0) * 11; // 0~5 → 25~80 (기존 30~95)
+    // sitemap도 동시 정상일 때만 +15 보너스 (실제 AI 봇 발견 + 색인 가능)
+    const synergyBonus = (infra.robotsScore >= 4 && infra.sitemapValid) ? 15 : 0;
+    botAccessVal = Math.max(10, Math.min(95, robotsBase + synergyBonus));
+  } else {
+    botAccessVal = baseScore;
+  }
   scores.botAccess = {
     value: botAccessVal,
-    reason: `robots.txt 7봇 중 ${infra.allowedBotsCount ?? 7}봇 허용`
+    reason: `robots.txt 7봇 중 ${infra.allowedBotsCount ?? 7}봇 허용` +
+            ((infra.robotsScore >= 4 && infra.sitemapValid) ? ' + sitemap 정상 동시 충족' :
+             (infra.robotsScore >= 4 ? ' (단, sitemap 부재 → 시너지 미달)' : ''))
   };
 
   // 2. sitemapStatus: sitemapScore(0~5) → 0~95
@@ -875,6 +885,32 @@ export default async function handler(req, res) {
       }
     }
 
+    // [옵션 3] AI 인용 페널티 매트릭스 — 핵심 신호 부재 시 다른 KPI에도 페널티
+    const penalties = [];
+    if (analysis.scores) {
+      // 페널티 1: structuredData < 30 → 모든 KPI -15% (Schema 없으면 AI 인용 자체 X)
+      if ((analysis.scores.structuredData?.value || 0) < 30) {
+        Object.entries(analysis.scores).forEach(([k, s]) => {
+          if (s && typeof s.value === 'number') s.value = Math.max(5, Math.round(s.value * 0.85));
+        });
+        penalties.push('structuredData < 30 (Schema 부재) → 전 KPI -15%');
+      }
+      // 페널티 2: indexExposure < 20 (색인 5건 미만) → aiCitation 강제 ≤ 25
+      if ((analysis.scores.indexExposure?.value || 0) < 20) {
+        if (analysis.scores.aiCitation) {
+          analysis.scores.aiCitation.value = Math.min(analysis.scores.aiCitation.value || 25, 25);
+        }
+        penalties.push('indexExposure < 20 (색인 부족) → aiCitation 상한 25');
+      }
+      // 페널티 3: AI 봇 5종+ 차단 → 모든 KPI -30% (AI 발견 자체 차단)
+      if (infraSignals && infraSignals.blockedBotsCount >= 5) {
+        Object.entries(analysis.scores).forEach(([k, s]) => {
+          if (s && typeof s.value === 'number') s.value = Math.max(5, Math.round(s.value * 0.7));
+        });
+        penalties.push(`AI 봇 ${infraSignals.blockedBotsCount}종 차단 → 전 KPI -30%`);
+      }
+    }
+
     // 가중 평균 종합 점수
     const totalScore = Math.round(
       Object.entries(analysis.scores).reduce((sum, [k, s]) => {
@@ -884,13 +920,14 @@ export default async function handler(req, res) {
       }, 0)
     );
 
-    // 새 6단계 등급 (kpi-config.js의 GRADE_CONFIG와 동일)
+    // [옵션 4] 6단계 등급 임계값 상향 — 60점대 사각지대 제거
+    // 기존: 90/75/60/45/30 → 변경: 95/85/70/55/40
     const grade = (() => {
-      if (totalScore >= 90) return { key: 'dominant', label: 'A+ Premium', desc: '최상위' };
-      if (totalScore >= 75) return { key: 'strong',   label: 'A 우수',     desc: '우수' };
-      if (totalScore >= 60) return { key: 'growing',  label: 'B 보통',     desc: '보통' };
-      if (totalScore >= 45) return { key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요' };
-      if (totalScore >= 30) return { key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요' };
+      if (totalScore >= 95) return { key: 'dominant', label: 'A+ Premium', desc: '최상위' };
+      if (totalScore >= 85) return { key: 'strong',   label: 'A 우수',     desc: '우수' };
+      if (totalScore >= 70) return { key: 'growing',  label: 'B 보통',     desc: '보통' };
+      if (totalScore >= 55) return { key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요' };
+      if (totalScore >= 40) return { key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요' };
       return { key: 'critical', label: 'F 잠금', desc: '신규 개발 필수' };
     })();
 
@@ -905,18 +942,18 @@ export default async function handler(req, res) {
         .sort((a, b) => a.value - b.value);
       const weakest = sortedKpis.slice(0, 3);
 
-      // 종합 점수 기반 톤
+      // 종합 점수 기반 톤 (새 임계값 85/70/55/40에 맞춤)
       let toneLine;
-      if (totalScore >= 75) {
+      if (totalScore >= 85) {
         toneLine = `상위권에 진입했습니다. 약점 KPI(${weakest[0].name} ${weakest[0].value}점)만 추가 강화하면 1위권 도달이 가능합니다.`;
-      } else if (totalScore >= 60) {
+      } else if (totalScore >= 70) {
         toneLine = `기본 구조는 갖춰졌으나 AI 인용·추천 최적화에는 미달합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점) 2개 영역의 보강이 우선입니다.`;
-      } else if (totalScore >= 45) {
-        toneLine = `AI 검색 시대 핵심 신호가 부족합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점), ${weakest[2].name}(${weakest[2].value}점) 영역에서 구조 정비가 시급하며, 부분 개선만으로는 한계가 있을 수 있습니다.`;
-      } else if (totalScore >= 30) {
-        toneLine = `AI 검색에서 사실상 인용·추천이 어려운 상태입니다. 약점 KPI 다수(${weakest.map(w => w.name + ' ' + w.value).join(', ')})가 임계점 미만으로, 신규 개발 권장 단계입니다.`;
+      } else if (totalScore >= 55) {
+        toneLine = `AI 검색 시대 핵심 신호가 부족합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점), ${weakest[2].name}(${weakest[2].value}점) 영역에서 구조 정비가 시급합니다.`;
+      } else if (totalScore >= 40) {
+        toneLine = `AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI 다수(${weakest.map(w => w.name + ' ' + w.value).join(', ')})가 임계점 미만이며, 부분 개선보다 신규 개발이 효율적입니다.`;
       } else {
-        toneLine = `AI 검색에서 거의 발견되지 않는 잠금 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
+        toneLine = `AI 검색에서 사실상 발견되지 않는 잠금 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
       }
 
       // headline + diagnosis 일관성 강제
