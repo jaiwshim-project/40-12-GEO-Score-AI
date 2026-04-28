@@ -13,6 +13,7 @@ window.KPI_DEFINITIONS = [
     color2: '#0d4ed1',
     weight: 14,
     desc: 'ChatGPT/Claude/Perplexity 등 AI 봇이 사이트에 접근 가능한지 측정',
+    description: 'ChatGPT·Claude·Perplexity 등 7종 AI 봇이 사이트를 크롤링할 수 있는지 측정합니다. robots.txt에서 AI 봇이 차단되어 있으면 LLM 학습 자체가 불가능해 인용·추천에서 사라집니다. 5종 이상 차단 시 신규 개발이 필수적인 결정적 약점이 됩니다.',
     insightHigh: 'GPTBot·ClaudeBot·PerplexityBot 등 주요 AI 봇이 자유롭게 크롤링 가능합니다.',
     insightMid: '일부 AI 봇만 허용되어 있어 robots.txt·헤더 설정 보강이 필요합니다.',
     insightLow: 'AI 봇 차단으로 인해 ChatGPT·Perplexity가 사이트를 학습할 수 없습니다.'
@@ -26,6 +27,7 @@ window.KPI_DEFINITIONS = [
     color2: '#0891b2',
     weight: 10,
     desc: '사이트 지도 정상 작동 + URL 등록 수',
+    description: 'sitemap.xml이 정상 작동하고 충분한 URL이 등록되어 있는지 측정합니다. 검색엔진과 AI 봇이 사이트 구조를 효율적으로 파악하는 핵심 인프라이며, 손상되거나 외부 도메인을 가리키면 색인 효율이 급격히 떨어집니다. 자기 도메인 + 50개 이상 URL이 이상적입니다.',
     insightHigh: 'sitemap.xml이 정상 작동하며 충분한 URL이 등록되어 있습니다.',
     insightMid: 'sitemap은 존재하나 URL 누락이 많거나 lastmod 갱신이 미흡합니다.',
     insightLow: 'sitemap.xml이 없거나 접근 불가 상태로 색인 효율이 매우 낮습니다.'
@@ -39,6 +41,7 @@ window.KPI_DEFINITIONS = [
     color2: '#0073cc',
     weight: 13,
     desc: '구글·네이버에 색인된 페이지 수',
+    description: '구글·네이버에 색인된 페이지 수를 측정합니다. 색인 수가 많을수록 AI 검색 결과에 발견될 가능성이 높아지며, 5건 미만일 경우 사실상 AI 인용 자체가 어려워집니다. sitemap·내부 링크 다양성·콘텐츠 신선도가 색인 수의 핵심 결정 요인입니다.',
     insightHigh: '구글·네이버에 다수 페이지가 색인되어 검색 노출 기반이 탄탄합니다.',
     insightMid: '일부 페이지만 색인되어 있어 색인 누락 페이지 점검이 필요합니다.',
     insightLow: '색인된 페이지가 거의 없어 검색에서 발견되지 않습니다.'
@@ -52,6 +55,7 @@ window.KPI_DEFINITIONS = [
     color2: '#7c3aed',
     weight: 12,
     desc: 'Schema.org · FAQ · JSON-LD 마크업 적용도',
+    description: 'Schema.org JSON-LD·FAQPage 등 구조화 마크업 적용도를 측정합니다. AI는 구조화된 정보를 우선 인용하므로, FAQPage·Organization·Article Schema가 적용된 사이트가 답변에 자주 발췌됩니다. 미적용 시 다른 KPI에도 -15% 페널티가 적용되는 결정적 영역입니다.',
     insightHigh: 'Schema.org JSON-LD·FAQPage 마크업이 잘 적용되어 AI 인용에 유리합니다.',
     insightMid: '일부 구조화 데이터만 적용되어 있어 FAQPage·Organization 보강이 필요합니다.',
     insightLow: '구조화 데이터가 없어 AI가 콘텐츠를 정확히 이해하기 어렵습니다.'
@@ -65,6 +69,7 @@ window.KPI_DEFINITIONS = [
     color2: '#00b87c',
     weight: 8,
     desc: '메타 태그·canonical·OG·H1/H2 완비도',
+    description: 'title·description·canonical·og 태그·H1/H2 헤딩 구조의 완비도를 측정합니다. AI가 페이지의 주제와 위계를 정확히 파악하는 1차 정보원으로, 페이지마다 고유한 메타 정보가 있어야 검색·인용 정확도가 높아집니다. 단일 메타로 통일된 사이트는 점수가 낮습니다.',
     insightHigh: '메타 태그·OG·canonical·H1/H2가 모두 갖춰져 있습니다.',
     insightMid: '일부 메타 정보가 누락되어 있어 OG 태그·canonical 보강이 필요합니다.',
     insightLow: '메타 태그·헤딩 구조가 부재해 페이지 정보가 AI에 전달되지 않습니다.'
@@ -78,6 +83,7 @@ window.KPI_DEFINITIONS = [
     color2: '#ff4500',
     weight: 10,
     desc: '블로그 발행 빈도 · 본문 양 · 최신성',
+    description: '블로그 발행 빈도·본문 양·최신성을 종합 측정합니다. AI 학습 데이터는 콘텐츠의 양과 다양성에 비례하므로, 30일 주기 발행 + 1500자 이상 본문이 이상적입니다. 단발성 페이지만 있는 사이트는 AI에 학습될 기회가 부족해 인용에서 누락됩니다.',
     insightHigh: '꾸준한 발행과 충분한 본문 깊이로 AI 학습 데이터가 풍부합니다.',
     insightMid: '간헐적 발행 또는 본문 길이가 부족해 콘텐츠 자산 누적이 더딥니다.',
     insightLow: '신규 콘텐츠와 본문 깊이가 부족해 AI에 학습될 기회가 거의 없습니다.'
@@ -91,6 +97,7 @@ window.KPI_DEFINITIONS = [
     color2: '#be185d',
     weight: 9,
     desc: '백링크 · 언론 보도 · 외부 언급',
+    description: '백링크·언론 보도·외부 매체 언급 수를 측정합니다. AI는 제3자 신호가 풍부한 출처를 선호하므로, 보도자료 발신·블로거 협업·전문 매체 등재가 인용 가중치를 높입니다. 자체 사이트 콘텐츠만 있고 외부 인용이 0건이면 AI 신뢰도가 매우 낮습니다.',
     insightHigh: '언론 보도와 외부 백링크가 누적되어 권위가 충분합니다.',
     insightMid: '일부 외부 언급이 있으나 보도자료·백링크 추가 확보가 필요합니다.',
     insightLow: '외부 언급·백링크가 거의 없어 AI 신뢰 가중치가 낮습니다.'
@@ -104,6 +111,7 @@ window.KPI_DEFINITIONS = [
     color2: '#00b87c',
     weight: 8,
     desc: '작성자·자격·연혁·연락처 신뢰 신호',
+    description: '작성자·자격·연혁·연락처 등 신뢰 신호 4축을 측정합니다. 구글이 정의한 Experience·Expertise·Authority·Trust 프레임워크로, 의료·금융·법률 등 YMYL 분야에서 특히 중요합니다. 대표 프로필·자격증·운영 연혁·실명 후기를 노출해 AI 신뢰 가중치를 확보합니다.',
     insightHigh: '저자·자격·연혁·연락처가 노출되어 AI 신뢰 가중치가 높습니다.',
     insightMid: '일부 신뢰 신호만 노출되어 저자 프로필·자격 강화가 필요합니다.',
     insightLow: 'E-E-A-T 신뢰 신호가 부재해 AI가 인용을 망설입니다.'
@@ -117,6 +125,7 @@ window.KPI_DEFINITIONS = [
     color2: '#ff8800',
     weight: 10,
     desc: 'ai_writing 5신호 (질문형/정의문 H2·브랜드반복·외부신호·CTA) — 자체 차별점',
+    description: '질문형 H2·정의문 H2·브랜드 반복·외부 신호·CTA 도달률 5가지 ai_writing 측정 신호를 측정합니다. 5신호 모두 50% 이상 충족 시 AI 답변에 인용될 가능성이 비약적으로 상승하며, /ai_writing 6원칙 기반 자체 차별점입니다. KPI 4의 직접 산출 지표입니다.',
     insightHigh: '질문형·정의문 H2·브랜드 반복·외부신호·CTA 도달이 모두 충족되어 AI가 인용하기 좋습니다.',
     insightMid: '일부 신호만 충족되어 질문형 H2·정의문·브랜드 반복 보강이 필요합니다.',
     insightLow: 'AI 인용 5신호가 거의 부재해 LLM 답변에 등장할 가능성이 매우 낮습니다.'
@@ -130,6 +139,7 @@ window.KPI_DEFINITIONS = [
     color2: '#d97706',
     weight: 6,
     desc: '"순간(scene)" 콘텐츠 — 자체 차별점',
+    description: '사용자의 결정적 순간(Category Entry Point)을 표적으로 한 장면형 콘텐츠 보유 정도를 측정합니다. "아침에 갑자기 ○○할 때" 같은 구체적 상황을 다룬 콘텐츠가 풍부할수록 AI가 실사용자 질문에 매칭되어 인용될 가능성이 높아집니다. 자체 차별점입니다.',
     insightHigh: '소비자의 결정적 순간(CEP)을 정조준한 장면형 콘텐츠가 풍부합니다.',
     insightMid: '일부 CEP 장면을 다루고 있으나 장면 다양성과 깊이 보강이 필요합니다.',
     insightLow: 'CEP 장면을 다룬 콘텐츠가 거의 없어 순간 점유 기회를 놓치고 있습니다.'
