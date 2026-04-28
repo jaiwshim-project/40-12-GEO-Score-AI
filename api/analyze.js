@@ -20,17 +20,22 @@ import { runCitationTest, scoreCitationRate } from './_lib/citation-tester.js';
 
 // 진단 콘텐츠 기반 AI 인용 가능성 측정 → KPI 1개 점수 객체로 변환.
 // 실패/콘텐츠 부족/비활성 시 null value(NA) 반환.
-async function computeCitabilityKpi({ brand, industry, content }) {
+async function computeCitabilityKpi({ brand, industry, content, axisLabel }) {
   if (process.env.DISABLE_AI_CITABILITY === '1') {
     return { value: null, reason: 'AI 인용 측정 비활성' };
   }
   const cleanContent = (content || '').slice(0, 6000);
+  console.log('[citability]', axisLabel || '?', { brand, industryLen: industry?.length || 0, contentLen: cleanContent.length, preview: cleanContent.slice(0, 200) });
   if (!cleanContent || cleanContent.length < 200) {
-    return { value: null, reason: '본문 부족 (200자 미만)' };
+    return { value: null, reason: `본문 부족 (${cleanContent.length}자)` };
   }
   const r = await runCitationTest({ brand, industry, content: cleanContent, count: 6, timeoutMs: 25000 });
+  console.log('[citability:result]', axisLabel || '?', { ok: r.ok, error: r.error, total: r.total, cited: r.citedCount, snippet: r.rawSnippet?.slice(0, 150) });
   if (!r.ok) {
-    return { value: null, reason: `측정 실패: ${r.error || 'unknown'}` };
+    return {
+      value: null,
+      reason: `측정 실패: ${r.error || 'unknown'}${r.rawSnippet ? ` | resp: ${r.rawSnippet.slice(0, 80)}` : ''}`
+    };
   }
   const v = scoreCitationRate(r.citationRate);
   const pct = Math.round(r.citationRate * 100);
@@ -813,7 +818,7 @@ export default async function handler(req, res) {
       // AI 인용 가능성 KPI — 본문 텍스트(태그 제거)로 인용율 측정
       try {
         const cleanText = (articleText || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        scores.ar_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText });
+        scores.ar_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText, axisLabel: 'article' });
       } catch (e) {
         scores.ar_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
       }
@@ -883,16 +888,18 @@ export default async function handler(req, res) {
         }));
         sampleArticles = sampleFetches
           .filter(r => r.status === 'fulfilled' && r.value.ok)
-          .map(r => ({ html: r.value.rawHtml || '' }));
+          .map(r => ({ html: r.value.rawHtml || '', content: r.value.content || '' }));
       } catch (_) {}
 
       const signals = detectBlogSignals(indexHtml, sampleArticles);
       const scores = scoreBlog(signals);
-      // AI 인용 가능성 KPI — 샘플 글 본문 합쳐서 인용율 측정
+      // AI 인용 가능성 KPI — 샘플 글의 stripped content 사용 (raw HTML strip이 noise 많아서).
+      // content 부족 시 indexHtml stripped로 폴백.
       try {
-        const merged = sampleArticles.map(s => (s.html || '')).join('\n\n');
-        const cleanText = merged.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 6000);
-        scores.bl_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText });
+        const fromSamples = sampleArticles.map(s => (s.content || '').trim()).filter(t => t.length > 50).join('\n\n');
+        const fallback = indexHtml.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const cleanText = (fromSamples || fallback).slice(0, 6000);
+        scores.bl_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: cleanText, axisLabel: 'blog' });
       } catch (e) {
         scores.bl_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
       }
@@ -1137,7 +1144,7 @@ export default async function handler(req, res) {
     // AI 인용 가능성 KPI — 홈페이지 텍스트로 인용율 측정
     try {
       const hpContent = (fetchResult?.content || '').slice(0, 6000);
-      homepageScores.hp_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: hpContent });
+      homepageScores.hp_aiCitability = await computeCitabilityKpi({ brand: companyName, industry, content: hpContent, axisLabel: 'homepage' });
     } catch (e) {
       homepageScores.hp_aiCitability = { value: null, reason: `측정 실패: ${e.message}` };
     }
