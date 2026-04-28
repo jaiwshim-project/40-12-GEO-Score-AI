@@ -953,7 +953,7 @@ export default async function handler(req, res) {
       } else if (totalScore >= 40) {
         toneLine = `AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI 다수(${weakest.map(w => w.name + ' ' + w.value).join(', ')})가 임계점 미만이며, 부분 개선보다 신규 개발이 효율적입니다.`;
       } else {
-        toneLine = `AI 검색에서 사실상 발견되지 않는 잠금 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
+        toneLine = `AI 검색에서 사실상 발견되지 않는 위급 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
       }
 
       // headline + diagnosis 일관성 강제
