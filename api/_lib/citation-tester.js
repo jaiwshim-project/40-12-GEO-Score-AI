@@ -70,13 +70,39 @@ function extractJSONArray(text) {
   } catch (e) { return null; }
 }
 
-function isBrandCited(answer, brand) {
+function isBrandCited(answer, brand, aliases = []) {
   if (!answer || !brand) return false;
   const a = answer.toLowerCase();
-  const b = brand.slice(0, 5).toLowerCase();
-  if (a.includes(b)) return true;
-  if (brand.length >= 2 && answer.includes(brand.slice(0, Math.min(brand.length, 4)))) return true;
+  const tryMatch = (s) => {
+    if (!s || s.length < 2) return false;
+    const sl = s.toLowerCase();
+    // 영숫자: 5자 이상 부분 매칭, 한글: 2자 이상 부분 매칭
+    const head = sl.slice(0, Math.min(sl.length, 5));
+    if (a.includes(head)) return true;
+    if (s.length >= 2 && answer.includes(s.slice(0, Math.min(s.length, 4)))) return true;
+    return false;
+  };
+  if (tryMatch(brand)) return true;
+  for (const alias of aliases) { if (tryMatch(alias)) return true; }
   return false;
+}
+
+// 콘텐츠에서 자주 등장하는 한글 명사구·고유명사 후보 추출 (브랜드 별칭 자동 탐지)
+function extractBrandAliases(content, inputBrand, maxAliases = 5) {
+  if (!content) return [];
+  const text = content.slice(0, 4000);
+  const counts = new Map();
+  // 한글 2~10자 명사구 + 영문/숫자 혼합 식별자(예: AI연구소, 5C1S, 노벨문해력5©)
+  const candidates = text.match(/[가-힣A-Za-z][가-힣A-Za-z0-9©®]{1,11}(?:연구소|컨설팅|아카데미|스튜디오|프로그램|센터|랩|미디어|그룹)|[A-Z][A-Za-z0-9]{2,15}|[가-힣]{2,5}\s*(?:대표|박사|교수|원장)/g) || [];
+  const stopwords = new Set(['그리고','하지만','그래서','때문에','이러한','다양한','일반','사용자','콘텐츠','이용자','검색','분석','내용','정보','기술','회사','대표','원장','박사','교수']);
+  for (const c of candidates) {
+    const k = c.trim();
+    if (k.length < 2) continue;
+    if (stopwords.has(k)) continue;
+    if (inputBrand && k.toLowerCase() === inputBrand.toLowerCase()) continue;
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0, maxAliases).map(([k]) => k);
 }
 
 /**
@@ -116,6 +142,10 @@ export async function runCitationTest({ brand, industry, content, count = 6, tim
       };
     }
 
+    // 콘텐츠에서 빈출 브랜드 후보(별칭) 자동 추출 — 입력 brand가 콘텐츠에 안 나와도
+    // 실제 콘텐츠 운영자명("미래역량AI연구소", "심재우 대표" 등)을 인용으로 인정.
+    const aliases = extractBrandAliases(content, brand, 5);
+
     const remainingMs = timeoutMs;
     const answers = await Promise.all(
       questions.slice(0, count).map(async (q) => {
@@ -125,7 +155,7 @@ export async function runCitationTest({ brand, industry, content, count = 6, tim
             new Promise((_, rj) => setTimeout(() => rj(new Error('a-timeout')), remainingMs))
           ]);
           const answer = aResult.response.text().trim();
-          return { id: q.id, type: q.type, question: q.question, answer, cited: isBrandCited(answer, brand) };
+          return { id: q.id, type: q.type, question: q.question, answer, cited: isBrandCited(answer, brand, aliases) };
         } catch (e) {
           return { id: q.id, type: q.type, question: q.question, error: e.message, cited: false };
         }
@@ -146,6 +176,7 @@ export async function runCitationTest({ brand, industry, content, count = 6, tim
       total,
       generalRate: generalTotal > 0 ? generalCited / generalTotal : 0,
       brandedRate: brandedTotal > 0 ? brandedCited / brandedTotal : 0,
+      aliases,
       answers
     };
   } catch (e) {

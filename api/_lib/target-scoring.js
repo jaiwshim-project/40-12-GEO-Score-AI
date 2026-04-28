@@ -423,12 +423,15 @@ export function detectBlogSignals(blogIndexHtml, articleSamples) {
   const freqs = Object.values(catFreq);
   const topFreqRatio = freqs.length > 0 ? Math.max(...freqs) / freqs.reduce((a, b) => a + b, 1) : 0;
 
-  // 7) 사용자 참여
+  // 7) 사용자 참여 — 인덱스 + 샘플 글의 신호를 OR 합산
+  //   (인덱스에는 좋아요/공유 버튼이 없는 경우가 많아 샘플 글까지 봐야 정확)
+  const engagementHtmls = [html, ...samples.map(s => s.html || '')];
+  const anyMatch = (re) => engagementHtmls.some(h => re.test(h));
   const engagementSignals = {
-    comments: /(댓글|comment|댓글\s*\d+|comments?\s*\(\s*\d+)/i.test(html),
-    likes: /(좋아요|like|♡|❤|likes?\s*\(\s*\d+)/i.test(html),
-    shares: /(공유|share|kakao|카카오|twitter|facebook).*share/i.test(html),
-    socialButtons: ((html.match(/<(a|button)[^>]*(?:share|sns|social)[^>]*>/gi) || []).length) > 0
+    comments: anyMatch(/(댓글|comment|댓글\s*\d+|comments?\s*\(\s*\d+)/i),
+    likes: anyMatch(/(좋아요|like|♡|❤|likes?\s*\(\s*\d+)/i),
+    shares: anyMatch(/(공유|share|kakao|카카오|twitter|facebook).*share/i),
+    socialButtons: engagementHtmls.some(h => ((h.match(/<(a|button)[^>]*(?:share|sns|social)[^>]*>/gi) || []).length) > 0)
   };
   const engagementCount = Object.values(engagementSignals).filter(Boolean).length;
 
@@ -575,10 +578,15 @@ export function scoreBlog(signals) {
   }
   {
     const a = s.bl_blogSchema || {};
+    // 샘플 글에 BlogPosting/Article Schema가 적용됐는지가 핵심.
+    // 인덱스(목록 페이지)에는 보통 BlogPosting Schema가 없으므로 가중치 ↓.
     let v = 0;
-    if (a.hasBlogSchema) v += 50;
-    v += Math.round((a.sampleSchemaRatio || 0) * 50);
-    out.bl_blogSchema = { value: Math.min(100, v), reason: `Schema ${a.hasBlogSchema ? '✓' : '✗'}, 샘플 적용 ${Math.round((a.sampleSchemaRatio || 0) * 100)}%` };
+    v += Math.round((a.sampleSchemaRatio || 0) * 80);  // 글 페이지 적용율 (80점)
+    if (a.hasBlogSchema) v += 20;                       // 인덱스에도 있으면 보너스 (20점)
+    out.bl_blogSchema = {
+      value: Math.min(100, v),
+      reason: `샘플 적용 ${Math.round((a.sampleSchemaRatio || 0) * 100)}%, 인덱스 ${a.hasBlogSchema ? '✓' : '✗'}`
+    };
   }
 
   return out;

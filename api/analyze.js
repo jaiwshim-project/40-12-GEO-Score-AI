@@ -39,10 +39,12 @@ async function computeCitabilityKpi({ brand, industry, content, axisLabel }) {
   }
   const v = scoreCitationRate(r.citationRate);
   const pct = Math.round(r.citationRate * 100);
+  const aliasNote = r.aliases?.length ? ` | 별칭: ${r.aliases.slice(0, 3).join(', ')}` : '';
   return {
     value: v,
-    reason: `인용율 ${pct}% (${r.citedCount}/${r.total})`,
+    reason: `인용율 ${pct}% (${r.citedCount}/${r.total})${aliasNote}`,
     citationRate: r.citationRate,
+    aliases: r.aliases,
     answers: r.answers
   };
 }
