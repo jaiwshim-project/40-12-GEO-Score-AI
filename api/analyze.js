@@ -1064,39 +1064,44 @@ export default async function handler(req, res) {
     // 옛 KPI alias (마이그레이션 호환)
     const legacyScores = buildLegacyScores(analysis.scores, fetchResult.meta);
 
-    // diagnosis 메시지 일관성 보장 — 임의 % 숫자 제거 + 종합 점수 기반 톤 강제
-    if (analysis.summary) {
-      // 임의의 "AI 최적화 준비도 NN%" 같은 hallucinated 숫자 제거
-      const sortedKpis = Object.entries(analysis.scores)
-        .map(([id, s]) => ({ id, value: s.value || 0, name: KPI_LIST.find(k => k.id === id)?.name || id }))
-        .sort((a, b) => a.value - b.value);
-      const weakest = sortedKpis.slice(0, 3);
-
-      // 종합 점수 기반 톤 (새 임계값 85/70/55/40에 맞춤)
-      let toneLine;
-      if (totalScore >= 85) {
-        toneLine = `상위권에 진입했습니다. 약점 KPI(${weakest[0].name} ${weakest[0].value}점)만 추가 강화하면 1위권 도달이 가능합니다.`;
-      } else if (totalScore >= 70) {
-        toneLine = `기본 구조는 갖춰졌으나 AI 인용·추천 최적화에는 미달합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점) 2개 영역의 보강이 우선입니다.`;
-      } else if (totalScore >= 55) {
-        toneLine = `AI 검색 시대 핵심 신호가 부족합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점), ${weakest[2].name}(${weakest[2].value}점) 영역에서 구조 정비가 시급합니다.`;
-      } else if (totalScore >= 40) {
-        toneLine = `AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI 다수(${weakest.map(w => w.name + ' ' + w.value).join(', ')})가 임계점 미만이며, 부분 개선보다 신규 개발이 효율적입니다.`;
-      } else {
-        toneLine = `AI 검색에서 사실상 발견되지 않는 위급 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
-      }
-
-      // headline + diagnosis 일관성 강제
-      const cleanHeadline = (analysis.summary.headline || '').replace(/\d+%/g, '').replace(/\s+/g, ' ').trim();
-      analysis.summary.headline = `현재 ${companyName}의 GEO 종합 점수는\n${totalScore}점 (${grade.label})입니다`;
-      analysis.summary.diagnosis = toneLine;
-    }
-
     const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
     // 3축 체계: homepage 축 점수(hp_*)를 legacy scores에서 파생
     const homepageScores = deriveHomepageScores(analysis.scores, infraSignals, fetchResult);
     const homepageTotal = computeTargetTotal('homepage', homepageScores);
+    const homepageGrade = getGrade3Axis(homepageTotal);
+
+    // diagnosis 메시지 일관성 보장 — homepageTotal(메인 점수)과 동일한 점수·등급 사용
+    // (이전: totalScore=옛 v2 가중치 산출값을 사용해 원형 차트(homepageTotal)와 headline이 불일치)
+    if (analysis.summary) {
+      const sortedHpKpis = Object.entries(homepageScores)
+        .map(([id, s]) => ({
+          id,
+          value: s.value || 0,
+          name: (HOMEPAGE_KPI_LIST.find(k => k.id === id)?.name) || id
+        }))
+        .sort((a, b) => a.value - b.value);
+      const weakest = sortedHpKpis.slice(0, 3);
+      const w0 = weakest[0] || { name: '-', value: 0 };
+      const w1 = weakest[1] || w0;
+      const w2 = weakest[2] || w1;
+
+      let toneLine;
+      if (homepageTotal >= 85) {
+        toneLine = `상위권에 진입했습니다. 약점 KPI(${w0.name} ${w0.value}점)만 추가 강화하면 1위권 도달이 가능합니다.`;
+      } else if (homepageTotal >= 70) {
+        toneLine = `기본 구조는 갖춰졌으나 AI 인용·추천 최적화에는 미달합니다. ${w0.name}(${w0.value}점), ${w1.name}(${w1.value}점) 2개 영역의 보강이 우선입니다.`;
+      } else if (homepageTotal >= 55) {
+        toneLine = `AI 검색 시대 핵심 신호가 부족합니다. ${w0.name}(${w0.value}점), ${w1.name}(${w1.value}점), ${w2.name}(${w2.value}점) 영역에서 구조 정비가 시급합니다.`;
+      } else if (homepageTotal >= 40) {
+        toneLine = `AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI 다수(${weakest.map(x => x.name + ' ' + x.value).join(', ')})가 임계점 미만이며, 부분 개선보다 신규 개발이 효율적입니다.`;
+      } else {
+        toneLine = `AI 검색에서 사실상 발견되지 않는 위급 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
+      }
+
+      analysis.summary.headline = `현재 ${companyName}의 GEO 종합 점수는\n${homepageTotal}점 (${homepageGrade.label})입니다`;
+      analysis.summary.diagnosis = toneLine;
+    }
 
     const responseBody = {
       success: true,
@@ -1108,7 +1113,7 @@ export default async function handler(req, res) {
       analyzedAt: new Date().toISOString(),
       // 3축 체계: homepage 점수를 메인으로 노출 (UI는 target 기반으로 사용)
       totalScore: homepageTotal,
-      grade: getGrade3Axis(homepageTotal),
+      grade: homepageGrade,
       scores: homepageScores,
       kpiList: HOMEPAGE_KPI_LIST,
       weights: HOMEPAGE_KPI_LIST.reduce((a, k) => { a[k.id] = k.weight; return a; }, {}),
