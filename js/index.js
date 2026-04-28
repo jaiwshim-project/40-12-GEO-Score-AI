@@ -29,9 +29,9 @@
   const TARGET_CONFIG = {
     homepage: {
       icon: '🏠',
-      label: '홈페이지',
-      hint: '🏠 <strong>홈페이지 축</strong> (10 KPI): AI 봇 접근 · Sitemap · 검색 색인 · 구조화 데이터 · 페이지 정보 · 외부 권위 · E-E-A-T · CMS 자율성 · CTA · 모바일 성능',
-      urlLabel: '홈페이지 URL',
+      label: '홈페이지(웹사이트)',
+      hint: '🏠 <strong>홈페이지(웹사이트) 축</strong> (10 KPI): AI 봇 접근 · Sitemap · 검색 색인 · 구조화 데이터 · 페이지 정보 · 외부 권위 · E-E-A-T · CMS 자율성 · CTA · 모바일 성능',
+      urlLabel: '홈페이지(웹사이트) URL',
       urlPlaceholder: 'https://example.com'
     },
     blog: {
@@ -43,7 +43,7 @@
     },
     article: {
       icon: '📄',
-      label: '글(콘텐츠)',
+      label: '글',
       hint: '📄 <strong>글 축</strong> (10 KPI): 정의문 H2 · 질문형 H2 · 브랜드 반복 · 외부 인용 · CTA 도달률 · 작성자 단락 · 구조화(리스트/표) · 핵심답+TL;DR · FAQ · CEP 장면',
       urlLabel: '글 URL (또는 아래에서 본문 직접 붙여넣기)',
       urlPlaceholder: 'https://example.com/post/123'

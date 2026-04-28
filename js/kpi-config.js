@@ -304,9 +304,9 @@ window.computeWeightedTotal = function(scores) {
 // ============================================================
 
 window.TARGET_LABELS = {
-  homepage: { ko: '홈페이지', en: 'Homepage', icon: '🏠', desc: '회사·기관의 메인 사이트 (인프라 축)' },
-  blog:     { ko: '블로그',   en: 'Blog',     icon: '📝', desc: '블로그/콘텐츠 허브 (운영 축)' },
-  article:  { ko: '글',       en: 'Article',  icon: '📄', desc: '단일 포스트/페이지 (본문 축)' }
+  homepage: { ko: '홈페이지(웹사이트)', en: 'Homepage', icon: '🏠', desc: '회사·기관의 메인 웹사이트 (인프라 축)' },
+  blog:     { ko: '블로그',           en: 'Blog',     icon: '📝', desc: '블로그/콘텐츠 허브 (운영 축)' },
+  article:  { ko: '글',               en: 'Article',  icon: '📄', desc: '단일 포스트/페이지 (본문 축)' }
 };
 
 window.KPI_REGISTRY = {
