@@ -150,15 +150,39 @@ window.KPI_WEIGHTS = {
   cepScene: 6
 };
 
-// 6단계 등급 체계
+// 6단계 등급 체계 (각 등급에 50단어 분량 설명 포함)
 window.GRADE_CONFIG = [
   // [옵션 4] 임계값 상향 — 60점대 사각지대 제거 (영업 동기 발생 구간 확장)
-  { min: 95, max: 100, key: 'dominant', label: 'A+ Premium', desc: '최상위',         emoji: '👑' },
-  { min: 85, max: 94,  key: 'strong',   label: 'A 우수',     desc: '우수',           emoji: '💪' },
-  { min: 70, max: 84,  key: 'growing',  label: 'B 보통',     desc: '보통',           emoji: '📈' },
-  { min: 55, max: 69,  key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요', emoji: '⚠️' },
-  { min: 40, max: 54,  key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요', emoji: '🚨' },
-  { min: 0,  max: 39,  key: 'critical', label: 'F 위급',     desc: '신규 개발 필수', emoji: '🚨' }
+  {
+    min: 95, max: 100, key: 'dominant', label: 'A+ Premium', desc: '최상위', emoji: '👑',
+    description: 'ChatGPT·Claude·Perplexity 등 모든 AI 검색에서 우선 인용·추천되는 시장 지배 수준입니다. 외부 인프라(AI 봇 접근·사이트 지도·검색 색인)·구조화 데이터·콘텐츠 깊이·외부 권위가 모두 충족되어 경쟁사가 따라잡기 어렵습니다. 추가 개선보다 모니터링과 미세 조정을 통한 우위 유지에 집중하면 됩니다.',
+    action: '운영 유지 (월 50~150만원)'
+  },
+  {
+    min: 85, max: 94, key: 'strong', label: 'A 우수', desc: '우수', emoji: '💪',
+    description: 'AI 검색 결과에서 안정적으로 발견되며, 인용·추천 빈도가 상위권에 속합니다. 핵심 기술 신호(AI 봇 접근·구조화 데이터·E-E-A-T)는 모두 갖춰진 상태로, 약점 KPI 한두 개만 추가 강화하면 1위권 도달이 가능한 수준입니다. 콘텐츠 발행 가속과 외부 백링크 확보가 다음 단계 핵심입니다.',
+    action: '콘텐츠 강화 (월 50~150만원)'
+  },
+  {
+    min: 70, max: 84, key: 'growing', label: 'B 보통', desc: '보통', emoji: '📈',
+    description: '검색 노출 기반은 형성되어 있으나, AI 인용·추천 최적화 측면에서는 미흡합니다. 일반 검색에서는 발견되지만 ChatGPT·Perplexity 답변에 등장할 가능성은 낮습니다. 약점 KPI 2~3개에 집중 투자하면 상위권 진입이 가능합니다. 구조화 데이터와 콘텐츠 깊이 보강이 우선 과제입니다.',
+    action: '부분 개선 (200~500만원, 2~4주)'
+  },
+  {
+    min: 55, max: 69, key: 'weak', label: 'C 미흡', desc: '구조 정비 필요', emoji: '⚠️',
+    description: 'AI 검색 시대 핵심 신호가 부족해 구조 정비가 시급한 단계입니다. 외부 인프라(사이트 지도·검색 색인)·구조화 데이터·콘텐츠 깊이 중 다수가 임계점 미만이며, 부분 개선만으로 한계가 있을 수 있어 종합적 재설계 검토가 필요합니다. 현재 시스템 수정 가능성을 먼저 확인하세요.',
+    action: '전면 개선 또는 신규 개발 비교 (200~400만원)'
+  },
+  {
+    min: 40, max: 54, key: 'poor', label: 'D 부족', desc: '상당한 개선 필요', emoji: '🚨',
+    description: 'AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI가 다수로 부분 개선보다 신규 개발이 효율적이며, 임대형 시스템이라면 운영자가 자유롭게 콘텐츠를 추가·수정할 수 있는 자체 도메인 구조로 전환하는 것이 우선입니다. 도메인은 유지, 시스템만 교체합니다.',
+    action: '신규 개발 권장 (400만원, 3주)'
+  },
+  {
+    min: 0, max: 39, key: 'critical', label: 'F 위급', desc: '신규 개발 필수', emoji: '🚨',
+    description: 'AI 검색에서 사실상 발견되지 않는 위급 상태입니다. AI 봇 차단·사이트 지도 부재·색인 누락 등 구조적 결함이 누적되어 기존 구조로는 회복이 어렵습니다. 신규 개발이 필수이며, 도메인은 유지하되 시스템 전체를 AI 친화적으로 교체해야 경쟁 진입이 가능합니다.',
+    action: '신규 개발 필수 (400만원, 3주, 즉시)'
+  }
 ];
 
 window.getGrade = function(score) {

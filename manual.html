@@ -217,15 +217,40 @@ CTA X? → "[X 문제]는 [브랜드]로 해결" 패턴
         <strong>/90upgrade</strong> 스킬 또는 <strong>✨ 90점 글</strong> 메뉴에서 자동 실행됩니다.
       </div>
 
-      <h2 id="grades">5. 등급 시스템</h2>
-      <p>10개 KPI 점수의 평균으로 종합 점수(0~100)가 산출되며, 5단계 등급으로 분류됩니다.</p>
-      <ul>
-        <li><strong>👑 AI Dominant (90~100)</strong> — 시장 지배 수준. AI가 우선 추천하는 기업.</li>
-        <li><strong>💪 Strong (70~89)</strong> — 상위권. AI 인용이 활발하게 일어남.</li>
-        <li><strong>📈 Growing (50~69)</strong> — 성장 가능. 약간의 보완으로 상위권 진입 가능.</li>
-        <li><strong>⚠️ Weak (30~49)</strong> — 위험 단계. 경쟁사에 밀리는 상태.</li>
-        <li><strong>🚨 Critical (0~29)</strong> — 거의 없음. AI 검색에서 사실상 부재 상태.</li>
-      </ul>
+      <h2 id="grades">5. 등급 시스템 (6단계)</h2>
+      <p>10개 KPI 가중치 평균(합 100%)으로 종합 점수(0~100)가 산출되며, <strong>6단계 등급</strong>으로 분류됩니다.</p>
+
+      <div style="display: grid; gap: 12px; margin: 16px 0;">
+        <div style="padding: 16px; background: rgba(0,214,143,0.06); border-left: 4px solid #00d68f; border-radius: 8px;">
+          <div style="font-weight: 700; color: #00d68f; margin-bottom: 6px;">👑 A+ Premium (95~100) · 운영 유지 (월 50~150만원)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">ChatGPT·Claude·Perplexity 등 모든 AI 검색에서 우선 인용·추천되는 시장 지배 수준입니다. 외부 인프라(AI 봇 접근·사이트 지도·검색 색인)·구조화 데이터·콘텐츠 깊이·외부 권위가 모두 충족되어 경쟁사가 따라잡기 어렵습니다. 추가 개선보다 모니터링과 미세 조정을 통한 우위 유지에 집중합니다.</div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(0,149,255,0.06); border-left: 4px solid #0095ff; border-radius: 8px;">
+          <div style="font-weight: 700; color: #0095ff; margin-bottom: 6px;">💪 A 우수 (85~94) · 콘텐츠 강화 (월 50~150만원)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">AI 검색 결과에서 안정적으로 발견되며 인용·추천 빈도가 상위권에 속합니다. 핵심 기술 신호(AI 봇 접근·구조화 데이터·E-E-A-T)는 모두 갖춰진 상태로 약점 KPI 한두 개만 추가 강화하면 1위권 도달이 가능합니다. 콘텐츠 발행 가속과 외부 백링크 확보가 다음 단계 핵심입니다.</div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(255,168,0,0.06); border-left: 4px solid #ffa800; border-radius: 8px;">
+          <div style="font-weight: 700; color: #ffa800; margin-bottom: 6px;">📈 B 보통 (70~84) · 부분 개선 (200~500만원, 2~4주)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">검색 노출 기반은 형성되어 있으나 AI 인용·추천 최적화 측면에서는 미흡합니다. 일반 검색에서는 발견되지만 ChatGPT·Perplexity 답변에 등장할 가능성은 낮습니다. 약점 KPI 2~3개에 집중 투자하면 상위권 진입이 가능합니다. 구조화 데이터와 콘텐츠 깊이 보강이 우선 과제입니다.</div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(255,107,53,0.06); border-left: 4px solid #ff6b35; border-radius: 8px;">
+          <div style="font-weight: 700; color: #ff6b35; margin-bottom: 6px;">⚠️ C 미흡 (55~69) · 전면 개선 또는 신규 개발 비교 (200~400만원)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">AI 검색 시대 핵심 신호가 부족해 구조 정비가 시급한 단계입니다. 외부 인프라(사이트 지도·검색 색인)·구조화 데이터·콘텐츠 깊이 중 다수가 임계점 미만이며 부분 개선만으로 한계가 있을 수 있어 종합적 재설계 검토가 필요합니다. 현재 시스템 수정 가능성을 먼저 확인합니다.</div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(255,61,113,0.06); border-left: 4px solid #ff3d71; border-radius: 8px;">
+          <div style="font-weight: 700; color: #ff3d71; margin-bottom: 6px;">🚨 D 부족 (40~54) · 신규 개발 권장 (400만원, 3주)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">AI 검색에서 인용·추천이 거의 어려운 상태입니다. 약점 KPI가 다수로 부분 개선보다 신규 개발이 효율적이며 임대형 시스템이라면 운영자가 자유롭게 콘텐츠를 추가·수정할 수 있는 자체 도메인 구조로 전환하는 것이 우선입니다. 도메인은 유지, 시스템만 교체합니다.</div>
+        </div>
+
+        <div style="padding: 16px; background: rgba(190,18,60,0.06); border-left: 4px solid #be123c; border-radius: 8px;">
+          <div style="font-weight: 700; color: #be123c; margin-bottom: 6px;">🚨 F 위급 (0~39) · 신규 개발 필수 (400만원, 3주, 즉시)</div>
+          <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">AI 검색에서 사실상 발견되지 않는 위급 상태입니다. AI 봇 차단·사이트 지도 부재·색인 누락 등 구조적 결함이 누적되어 기존 구조로는 회복이 어렵습니다. 신규 개발이 필수이며 도메인은 유지하되 시스템 전체를 AI 친화적으로 교체해야 경쟁 진입이 가능합니다.</div>
+        </div>
+      </div>
 
       <h2 id="workflow">6. 진단 워크플로</h2>
       <p>입력 한 번으로 8단계 프로세스가 자동 실행됩니다.</p>
