@@ -661,7 +661,7 @@ function fallbackResult({ companyName, websiteUrl, fetchResult, infraSignals, ha
   return {
     scores,
     summary: {
-      headline: `현재 ${companyName}의 GEO 종합 점수는 ${total}점입니다`,
+      headline: `현재 ${companyName}의 GEO 종합 점수는\n${total}점입니다`,
       diagnosis: fetchResult.ok
         ? (hasGeminiKey
             ? 'AI 분석 엔진이 일시적으로 응답을 반환하지 못해 규칙 기반 점수로 대체했습니다. 잠시 후 다시 시도하시면 정밀 진단을 받을 수 있습니다.'
@@ -958,7 +958,7 @@ export default async function handler(req, res) {
 
       // headline + diagnosis 일관성 강제
       const cleanHeadline = (analysis.summary.headline || '').replace(/\d+%/g, '').replace(/\s+/g, ' ').trim();
-      analysis.summary.headline = `현재 ${companyName}의 GEO 종합 점수는 ${totalScore}점 (${grade.label})입니다`;
+      analysis.summary.headline = `현재 ${companyName}의 GEO 종합 점수는\n${totalScore}점 (${grade.label})입니다`;
       analysis.summary.diagnosis = toneLine;
     }
 

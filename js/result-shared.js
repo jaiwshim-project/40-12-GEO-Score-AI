@@ -103,8 +103,10 @@ window.ResultShared = (function() {
       gradeEl.className = `score-grade ${result.grade.key}`;
     }
 
-    setHTML('shockMessage',
-      `<span class="highlight">${escapeHtml(result.summary?.headline || `현재 점수는 ${result.totalScore}점입니다`)}</span>`);
+    // headline의 \n을 <br/>로 변환 (escapeHtml 후)
+    const rawHeadline = result.summary?.headline || `현재 점수는 ${result.totalScore}점입니다`;
+    const headlineHtml = escapeHtml(rawHeadline).replace(/\n/g, '<br/>');
+    setHTML('shockMessage', `<span class="highlight">${headlineHtml}</span>`);
     set('diagnosisText', result.summary?.diagnosis || '');
   }
 
