@@ -39,13 +39,13 @@ function ruleBasedRecommendation(scores, totalScore) {
     },
     engagement: {
       action: '리뷰/후기 시스템 + SNS 인터랙션',
-      detail: '구글 리뷰 임베드, 인스타 피드, 카카오 채널 연동',
+      detail: '구글 리뷰 임베드, 인스타 피드, 메신저 채널 연동',
       impact: '체류시간 +120%',
       cost: '2주 작업'
     },
     conversion: {
       action: 'CTA 반복 노출 + 상담 예약 시스템',
-      detail: '히어로 + 미들 + 푸터 3중 CTA, 챗봇 상담, 카카오톡 연동',
+      detail: '히어로 + 미들 + 푸터 3중 CTA, 챗봇 상담, 메신저 연동',
       impact: '전환율 +200%',
       cost: 'Quick Win'
     },

@@ -30,7 +30,7 @@
         tip: '후기 인용("…") + 언론 보도 + "에 따르면" 패턴 추가' },
       { key: 'ctaReach', label: '⑤ CTA 도달률', target: '≥ 50%', actual: pct(aiw.ctaReachRate),
         scale: aiw.ctaReach || 0,
-        tip: '본문 800자마다 상담/예약/카카오톡 CTA 1개씩 배치' }
+        tip: '본문 800자마다 상담/예약/메신저 CTA 1개씩 배치' }
     ];
 
     const totalScale = items.reduce((sum, i) => sum + i.scale, 0); // 0~15

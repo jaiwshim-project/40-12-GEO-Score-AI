@@ -49,7 +49,7 @@ ${prevNote}
 - **질문형 H2 ≥ 50%**: H2의 절반 이상이 "?"로 끝나거나 "어떻게/왜/언제/무엇/어디/어떤" 포함
 - **브랜드 반복 ≥ 50%**: 각 H2 섹션에 브랜드명 ${companyName} 1회 이상 등장 (전체 H2의 50% 이상)
 - **외부 신호 ≥ 30%**: 후기 인용(>" "), 언론 보도(KBS/MBC 등), "에 따르면" 인용 패턴
-- **CTA 도달률 ≥ 50%**: 본문 800자 블록의 절반 이상에 상담/예약/문의/카카오톡/전화 등 CTA 키워드
+- **CTA 도달률 ≥ 50%**: 본문 800자 블록의 절반 이상에 상담/예약/문의/메신저/전화 등 CTA 키워드
 
 ## 원칙 5. 행동 유도 (CTA 솔루션)
 - 각 H2 끝에 "핵심:" 한 줄 요약 + 결론에 "[X 문제]는 ${companyName}로 해결" 패턴
@@ -61,7 +61,7 @@ ${prevNote}
 3. **단계별 프로세스**: 번호 리스트 (1. 2. 3.)
 4. **사례·수치**: 구체적 숫자 5개 이상 + Before/After
 5. **FAQ Q1~Q5+**: 각 Q는 질문형, A는 정의문 시작
-6. **결론 + CTA**: 카카오톡/전화/예약 3종 동시 노출
+6. **결론 + CTA**: 메신저/전화/예약 3종 동시 노출
 7. **비교 표 3열**: \`| 항목 | 업계 평균 | ${companyName} |\` 형식
 
 # 분량 권장
@@ -83,7 +83,7 @@ ${prevNote}
 
 ## ③ 전환 설계 (CTA)
 - 명확한 행동 유도 3종 이상: 상담 / 예약 / 문의
-- 카카오톡, 전화번호, 이메일 등 즉시 연결 채널 명시
+- 메신저, 전화번호, 이메일 등 즉시 연결 채널 명시
 - "지금 바로", "무료 상담" 등 행동 유도 언어
 
 ## ④ 사회적 증거 (Engagement)
@@ -91,7 +91,7 @@ ${prevNote}
 - 만족도/추천 수치 (구체적 숫자)
 
 ## ⑤ 멀티채널 (Channel)
-- 블로그, 인스타그램, 유튜브, 네이버블로그, 카카오 채널 중 3개 이상 링크/언급
+- 블로그, 인스타그램, 유튜브, 네이버블로그, 메신저 채널 중 3개 이상 링크/언급
 
 ## ⑥ 브랜드 일관성 (Brand)
 - 브랜드명 ${companyName}을(를) 본문에서 3회 이상 자연스럽게 반복
@@ -178,7 +178,7 @@ function detectSignalsServer(content, companyName) {
   const externalSignalHits = extPatterns.filter(re => re.test(aiwSrc)).length;
   const externalSignalRate = externalSignalHits / extPatterns.length;
 
-  const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|kakao|카카오|전화|이메일|tel|email/i;
+  const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|전화|이메일|tel|email/i;
   const ctaBlocks = [];
   for (let i = 0; i < aiwSrc.length; i += 800) ctaBlocks.push(aiwSrc.slice(i, i + 800));
   const ctaReachHits = ctaBlocks.filter(b => ctaP.test(b)).length;
@@ -226,7 +226,7 @@ function detectSignalsServer(content, companyName) {
     cta: count([
       /(상담|예약|문의|신청|가입|구독|시작|체험|무료|상담\s*받기)/i.test(text),
       /(클릭|버튼|button|cta|행동|지금\s*바로|today)/i.test(text),
-      /(전화|kakao|카카오|카톡|tel|message|메시지)/i.test(text)
+      /(전화|tel|message|메시지)/i.test(text)
     ]),
     review: count([
       /(리뷰|후기|평점|별점|만족도|recommend|추천\s*해|좋아요|like)/i.test(text),
@@ -234,7 +234,7 @@ function detectSignalsServer(content, companyName) {
     ]),
     channel: count([
       /(blog|블로그|news|소식|매거진)/i.test(text),
-      /(instagram|facebook|youtube|twitter|linkedin|kakao|naver|tiktok)/i.test(text)
+      /(instagram|facebook|youtube|twitter|linkedin|naver|tiktok)/i.test(text)
     ]),
     brand: count([
       companyName && (text.match(new RegExp(companyName.slice(0, 5), 'gi')) || []).length >= 2,

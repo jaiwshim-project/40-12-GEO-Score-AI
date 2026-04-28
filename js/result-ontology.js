@@ -129,7 +129,7 @@
       if (!signals?.lengthExcellent) causes.push({ input: '콘텐츠 양 부족', sol: '월 30건 이상 발행 + 카테고리 5개 분산', impact: '+10점' });
     }
     else if (kpiId === 'conversion') {
-      if ((signals?.cta || 0) < 2) causes.push({ input: 'CTA 약함', sol: '카카오톡 / 전화 / 예약 3종 동시 노출', impact: '+18점' });
+      if ((signals?.cta || 0) < 2) causes.push({ input: 'CTA 약함', sol: '메신저 / 전화 / 예약 3종 동시 노출', impact: '+18점' });
       if ((ai?.ctaReach || 0) < 2) causes.push({ input: 'CTA 도달률 < 50%', sol: '본문 800자마다 CTA 1개씩 배치', impact: '+9점' });
       if ((signals?.trust || 0) < 2) causes.push({ input: '신뢰 신호 부족', sol: '환불/보증 + 후기 + 실명 노출', impact: '+7점' });
     }
@@ -138,7 +138,7 @@
       if ((signals?.channel || 0) < 1) causes.push({ input: 'SNS 채널 미연동', sol: '인스타그램/유튜브 피드 임베드', impact: '+10점' });
     }
     else if (kpiId === 'channel') {
-      if ((signals?.channel || 0) < 2) causes.push({ input: '단일 채널 의존', sol: '블로그 + 인스타 + 유튜브 + 네이버블로그 + 카카오 5채널 분산', impact: '+22점' });
+      if ((signals?.channel || 0) < 2) causes.push({ input: '단일 채널 의존', sol: '블로그 + 인스타 + 유튜브 + 네이버블로그 + 인스타DM 5채널 분산', impact: '+22점' });
     }
     else if (kpiId === 'brand') {
       if ((signals?.brand || 0) < 2) causes.push({ input: '브랜드명 반복 부족', sol: '본문 H2마다 브랜드명 1회 이상 반복 (50%+)', impact: '+15점' });

@@ -66,7 +66,7 @@ async function fetchWebsiteContent(url) {
     const hasCTA = /상담|문의|예약|가입|신청|구독|지금\s*시작|무료|체험/i.test(truncated);
     const hasReview = /리뷰|후기|평점|별점|review/i.test(truncated);
     const hasBlog = /blog|블로그|news|소식|공지/i.test(truncated);
-    const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|kakao|naver\s*blog)/i.test(truncated);
+    const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|naver\s*blog)/i.test(truncated);
     const hasAuthor = /(작성자|저자|글쓴이|by\s+[A-Za-z가-힣]|author)/i.test(truncated);
     const hasCertification = /(자격|면허|학위|박사|교수|전문의|인증|certified|MD|PhD)/i.test(truncated);
     const hasContact = /(연락처|전화|이메일|tel:|mailto:|02-|010-)/i.test(truncated);
@@ -508,7 +508,7 @@ function detectAIWritingSignals(content, companyName) {
   const externalSignalHits = extPatterns.filter(re => re.test(aiwSrc)).length;
   const externalSignalRate = externalSignalHits / extPatterns.length;
 
-  const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|kakao|카카오|전화|이메일|tel|email/i;
+  const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|전화|이메일|tel|email/i;
   const ctaBlocks = [];
   for (let i = 0; i < aiwSrc.length; i += 800) ctaBlocks.push(aiwSrc.slice(i, i + 800));
   const ctaReachHits = ctaBlocks.filter(b => ctaP.test(b)).length;
@@ -739,7 +739,7 @@ export default async function handler(req, res) {
       const hasCTA = /상담|문의|예약|가입|신청|구독|지금\s*시작|무료|체험/i.test(content);
       const hasReview = /리뷰|후기|평점|별점|review/i.test(content);
       const hasBlog = /blog|블로그|news|소식|공지/i.test(content);
-      const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|kakao|naver\s*blog)/i.test(content);
+      const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|naver\s*blog)/i.test(content);
       const hasAuthor = /(작성자|저자|글쓴이|by\s+[A-Za-z가-힣]|author)/i.test(content);
       const hasCertification = /(자격|면허|학위|박사|교수|전문의|인증|certified|MD|PhD)/i.test(content);
       const hasContact = /(연락처|전화|이메일|tel:|mailto:|02-|010-)/i.test(content);

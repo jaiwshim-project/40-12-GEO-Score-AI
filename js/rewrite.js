@@ -100,7 +100,7 @@
     ];
     const externalSignalRate = extPatterns.filter(re => re.test(aiwSrc)).length / extPatterns.length;
 
-    const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|kakao|카카오|전화|이메일|tel|email/i;
+    const ctaP = /상담|예약|문의|신청|가입|구독|체험|무료|클릭|지금|버튼|시작|전화|이메일|tel|email/i;
     const ctaBlocks = [];
     for (let i = 0; i < aiwSrc.length; i += 800) ctaBlocks.push(aiwSrc.slice(i, i + 800));
     const ctaReachRate = ctaBlocks.length > 0
