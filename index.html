@@ -73,37 +73,50 @@
       <div class="diag-form fade-in">
         <h3 class="diag-form-title">🚀 무료 GEO Score 진단 시작</h3>
 
-        <!-- 진단 모드 토글 -->
+        <!-- 진단 대상 3축 선택 (v3.0 - 3대상 독립 KPI) -->
         <div class="form-group">
-          <div class="tabs" id="diagModeToggle" style="margin-bottom: 0;">
-            <button type="button" class="tab active" data-mode="url">🌐 홈페이지 URL로 진단</button>
-            <button type="button" class="tab" data-mode="content">📝 작성한 글로 진단</button>
+          <label class="form-label" style="margin-bottom: 8px;">진단 대상 선택 (3축 독립 KPI)</label>
+          <div class="tabs" id="diagTargetToggle" style="margin-bottom: 0;">
+            <button type="button" class="tab active" data-target="homepage">🏠 홈페이지<br/><span style="font-size:0.7rem;opacity:0.75">인프라 7 KPI</span></button>
+            <button type="button" class="tab" data-target="blog">📝 블로그<br/><span style="font-size:0.7rem;opacity:0.75">운영 5 KPI</span></button>
+            <button type="button" class="tab" data-target="article">📄 글(콘텐츠)<br/><span style="font-size:0.7rem;opacity:0.75">본문 6 KPI</span></button>
           </div>
+          <p style="margin-top: 8px; font-size: 0.78rem; color: var(--text-tertiary);" id="targetHint">
+            🏠 <strong>홈페이지 축</strong>: AI 봇 접근 / sitemap / schema / 색인 / CMS 자율성 / CTA / E-E-A-T 페이지
+          </p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="companyName">기업/기관명</label>
+          <label class="form-label" for="companyName">기업/기관명 또는 브랜드명</label>
           <input type="text" id="companyName" class="form-input"
                  placeholder="예: 디지털스마일치과" />
         </div>
 
-        <!-- URL 모드 -->
+        <!-- URL 입력 (homepage / blog / article URL 모드 공유) -->
         <div class="form-group" id="urlMode">
-          <label class="form-label" for="websiteUrl">홈페이지 URL</label>
+          <label class="form-label" for="websiteUrl" id="urlModeLabel">홈페이지 URL</label>
           <input type="url" id="websiteUrl" class="form-input"
                  placeholder="https://example.com" />
         </div>
 
-        <!-- 콘텐츠 모드 -->
+        <!-- 콘텐츠 입력 (article 축 전용 — 본문 직접 붙여넣기) -->
         <div class="form-group hidden" id="contentMode">
-          <label class="form-label" for="contentText">분석할 글 (제품 설명, 블로그 포스트, 회사 소개 등)</label>
+          <label class="form-label" for="contentText">분석할 글 본문 (제목 포함, ## H2 마크다운 또는 HTML)</label>
           <textarea id="contentText" class="form-input"
                     rows="10"
-                    placeholder="여기에 분석할 콘텐츠를 붙여넣으세요. AI가 이 글을 기준으로 10대 KPI를 평가합니다.&#10;&#10;예시: 회사 소개글, 제품 상세 페이지, 블로그 포스트, 보도자료 등."
+                    placeholder="여기에 분석할 글의 본문을 붙여넣으세요. ar_definitionH2 / ar_questionH2 / ar_brandRepetition / ar_externalCitation / ar_ctaReach / ar_faq 6개 KPI를 측정합니다.&#10;&#10;팁: H2는 ## 또는 <h2>...</h2> 형태로 작성된 본문이어야 측정 정확도가 높습니다."
                     style="resize: vertical; min-height: 220px; font-family: inherit; line-height: 1.6;"></textarea>
           <p style="margin-top: 8px; font-size: 0.78rem; color: var(--text-tertiary);">
-            💡 글의 길이: 300~6,000자 권장 · 너무 짧으면 정확도 낮음
+            💡 글의 길이: 800~8,000자 권장 · H2 헤딩이 3개 이상일 때 측정 정확
           </p>
+        </div>
+
+        <!-- article 축에서 URL 또는 본문 선택 -->
+        <div class="form-group hidden" id="articleInputModeWrapper">
+          <div class="tabs" id="articleInputMode" style="margin-bottom: 0;">
+            <button type="button" class="tab active" data-input="url">🔗 글 URL 입력</button>
+            <button type="button" class="tab" data-input="content">📝 본문 직접 붙여넣기</button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -392,6 +405,10 @@
     </div>
   </section>
 
+  <!-- 3축 KPI 모듈 (kpi-config.js 이전에 로드) -->
+  <script src="js/kpi-homepage.js"></script>
+  <script src="js/kpi-blog.js"></script>
+  <script src="js/kpi-article.js"></script>
   <script src="js/kpi-config.js"></script>
   <script src="js/common.js"></script>
   <script src="js/standalone-shim.js"></script>

@@ -1,9 +1,11 @@
-# 📊 GEO Score AI
+# 📊 GEO Score AI (v3.0 — 3축 독립 KPI)
 
 > AI 검색 시대 기업의 존재력을 진단하고, 존재하게 만드는 플랫폼
 
 **슬로건**: "AI가 당신을 선택하게 만드십시오"
 **철학**: 문제를 보여주고, 해결을 유일하게 만들고, 계약으로 연결한다
+
+**v3.0 주요 변경**: 진단 대상을 **홈페이지 / 블로그 / 글** 3축으로 분리하여 각 축에 독립된 KPI 세트를 적용합니다.
 
 ---
 
@@ -32,20 +34,42 @@
 
 ---
 
-## 📐 10대 KPI (GEO Score Framework)
+## 📐 3축 18 KPI (GEO Score Framework v3.0)
 
-각 KPI는 0~100점 → 평균이 종합 점수가 됩니다.
+진단 대상에 따라 **독립된 KPI 세트**가 적용됩니다. 각 KPI는 0~100점, 가중치 합 100% → 가중평균이 종합 점수.
 
-1. **검색 가시성 지수** — 구글·네이버 노출 + AI Overview
-2. **콘텐츠 생산력 지수** — 발행 빈도 + 최신성
-3. **E-E-A-T 신뢰도 지수** — 전문성·경험 기반 콘텐츠
-4. **AI 인용 가능성 지수** — 구조화 콘텐츠, FAQ, Q&A ⭐ 가장 중요
-5. **고객 참여도 지수** — 댓글, 리뷰, SNS 반응
-6. **전환 설계 지수** — CTA + 상담 유도 + 랜딩
-7. **채널 확장 지수** — 블로그, 유튜브, SNS 멀티채널
-8. **브랜드 일관성 지수** — 메시지·디자인 통일성
-9. **경쟁 대비 점유율 지수** — 경쟁사 대비 키워드·콘텐츠량
-10. **AI 최적화 준비도** — GEO 구조 + AIO 인프라
+### 🏠 홈페이지 KPI (인프라 축, 7개)
+
+| ID | KPI | 가중치 | 핵심 신호 |
+|---|---|---|---|
+| hp_botAccess | AI 봇 접근 | 18 | robots.txt + 7종 AI 봇 (GPTBot/ClaudeBot/PerplexityBot 등) 허용 |
+| hp_sitemap | Sitemap 상태 | 12 | sitemap.xml 정상 + URL 50+ + lastmod 갱신 |
+| hp_schema | 구조화 데이터 | 16 | JSON-LD / Schema.org / FAQPage / Organization / Article |
+| hp_indexExposure | 검색 색인 | 14 | 구글/네이버 색인 페이지 수 |
+| hp_cmsAutonomy | CMS 자율성 | 12 | 운영자 직접 글/페이지 추가·수정 가능 여부 |
+| hp_ctaDesign | CTA 설계 | 14 | 상담/예약/문의 CTA + 랜딩 페이지 완비도 |
+| hp_eeatPage | E-E-A-T 페이지 | 14 | 대표/자격/연혁/연락처/오시는길 등 신뢰 페이지 |
+
+### 📝 블로그 KPI (운영 축, 5개)
+
+| ID | KPI | 가중치 | 핵심 신호 |
+|---|---|---|---|
+| bl_publishFreq | 발행 빈도·최신성 | 25 | 30일 주기 발행 + 최신 글 1주 이내 |
+| bl_categoryDepth | 카테고리 깊이 | 18 | 카테고리 5+ × 카테고리당 글 10+ |
+| bl_internalLinks | 내부 링크망 | 18 | 글당 내부 링크 3+ + 토픽 클러스터 |
+| bl_authorAuthority | 작성자 권위 | 19 | 저자 프로필 + 자격 + E-E-A-T 신호 |
+| bl_channelExpansion | 채널 확장 | 20 | 블로그 + 유튜브 + SNS 멀티채널 |
+
+### 📄 글 KPI (본문 축, 6개) — ai_writing 5신호 + FAQ
+
+| ID | KPI | 가중치 | 핵심 신호 |
+|---|---|---|---|
+| ar_definitionH2 | 정의문 H2 | 17 | H2 첫 문장 "X는 ~이다" 패턴 ≥ 50% |
+| ar_questionH2 | 질문형 H2 | 18 | H2에 ?/어떻게/왜/언제/무엇 ≥ 50% |
+| ar_brandRepetition | 브랜드 반복 | 15 | H2 섹션 중 브랜드명 등장 ≥ 50% |
+| ar_externalCitation | 외부 인용 | 17 | 후기/언론/"~에 따르면" ≥ 30% |
+| ar_ctaReach | CTA 도달률 | 17 | 800자 블록당 CTA 등장 ≥ 50% |
+| ar_faq | FAQ 구조 | 16 | FAQ 섹션 + Q&A 5+ + Schema FAQPage |
 
 ### 등급 체계
 
@@ -95,24 +119,42 @@ npx vercel env add GEO_AIO_URL production
 
 ## 🔌 API 엔드포인트
 
-### `POST /api/analyze`
-URL 분석 → 10 KPI 점수 산출
+### `POST /api/analyze` (v3.0 — target 분기)
+3축 진단 대상별로 해당 KPI 세트만 산출.
 
 ```json
 {
   "companyName": "디지털스마일치과",
   "websiteUrl": "https://example.com",
-  "industry": "dental"
+  "industry": "dental",
+  "target": "homepage"   // "homepage" | "blog" | "article"
 }
 ```
 
+응답:
+```json
+{
+  "id": "...",
+  "target": "homepage",
+  "totalScore": 73,
+  "grade": { "key": "growing", "label": "B 보통" },
+  "scores": { "hp_botAccess": { "value": 85, "reason": "..." }, ... },
+  "kpiList": [{ "id": "hp_botAccess", "name": "AI 봇 접근", "weight": 18 }, ...],
+  "weights": { "hp_botAccess": 18, ... },
+  "summary": { "headline": "...", "diagnosis": "..." }
+}
+```
+
+`target='article'`일 때는 `mode: 'content'` + `content` 필드로 본문 텍스트도 직접 입력 가능.
+
 ### `POST /api/recommend`
-진단 결과 기반 솔루션 추천
+진단 결과 기반 솔루션 추천 (target별 약점 우선 추천)
 
 ```json
 {
   "scores": { ... },
   "totalScore": 42,
+  "target": "homepage",
   "companyName": "...",
   "industry": "..."
 }
@@ -187,26 +229,34 @@ Layer 4 · AI & Integration
 
 ---
 
-## 📂 디렉토리 구조
+## 📂 디렉토리 구조 (v3.0)
 
 ```
 geo-score-ai/
 ├── index.html / results.html / dashboard.html / ...
 ├── api/
-│   ├── analyze.js          # URL → 10 KPI 분석
-│   ├── recommend.js        # 솔루션 추천 엔진
+│   ├── analyze.js          # 3축 분기 (homepage/blog/article) → 해당 축 KPI 산출
+│   ├── recommend.js        # 솔루션 추천 (target-aware)
 │   ├── chat.js             # RAG 챗봇
-│   └── health.js
+│   ├── save-diagnosis.js   # Supabase 저장 (target_type 컬럼)
+│   ├── list-diagnostics.js # Supabase 조회 (target_type 필터)
+│   ├── health.js
+│   └── _lib/
+│       └── target-scoring.js  # 서버 측 3축 KPI 스코어링 (article/blog 전용 로직 + homepage 파생)
 ├── js/
-│   ├── kpi-config.js       # 10 KPI 정의
-│   ├── common.js           # Session, History, API client
-│   ├── chart.js            # SVG 차트
-│   ├── results.js / dashboard.js / chatbot.js / admin.js / index.js
+│   ├── kpi-homepage.js     # 7 KPI (인프라 축) + 신호 검출/점수
+│   ├── kpi-blog.js         # 5 KPI (운영 축)
+│   ├── kpi-article.js      # 6 KPI (본문 축)
+│   ├── kpi-config.js       # 3축 통합 레지스트리 + 후방호환 단일 KPI
+│   ├── common.js / chart.js / index.js / analyzing.js / results.js
+│   ├── result-overview.js / result-kpi.js / ... (target-aware 렌더)
+│   └── dashboard.js / chatbot.js / admin.js
 ├── css/
-│   ├── main.css            # 디자인 시스템
-│   └── dashboard.css
+│   ├── main.css / dashboard.css
+├── supabase/
+│   └── schema.sql          # target_type 컬럼 + diagnostics_by_target 뷰
 ├── package.json / vercel.json / .env.example
-└── dev-server.cjs          # 로컬 개발 서버
+└── dev-server.cjs
 ```
 
 ---

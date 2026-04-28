@@ -295,3 +295,71 @@ window.computeWeightedTotal = function(scores) {
   if (weightTotal === 0) return 0;
   return Math.round(weightedSum / weightTotal);
 };
+
+// ============================================================
+// 3축 KPI 레지스트리 (홈페이지 / 블로그 / 글)
+// kpi-homepage.js / kpi-blog.js / kpi-article.js를 사전 로드해야 함.
+// 각 모듈은 window.HOMEPAGE_KPIS / BLOG_KPIS / ARTICLE_KPIS 와 *_WEIGHTS,
+// detectXxxSignals / scoreXxx / computeXxxTotal 함수를 노출.
+// ============================================================
+
+window.TARGET_LABELS = {
+  homepage: { ko: '홈페이지', en: 'Homepage', icon: '🏠', desc: '회사·기관의 메인 사이트 (인프라 축)' },
+  blog:     { ko: '블로그',   en: 'Blog',     icon: '📝', desc: '블로그/콘텐츠 허브 (운영 축)' },
+  article:  { ko: '글',       en: 'Article',  icon: '📄', desc: '단일 포스트/페이지 (본문 축)' }
+};
+
+window.KPI_REGISTRY = {
+  homepage: {
+    definitions: () => window.HOMEPAGE_KPIS || [],
+    weights:     () => window.HOMEPAGE_WEIGHTS || {},
+    detect:      (...args) => (window.detectHomepageSignals ? window.detectHomepageSignals(...args) : {}),
+    score:       (signals) => (window.scoreHomepage ? window.scoreHomepage(signals) : {}),
+    total:       (scores) => (window.computeHomepageTotal ? window.computeHomepageTotal(scores) : 0)
+  },
+  blog: {
+    definitions: () => window.BLOG_KPIS || [],
+    weights:     () => window.BLOG_WEIGHTS || {},
+    detect:      (...args) => (window.detectBlogSignals ? window.detectBlogSignals(...args) : {}),
+    score:       (signals) => (window.scoreBlog ? window.scoreBlog(signals) : {}),
+    total:       (scores) => (window.computeBlogTotal ? window.computeBlogTotal(scores) : 0)
+  },
+  article: {
+    definitions: () => window.ARTICLE_KPIS || [],
+    weights:     () => window.ARTICLE_WEIGHTS || {},
+    detect:      (...args) => (window.detectArticleSignals ? window.detectArticleSignals(...args) : {}),
+    score:       (signals) => (window.scoreArticle ? window.scoreArticle(signals) : {}),
+    total:       (scores) => (window.computeArticleTotal ? window.computeArticleTotal(scores) : 0)
+  }
+};
+
+window.getKPIDefinitions = function(target) {
+  if (target && window.KPI_REGISTRY[target]) return window.KPI_REGISTRY[target].definitions();
+  return window.KPI_DEFINITIONS;  // 후방호환: 단일 10 KPI
+};
+
+window.getKPIWeights = function(target) {
+  if (target && window.KPI_REGISTRY[target]) return window.KPI_REGISTRY[target].weights();
+  return window.KPI_WEIGHTS;
+};
+
+window.computeTargetTotal = function(target, scores) {
+  if (target && window.KPI_REGISTRY[target]) return window.KPI_REGISTRY[target].total(scores);
+  return window.computeWeightedTotal(scores);
+};
+
+/**
+ * 3축 점수를 종합하여 단일 종합 점수 산출 (단순 평균; 각 축이 동등 가중).
+ * 일부 축만 있어도 산출됨 (분모 보정).
+ */
+window.compute3AxisOverall = function(targetScores) {
+  const ts = targetScores || {};
+  const totals = [];
+  ['homepage', 'blog', 'article'].forEach(t => {
+    if (ts[t] && Object.keys(ts[t]).length > 0) {
+      totals.push(window.computeTargetTotal(t, ts[t]));
+    }
+  });
+  if (totals.length === 0) return 0;
+  return Math.round(totals.reduce((a, b) => a + b, 0) / totals.length);
+};

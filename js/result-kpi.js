@@ -74,7 +74,18 @@
               || result.meta?.aiwSignals
               || result.meta?.signalsDetected;
 
-    grid.innerHTML = window.KPI_DEFINITIONS.map(kpi => {
+    // 3축 active KPI 목록 — kpiList(서버) > target > legacy
+    let activeKpis;
+    if (result.kpiList && result.kpiList.length) {
+      const fullDefs = (window.getKPIDefinitions ? window.getKPIDefinitions(result.target || 'homepage') : null) || window.KPI_DEFINITIONS || [];
+      activeKpis = result.kpiList.map(k => fullDefs.find(d => d.id === k.id) || { ...k, icon: '📊', color: '#888', color2: '#666', desc: '', description: '' });
+    } else if (result.target && window.getKPIDefinitions) {
+      activeKpis = window.getKPIDefinitions(result.target);
+    } else {
+      activeKpis = window.KPI_DEFINITIONS;
+    }
+
+    grid.innerHTML = activeKpis.map(kpi => {
       const s = result.scores[kpi.id] || {};
       const value = s.value || 0;
       const insight = window.getKpiInsight(kpi, value);

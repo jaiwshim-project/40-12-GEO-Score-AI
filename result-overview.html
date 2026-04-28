@@ -43,7 +43,10 @@
         </div>
 
         <h1 style="margin-bottom: 16px;" id="companyTitle">-</h1>
-        <p style="color: var(--text-secondary); margin-bottom: 40px;" id="urlSubtitle">-</p>
+        <p style="color: var(--text-secondary); margin-bottom: 12px;" id="urlSubtitle">-</p>
+        <div style="margin-bottom: 28px;">
+          <span id="targetBadge" style="display:none;padding:6px 14px;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.35);border-radius:999px;font-size:0.82rem;font-weight:600;"></span>
+        </div>
 
         <div class="score-circle">
           <svg viewBox="0 0 280 280">
@@ -209,6 +212,10 @@
     </div>
   </footer>
 
+  <!-- 3축 KPI 모듈 (kpi-config.js 이전에 로드) -->
+  <script src="js/kpi-homepage.js"></script>
+  <script src="js/kpi-blog.js"></script>
+  <script src="js/kpi-article.js"></script>
   <script src="js/kpi-config.js"></script>
   <script src="js/common.js"></script>
   <script src="js/standalone-shim.js"></script>

@@ -34,8 +34,14 @@ export default async function handler(req, res) {
     const ip = xff.split(',')[0].trim() || 'unknown';
     const ipHash = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16);
 
+    // 3축 target_type (homepage/blog/article) — 기본 homepage
+    const targetType = ['homepage', 'blog', 'article'].includes(result.target || body.target)
+      ? (result.target || body.target)
+      : 'homepage';
+
     const record = {
       diagnosis_id:  String(result.id),
+      target_type:   targetType,
       company_name:  String(result.companyName).slice(0, 200),
       website_url:   result.websiteUrl ? String(result.websiteUrl).slice(0, 500) : null,
       industry:      result.industry ? String(result.industry).slice(0, 50) : null,

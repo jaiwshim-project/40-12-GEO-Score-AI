@@ -169,12 +169,15 @@ export default async function handler(req, res) {
     body = body || {};
 
     const { scores, totalScore, companyName, industry } = body;
+    // 3축 진단 대상 (homepage/blog/article). 후방호환을 위해 기본 homepage.
+    const target = ['homepage', 'blog', 'article'].includes(body.target) ? body.target : 'homepage';
 
     if (!scores || typeof totalScore !== 'number') {
       return res.status(400).json({ error: 'scores와 totalScore가 필요합니다' });
     }
 
     const recommendation = ruleBasedRecommendation(scores, totalScore);
+    recommendation.target = target;
 
     if (process.env.GEMINI_API_KEY && companyName) {
       try {

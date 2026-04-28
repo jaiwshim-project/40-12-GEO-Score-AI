@@ -6,6 +6,24 @@
   let currentResult = null;
   let recommendation = null;
 
+  // 3축(homepage/blog/article)에 맞는 KPI 정의 배열 가져오기
+  function getActiveKpiList(result) {
+    // 1순위: 서버 응답의 kpiList (target에 맞는 KPI 정의)
+    if (result?.kpiList && Array.isArray(result.kpiList) && result.kpiList.length) {
+      // kpiList는 {id, name, weight}만 있을 수 있으므로, target별 정의에서 풀버전 매칭
+      const target = result.target || 'homepage';
+      const fullDefs = (window.getKPIDefinitions ? window.getKPIDefinitions(target) : null) || window.KPI_DEFINITIONS || [];
+      return result.kpiList.map(k => fullDefs.find(d => d.id === k.id) || { ...k, icon: '📊', color: '#888', color2: '#666', desc: '', description: '' });
+    }
+    // 2순위: target 기준
+    if (result?.target && window.getKPIDefinitions) {
+      const defs = window.getKPIDefinitions(result.target);
+      if (defs && defs.length) return defs;
+    }
+    // 3순위: 레거시 단일 10 KPI
+    return window.KPI_DEFINITIONS || [];
+  }
+
   // 온톨로지 iframe과 데이터 통신
   window.addEventListener('message', e => {
     if (e.data && e.data.type === 'request-diagnosis') {
@@ -114,12 +132,21 @@
     document.getElementById('diagnosisText').textContent =
       result.summary?.diagnosis || '';
 
-    // 레이더 차트
-    const radarData = window.KPI_DEFINITIONS.map(kpi => ({
+    // 레이더 차트 (3축 — target에 맞는 KPI만 표시)
+    const activeKpis = getActiveKpiList(result);
+    const radarData = activeKpis.map(kpi => ({
       label: kpi.name.replace(' 지수', '').replace('지수', ''),
       value: result.scores[kpi.id]?.value || 0
     }));
     Chart.radar('radarChart', radarData);
+
+    // 진단 대상(target) 배지 표시
+    const targetBadgeEl = document.getElementById('targetBadge');
+    if (targetBadgeEl && window.TARGET_LABELS && result.target) {
+      const t = window.TARGET_LABELS[result.target] || window.TARGET_LABELS.homepage;
+      targetBadgeEl.textContent = `${t.icon} ${t.ko} 축 진단`;
+      targetBadgeEl.style.display = 'inline-block';
+    }
 
     // 강점/약점/즉시 개선
     renderStrengthsWeaknesses(result);
@@ -173,11 +200,12 @@
   }
 
   function renderStrengthsWeaknesses(result) {
+    const activeKpis = getActiveKpiList(result);
     const sorted = Object.entries(result.scores)
       .map(([id, s]) => ({
         id,
         value: s.value || 0,
-        kpi: window.KPI_DEFINITIONS.find(k => k.id === id),
+        kpi: activeKpis.find(k => k.id === id),
         reason: s.reason
       }))
       .filter(x => x.kpi);
@@ -203,7 +231,19 @@
       </div>
     `).join('');
 
-    const quickWins = sorted.filter(s => s.value < 50 && ['citation', 'conversion', 'visibility'].includes(s.id));
+    // quickWins: 점수가 낮은 KPI 중 비교적 빠르게 개선 가능한 항목
+    // (target별로 추천 키워드가 다름 — homepage/blog/article 모두 지원)
+    const quickWinIds = [
+      // homepage
+      'hp_botAccess', 'hp_sitemap', 'hp_schema', 'hp_ctaDesign',
+      // blog
+      'bl_publishFreq', 'bl_internalLinks',
+      // article
+      'ar_definitionH2', 'ar_questionH2', 'ar_ctaReach', 'ar_faq',
+      // legacy
+      'citation', 'conversion', 'visibility', 'aiCitation'
+    ];
+    const quickWins = sorted.filter(s => s.value < 50 && quickWinIds.includes(s.id));
     document.getElementById('quickWinsList').innerHTML = quickWins.length ? quickWins.map(q => `
       <div style="margin-bottom: 12px; padding: 12px; background: rgba(255,168,0,0.08); border-left: 3px solid #ffa800; border-radius: 6px;">
         <div style="font-weight:600;margin-bottom:4px;">${q.kpi.icon} ${q.kpi.name}</div>
@@ -214,7 +254,8 @@
 
   function renderKpiDetails(result) {
     const grid = document.getElementById('kpiDetailGrid');
-    grid.innerHTML = window.KPI_DEFINITIONS.map(kpi => {
+    const activeKpis = getActiveKpiList(result);
+    grid.innerHTML = activeKpis.map(kpi => {
       const s = result.scores[kpi.id] || {};
       const value = s.value || 0;
       const insight = window.getKpiInsight(kpi, value);

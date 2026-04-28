@@ -57,6 +57,7 @@
         websiteUrl: info.websiteUrl,
         industry: info.industry,
         mode: info.mode || 'url',
+        target: info.target || 'homepage',
         content: info.content || null
       });
 
@@ -68,14 +69,15 @@
       updateLoaderStage(4);
       await sleep(700);
 
-      // 추천 솔루션
+      // 추천 솔루션 (3축 target 전달)
       let recommendation = null;
       try {
         recommendation = await api.post('/api/recommend', {
           scores: result.scores,
           totalScore: result.totalScore,
           companyName: result.companyName,
-          industry: result.industry
+          industry: result.industry,
+          target: result.target || info.target || 'homepage'
         });
       } catch (e) {
         console.warn('[analyzing] recommendation 실패', e);

@@ -4,6 +4,18 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  HOMEPAGE_KPI_LIST,
+  ARTICLE_KPI_LIST,
+  BLOG_KPI_LIST,
+  computeTargetTotal,
+  deriveHomepageScores,
+  detectArticleSignals,
+  scoreArticle,
+  detectBlogSignals,
+  scoreBlog,
+  getGrade as getGrade3Axis
+} from './_lib/target-scoring.js';
 
 // 새 10 KPI 명세 (가중치 합 100%)
 const KPI_LIST = [
@@ -726,9 +738,11 @@ export default async function handler(req, res) {
     }
 
     const { companyName, websiteUrl, industry, mode, content } = body;
+    // 진단 대상 (3축): homepage / blog / article. 후방호환을 위해 기본값 homepage.
+    const target = ['homepage', 'blog', 'article'].includes(body.target) ? body.target : 'homepage';
 
     console.log('[analyze]', {
-      companyName, websiteUrl, industry, mode,
+      companyName, websiteUrl, industry, mode, target,
       contentLen: content ? content.length : 0,
       hasGemini: !!process.env.GEMINI_API_KEY
     });
@@ -736,6 +750,122 @@ export default async function handler(req, res) {
     if (!companyName) {
       return res.status(400).json({ error: '기업명이 필요합니다' });
     }
+
+    // ============================================================
+    // ARTICLE 축 — 본문 텍스트(또는 단일 글 URL)에서 6 KPI 산출
+    // ============================================================
+    if (target === 'article') {
+      let articleText = '';
+      let articleUrl = '';
+      if (mode === 'content' && content) {
+        articleText = content;
+        articleUrl = '직접 입력 콘텐츠';
+      } else if (websiteUrl) {
+        articleUrl = /^https?:\/\//i.test(websiteUrl) ? websiteUrl : 'https://' + websiteUrl;
+        const r = await fetchWebsiteContent(articleUrl);
+        articleText = r.rawHtml || r.content || '';
+      } else {
+        return res.status(400).json({ error: '글(URL 또는 본문)이 필요합니다' });
+      }
+
+      const signals = detectArticleSignals(articleText, companyName);
+      const scores = scoreArticle(signals);
+      const totalScore = computeTargetTotal('article', scores);
+      const grade = getGrade3Axis(totalScore);
+      const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const responseBody = {
+        success: true,
+        id: responseId,
+        target,
+        companyName,
+        websiteUrl: articleUrl,
+        industry: industry || '미분류',
+        analyzedAt: new Date().toISOString(),
+        totalScore,
+        grade,
+        scores,
+        kpiList: ARTICLE_KPI_LIST,
+        weights: ARTICLE_KPI_LIST.reduce((a, k) => { a[k.id] = k.weight; return a; }, {}),
+        summary: {
+          headline: `${companyName}의 글 GEO 점수는\n${totalScore}점 (${grade.label})입니다`,
+          diagnosis: buildArticleDiagnosis(scores, totalScore)
+        },
+        meta: {
+          usedGemini: false,
+          contentLength: articleText.length,
+          articleSignals: signals,
+          kpiVersion: '3.0-3axis-article'
+        }
+      };
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        try { await saveToSupabase(responseBody, mode || 'content', req, target); } catch (e) { console.error('[analyze:article] save', e.message); }
+      }
+      return res.status(200).json(responseBody);
+    }
+
+    // ============================================================
+    // BLOG 축 — 블로그 인덱스 URL에서 5 KPI 산출
+    // ============================================================
+    if (target === 'blog') {
+      if (!websiteUrl) {
+        return res.status(400).json({ error: '블로그 URL이 필요합니다' });
+      }
+      const blogUrl = /^https?:\/\//i.test(websiteUrl) ? websiteUrl : 'https://' + websiteUrl;
+      const indexRes = await fetchWebsiteContent(blogUrl);
+      const indexHtml = indexRes.rawHtml || '';
+      // 샘플 글 페이지 — 같은 도메인 내 글 링크 3개를 골라 fetch
+      let sampleArticles = [];
+      try {
+        const articleLinks = [...indexHtml.matchAll(/<a[^>]+href=["']([^"']+)["']/gi)]
+          .map(m => m[1])
+          .filter(href => /\/(post|article|blog|read|view|\d{4})/.test(href))
+          .slice(0, 3);
+        const sampleFetches = await Promise.allSettled(articleLinks.map(href => {
+          const fullUrl = href.startsWith('http') ? href : new URL(href, blogUrl).toString();
+          return fetchWebsiteContent(fullUrl);
+        }));
+        sampleArticles = sampleFetches
+          .filter(r => r.status === 'fulfilled' && r.value.ok)
+          .map(r => ({ html: r.value.rawHtml || '' }));
+      } catch (_) {}
+
+      const signals = detectBlogSignals(indexHtml, sampleArticles);
+      const scores = scoreBlog(signals);
+      const totalScore = computeTargetTotal('blog', scores);
+      const grade = getGrade3Axis(totalScore);
+      const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const responseBody = {
+        success: true,
+        id: responseId,
+        target,
+        companyName,
+        websiteUrl: blogUrl,
+        industry: industry || '미분류',
+        analyzedAt: new Date().toISOString(),
+        totalScore,
+        grade,
+        scores,
+        kpiList: BLOG_KPI_LIST,
+        weights: BLOG_KPI_LIST.reduce((a, k) => { a[k.id] = k.weight; return a; }, {}),
+        summary: {
+          headline: `${companyName}의 블로그 GEO 점수는\n${totalScore}점 (${grade.label})입니다`,
+          diagnosis: buildBlogDiagnosis(scores, totalScore, sampleArticles.length)
+        },
+        meta: {
+          usedGemini: false,
+          contentLength: indexHtml.length,
+          sampleArticleCount: sampleArticles.length,
+          blogSignals: signals,
+          kpiVersion: '3.0-3axis-blog'
+        }
+      };
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        try { await saveToSupabase(responseBody, mode || 'url', req, target); } catch (e) { console.error('[analyze:blog] save', e.message); }
+      }
+      return res.status(200).json(responseBody);
+    }
+
+    // target === 'homepage' (기본) → 아래 기존 flow 사용 (homepage 축 응답으로 태깅)
 
     let url = '';
     let fetchResult;
@@ -963,18 +1093,31 @@ export default async function handler(req, res) {
     }
 
     const responseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+    // 3축 체계: homepage 축 점수(hp_*)를 legacy scores에서 파생
+    const homepageScores = deriveHomepageScores(analysis.scores, infraSignals, fetchResult);
+    const homepageTotal = computeTargetTotal('homepage', homepageScores);
+
     const responseBody = {
       success: true,
       id: responseId,
+      target,  // 'homepage'
       companyName,
       websiteUrl: url,
       industry: industry || analysis.summary?.industryDetected || '미분류',
       analyzedAt: new Date().toISOString(),
-      totalScore,
-      grade,
-      scores: analysis.scores,
-      legacyScores,
-      weights: WEIGHTS,
+      // 3축 체계: homepage 점수를 메인으로 노출 (UI는 target 기반으로 사용)
+      totalScore: homepageTotal,
+      grade: getGrade3Axis(homepageTotal),
+      scores: homepageScores,
+      kpiList: HOMEPAGE_KPI_LIST,
+      weights: HOMEPAGE_KPI_LIST.reduce((a, k) => { a[k.id] = k.weight; return a; }, {}),
+      // 후방호환: legacy 10 KPI도 함께 노출
+      legacyScores: analysis.scores,
+      legacyTotalScore: totalScore,
+      legacyGrade: grade,
+      legacyKpiAlias: legacyScores,
+      legacyWeights: WEIGHTS,
       summary: analysis.summary,
       competitors: analysis.competitors || [
         { label: '업계 평균', value: 45 },
@@ -986,7 +1129,7 @@ export default async function handler(req, res) {
         contentLength: fetchResult.meta?.contentLength || 0,
         aiwSignals,
         infraSignals,
-        kpiVersion: '2.0-weighted-10kpi'
+        kpiVersion: '3.0-3axis-homepage'
       }
     };
 
@@ -994,7 +1137,7 @@ export default async function handler(req, res) {
     // (저장 실패해도 응답은 정상 반환 — try/catch 내부 처리)
     if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
-        await saveToSupabase(responseBody, mode, req);
+        await saveToSupabase(responseBody, mode, req, target);
       } catch (err) {
         console.error('[analyze] Supabase 저장 실패 (응답에는 영향 없음)', err.message);
       }
@@ -1010,8 +1153,30 @@ export default async function handler(req, res) {
   }
 }
 
-// Supabase 자동 저장 헬퍼 (fire-and-forget)
-async function saveToSupabase(result, mode, req) {
+// Article/Blog용 간단 진단 톤 (homepage는 기존 로직 사용)
+function buildArticleDiagnosis(scores, total) {
+  const sorted = Object.entries(scores).map(([k, s]) => ({ k, v: s.value || 0 })).sort((a, b) => a.v - b.v);
+  const weakest = sorted.slice(0, 2).map(x => x.k).join(', ');
+  if (total >= 85) return `본문 신호가 매우 우수합니다. 약점 KPI(${weakest})만 보강하면 AI 인용 가능성이 최상위 수준입니다.`;
+  if (total >= 70) return `기본 본문 구조는 갖춰졌으나 AI 인용 최적화에는 일부 부족합니다. ${weakest} 영역 보강이 우선입니다.`;
+  if (total >= 55) return `정의문 H2/질문형 H2/CTA 도달률 등 핵심 본문 신호가 부족합니다. ${weakest} 영역에서 즉시 보강이 필요합니다.`;
+  if (total >= 40) return `본문이 AI 인용 친화적이지 않습니다. /90upgrade 또는 재작성 도구로 본문 자체를 재구성하시길 권장합니다.`;
+  return `본문 신호가 거의 없어 AI 답변에 등장할 가능성이 매우 낮습니다. 처음부터 다시 작성하는 것이 효율적입니다.`;
+}
+
+function buildBlogDiagnosis(scores, total, sampleCount) {
+  const sorted = Object.entries(scores).map(([k, s]) => ({ k, v: s.value || 0 })).sort((a, b) => a.v - b.v);
+  const weakest = sorted.slice(0, 2).map(x => x.k).join(', ');
+  const note = sampleCount === 0 ? ' (샘플 글을 가져오지 못해 일부 KPI는 인덱스 페이지만으로 추정)' : '';
+  if (total >= 85) return `블로그 운영이 매우 활발합니다. 약점 KPI(${weakest})만 보강하면 주제 권위가 최상위 수준에 도달합니다.${note}`;
+  if (total >= 70) return `발행과 운영 기반은 갖춰졌으나 AI 인용 최적화에는 일부 부족합니다. ${weakest} 영역 보강이 우선입니다.${note}`;
+  if (total >= 55) return `발행 빈도/카테고리/내부 링크 중 다수가 임계점 미만입니다. ${weakest} 영역에서 운영 정비가 시급합니다.${note}`;
+  if (total >= 40) return `블로그 운영이 정체된 상태입니다. 발행 주기 회복과 카테고리 깊이 확장이 필수입니다.${note}`;
+  return `블로그가 사실상 비활성 상태로 AI 학습에 등장할 가능성이 매우 낮습니다. 발행 자체를 재개해야 합니다.${note}`;
+}
+
+// Supabase 자동 저장 헬퍼 (fire-and-forget) — 3축 target 지원
+async function saveToSupabase(result, mode, req, target) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
@@ -1023,6 +1188,7 @@ async function saveToSupabase(result, mode, req) {
 
   const record = {
     diagnosis_id:  result.id,
+    target_type:   target || result.target || 'homepage',
     company_name:  String(result.companyName).slice(0, 200),
     website_url:   result.websiteUrl ? String(result.websiteUrl).slice(0, 500) : null,
     industry:      result.industry ? String(result.industry).slice(0, 50) : null,

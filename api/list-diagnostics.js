@@ -65,6 +65,10 @@ export default async function handler(req, res) {
       const f = body.filter;
       if (f.gradeKey) qs += `&grade_key=eq.${encodeURIComponent(f.gradeKey)}`;
       if (f.industry) qs += `&industry=eq.${encodeURIComponent(f.industry)}`;
+      // 3축 target_type 필터 (homepage/blog/article)
+      if (f.targetType && ['homepage', 'blog', 'article'].includes(f.targetType)) {
+        qs += `&target_type=eq.${encodeURIComponent(f.targetType)}`;
+      }
       if (f.minScore != null) qs += `&total_score=gte.${parseInt(f.minScore, 10)}`;
       if (f.maxScore != null) qs += `&total_score=lte.${parseInt(f.maxScore, 10)}`;
       if (f.search) {

@@ -1,8 +1,14 @@
-# /90upgrade — GEO Score 90점 자동 업그레이드
+# /90upgrade — GEO Score 90점 자동 업그레이드 (v3.0 — Article 축 기준)
 
-입력된 콘텐츠를 분석·평가한 뒤, **부족한 신호를 자동 보강**하여 GEO Score **90점 이상**의 글로 재작성한다. 자가 검증 루프(최대 3회)로 목표 점수 도달까지 자동 반복.
+입력된 **글 본문**을 분석·평가한 뒤, **부족한 신호를 자동 보강**하여 Article 축 GEO Score **90점 이상**의 글로 재작성한다. 자가 검증 루프(최대 3회)로 목표 점수 도달까지 자동 반복.
 
 > 단순 "AI 글쓰기"가 아니라, **측정 가능한 점수 체계**에 기반한 **결정적(deterministic) 콘텐츠 업그레이드 알고리즘**.
+
+**v3.0 변경**: 본 문서는 **Article 축 6 KPI** 기준으로 동작합니다.
+- `ar_definitionH2` (정의문 H2) · `ar_questionH2` (질문형 H2) · `ar_brandRepetition` (브랜드 반복)
+- `ar_externalCitation` (외부 인용) · `ar_ctaReach` (CTA 도달률) · `ar_faq` (FAQ 구조)
+
+홈페이지/블로그 축 업그레이드는 별도 도구(`/90upgrade-homepage`, `/90upgrade-blog`)로 분리됩니다 (향후 도입).
 
 ---
 

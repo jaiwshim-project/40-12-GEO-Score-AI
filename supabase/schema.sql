@@ -13,6 +13,8 @@
 CREATE TABLE IF NOT EXISTS diagnostics (
   id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
   diagnosis_id    TEXT            UNIQUE NOT NULL,        -- 클라이언트 측 sessionStorage ID와 매칭
+  -- 3축 진단 대상 (v3.0+): homepage / blog / article
+  target_type     TEXT            NOT NULL DEFAULT 'homepage' CHECK (target_type IN ('homepage','blog','article')),
   company_name    TEXT            NOT NULL,
   website_url     TEXT,
   industry        TEXT,
@@ -45,6 +47,15 @@ CREATE INDEX IF NOT EXISTS idx_diagnostics_total_score ON diagnostics(total_scor
 CREATE INDEX IF NOT EXISTS idx_diagnostics_grade_key ON diagnostics(grade_key);
 CREATE INDEX IF NOT EXISTS idx_diagnostics_company_name ON diagnostics USING gin(to_tsvector('simple', company_name));
 CREATE INDEX IF NOT EXISTS idx_diagnostics_industry ON diagnostics(industry);
+CREATE INDEX IF NOT EXISTS idx_diagnostics_target_type ON diagnostics(target_type, created_at DESC);
+
+-- ============================================================
+-- 1.1 ALTER TABLE 마이그레이션 (기존 테이블이 있는 경우)
+-- ============================================================
+-- 기존 diagnostics 테이블에 target_type 컬럼이 없을 때 안전하게 추가:
+--   ALTER TABLE diagnostics ADD COLUMN IF NOT EXISTS target_type TEXT NOT NULL DEFAULT 'homepage'
+--     CHECK (target_type IN ('homepage','blog','article'));
+--   CREATE INDEX IF NOT EXISTS idx_diagnostics_target_type ON diagnostics(target_type, created_at DESC);
 
 -- ============================================================
 -- 2. RLS (Row Level Security) — 기본 차단
@@ -86,4 +97,19 @@ SELECT
 FROM diagnostics
 WHERE industry IS NOT NULL AND industry != ''
 GROUP BY industry
+ORDER BY count DESC;
+
+-- ============================================================
+-- 5. 3축 (target_type) 통계 뷰
+-- ============================================================
+CREATE OR REPLACE VIEW diagnostics_by_target AS
+SELECT
+  target_type,
+  COUNT(*) AS count,
+  ROUND(AVG(total_score)::numeric, 1) AS avg_score,
+  MAX(total_score) AS max_score,
+  MIN(total_score) AS min_score,
+  COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS last_30_days
+FROM diagnostics
+GROUP BY target_type
 ORDER BY count DESC;
