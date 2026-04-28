@@ -131,21 +131,73 @@ window.ResultShared = (function() {
     }
   }
 
-  // 진입점
-  function init(renderTabContent) {
-    const result = load();
-    if (!result) {
-      // 결과 없으면 analyzing.html로 리다이렉트 (id가 있으면) 또는 에러
-      if (_id) {
-        const stored = sessionStorage.getItem('current_diagnosis');
-        if (stored) {
-          location.href = 'analyzing.html?id=' + _id;
-          return;
+  // Supabase에서 단일 진단 조회 (sessionStorage 없을 때 fallback)
+  async function loadFromApi(id) {
+    try {
+      const r = await fetch('/api/get-diagnosis?id=' + encodeURIComponent(id), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data.success || !data.result) return null;
+      _result = data.result;
+      _recommendation = data.recommendation || null;
+      // KPI 마이그레이션 (옛 진단 호환)
+      if (_result && _result.scores) {
+        const keys = Object.keys(_result.scores);
+        const hasNewKpi = keys.some(k => ['botAccess','sitemapStatus','indexExposure','aiCitation','cepScene','hp_botAccess','hp_schema','hp_pageInfo'].includes(k));
+        const hasLegacyKpi = keys.some(k => ['visibility','velocity','citation','aio'].includes(k));
+        if (!hasNewKpi && hasLegacyKpi && window.migrateLegacyScores) {
+          const migrated = window.migrateLegacyScores(_result.scores);
+          _result.scores = Object.assign({}, _result.scores, migrated);
+        } else if (hasNewKpi && !hasLegacyKpi && _result.legacyScores) {
+          _result.scores = Object.assign({}, _result.scores, _result.legacyScores);
         }
       }
-      showError('진단 정보를 찾을 수 없습니다. 처음부터 다시 시작해주세요.');
+      // sessionStorage에도 캐시 (같은 탭 내 다른 result-* 페이지 방문 시 재요청 방지)
+      try {
+        sessionStorage.setItem('current_result_' + id, JSON.stringify({ result: _result, recommendation: _recommendation }));
+      } catch (e) {}
+      return _result;
+    } catch (e) {
+      console.warn('[result-shared] API fallback 실패', e);
+      return null;
+    }
+  }
+
+  // 진입점 (비동기 — API fallback 지원)
+  function init(renderTabContent) {
+    let result = load();
+    if (result) {
+      // 정상 흐름: sessionStorage에서 즉시 로드
+      _renderAll(result, renderTabContent);
       return;
     }
+    // sessionStorage 없음 → API fallback (관리 대시보드에서 새 탭으로 열린 경우 등)
+    if (_id) {
+      // 진단 진행 중 (current_diagnosis가 있으면) → analyzing 페이지로
+      const stored = sessionStorage.getItem('current_diagnosis');
+      if (stored) {
+        try {
+          const d = JSON.parse(stored);
+          if (d.id === _id) {
+            location.href = 'analyzing.html?id=' + _id;
+            return;
+          }
+        } catch (e) {}
+      }
+      // Supabase에서 가져오기
+      loadFromApi(_id).then(r => {
+        if (r) _renderAll(r, renderTabContent);
+        else showError('진단 정보를 찾을 수 없습니다. 처음부터 다시 시작해주세요.');
+      });
+      return;
+    }
+    showError('진단 ID가 없습니다.');
+  }
+
+  function _renderAll(result, renderTabContent) {
     syncTabLinks();
     renderScoreHero(result);
     setupCTA(result, _recommendation);
