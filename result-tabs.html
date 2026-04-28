@@ -107,41 +107,25 @@
   <section id="resultSection" class="section">
     <div class="container">
 
-      <!-- 종합 점수 (상단 그래프 — 그대로 유지) -->
-      <div class="score-hero">
-        <div class="hero-badge">
+      <!-- 페이지 헤더 (점수 hero는 result-overview에 있으므로 여기서는 간단한 헤더만) -->
+      <div style="text-align: center; padding: 32px 16px 16px;">
+        <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(255,107,53,0.12); border: 1px solid rgba(255,107,53,0.3); border-radius: 999px;">
           <span class="pulse"></span>
-          <span id="resultMeta">진단 완료</span>
+          <span id="resultMeta" style="font-size: 0.78rem; font-weight: 600; color: var(--color-accent);">📋 통합 분석</span>
         </div>
-
-        <h1 style="margin-bottom: 16px;" id="companyTitle">-</h1>
-        <p style="color: var(--text-secondary); margin-bottom: 40px;" id="urlSubtitle">-</p>
-
-        <div class="score-circle">
-          <svg viewBox="0 0 280 280">
-            <defs>
-              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#ff6b35" />
-                <stop offset="50%" stop-color="#ffa800" />
-                <stop offset="100%" stop-color="#00d68f" />
-              </linearGradient>
-            </defs>
-            <circle class="score-circle-bg" cx="140" cy="140" r="120" />
-            <circle class="score-circle-fg" id="scoreFg" cx="140" cy="140" r="120"
-                    stroke-dasharray="753.98" stroke-dashoffset="753.98"
-                    transform="rotate(-90 140 140)" />
-          </svg>
-          <div class="score-content">
-            <div class="score-value" id="scoreValue">0</div>
-            <div class="score-total">/ 100</div>
-          </div>
+        <h1 style="margin: 16px 0 8px;" id="companyTitle">-</h1>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;" id="urlSubtitle">-</p>
+        <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-top: 8px;">
+          <a href="result-overview.html" data-href="result-overview.html" style="color: var(--color-accent); text-decoration: none;">← 점수 요약 페이지로 돌아가기</a>
+        </p>
+        <!-- 점수 hero에 있던 hidden id 컨테이너 (result-shared.js 의존성 보존) -->
+        <div style="display: none;">
+          <span id="scoreValue">0</span>
+          <span id="scoreGrade">-</span>
+          <span id="shockMessage">-</span>
+          <span id="diagnosisText">-</span>
+          <svg><circle id="scoreFg" cx="0" cy="0" r="0"></circle></svg>
         </div>
-
-        <div class="score-grade" id="scoreGrade">-</div>
-
-        <div class="shock-message" id="shockMessage">분석 결과를 준비 중입니다</div>
-
-        <p style="color: var(--text-secondary); max-width: 720px; margin: 0 auto;" id="diagnosisText">-</p>
       </div>
 
       <!-- 8개 탭 sub-nav (sticky) -->
