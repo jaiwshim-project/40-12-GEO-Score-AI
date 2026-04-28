@@ -12,17 +12,24 @@
   console.log('[standalone-shim] file:// 감지 — API mock 활성화');
 
   const KPI_LIST = [
-    { id: 'visibility' },
-    { id: 'velocity' },
-    { id: 'authority' },
-    { id: 'citation' },
-    { id: 'engagement' },
-    { id: 'conversion' },
-    { id: 'channel' },
-    { id: 'brand' },
-    { id: 'competitive' },
-    { id: 'aio' }
+    { id: 'botAccess' },
+    { id: 'sitemapStatus' },
+    { id: 'indexExposure' },
+    { id: 'structuredData' },
+    { id: 'pageInfo' },
+    { id: 'contentDepth' },
+    { id: 'externalAuthority' },
+    { id: 'eeat' },
+    { id: 'aiCitation' },
+    { id: 'cepScene' }
   ];
+
+  // 새 KPI 가중치 (kpi-config.js와 동일, 합 100)
+  const KPI_WEIGHTS = {
+    botAccess: 14, sitemapStatus: 10, indexExposure: 13, structuredData: 12,
+    pageInfo: 8, contentDepth: 10, externalAuthority: 9, eeat: 8,
+    aiCitation: 10, cepScene: 6
+  };
 
   // 문자열 기반 결정적 의사난수 (companyName + URL이 같으면 같은 점수)
   function hashString(str) {
@@ -279,42 +286,107 @@
     };
   }
 
-  // 신호 → 점수 변환 + 사유 메시지
+  // 신호 → 점수 변환 + 사유 메시지 (새 10 KPI 체계)
   function scoreFromSignals(signals, mode) {
     const cap = (v, max = 95) => Math.max(5, Math.min(max, Math.round(v)));
     const s = signals;
-    const isContent = mode === 'content';
 
-    // 각 KPI별 점수 계산 (기본값 + 신호별 가산)
     const scores = {};
 
-    // 1. visibility (검색 가시성): 헤딩 + 콘텐츠 길이 + 숫자/리스트
+    // 1. botAccess (AI 봇 접근): 콘텐츠 모드에서는 직접 측정 불가 → 휴리스틱 기본값
+    //    Schema/FAQ가 있으면 봇 친화적 사이트로 추정. 콘텐츠가 풍부하면 가산.
+    {
+      let v = 55; // 일반 사이트는 대부분 봇 접근 허용
+      v += s.schema * 8;               // 0~16 (구조화가 있으면 봇 친화적)
+      v += s.lengthGood ? 8 : 0;
+      v += s.heading * 3;              // 0~6
+      v += s.faq >= 2 ? 6 : 0;
+      const reason = s.schema >= 1
+        ? 'GPTBot·ClaudeBot·PerplexityBot 등 주요 AI 봇이 접근 가능한 구조로 추정됩니다.'
+        : 'AI 봇 접근 여부를 robots.txt·헤더에서 직접 확인하고 허용 설정을 점검하세요.';
+      scores.botAccess = { value: cap(v), reason };
+    }
+
+    // 2. sitemapStatus (Sitemap 상태): 콘텐츠 양·헤딩으로 페이지 규모 추정
+    {
+      let v = 40;
+      v += s.heading * 6;                                                    // 0~12
+      v += s.lengthExcellent ? 24 : (s.lengthGood ? 14 : (s.lengthOK ? 6 : 0));
+      v += s.channel * 6;                                                    // 0~12 (블로그/뉴스 채널 → URL 풍부 추정)
+      v += s.hasDates ? 6 : 0;
+      const reason = s.lengthGood && s.channel >= 1
+        ? 'sitemap.xml에 다수 URL이 등록될 만큼 콘텐츠 자산이 누적되어 있습니다.'
+        : 'sitemap.xml 정상 동작과 URL 등록 수를 점검하세요. 블로그·소식 채널 누적이 필요합니다.';
+      scores.sitemapStatus = { value: cap(v), reason };
+    }
+
+    // 3. indexExposure (검색 색인): 헤딩 + 콘텐츠 + 숫자/리스트 → 색인 가능 페이지 추정
     {
       let v = 25;
       v += s.heading * 18;                                                   // 0~36
-      v += s.lengthExcellent ? 22 : (s.lengthGood ? 14 : (s.lengthOK ? 6 : 0)); // 0~22
+      v += s.lengthExcellent ? 22 : (s.lengthGood ? 14 : (s.lengthOK ? 6 : 0));
       v += s.hasNumbers ? 12 : 0;
       v += s.hasLists ? 10 : 0;
       const reason = s.heading >= 2 && s.lengthGood
-        ? '제목 구조와 충분한 본문이 갖춰져 있어 검색 노출 기반은 양호합니다.'
-        : '메타 정보·헤딩 구조·본문 길이 중 보강 필요한 영역이 있습니다.';
-      scores.visibility = { value: cap(v), reason };
+        ? '제목 구조와 본문이 갖춰져 구글·네이버 색인 기반은 양호합니다.'
+        : '색인 대상 페이지·헤딩 구조·본문 길이 중 보강 필요한 영역이 있습니다.';
+      scores.indexExposure = { value: cap(v), reason };
     }
 
-    // 2. velocity (콘텐츠 생산력): 블로그·날짜 표시·콘텐츠 양
+    // 4. structuredData (구조화 데이터): Schema + FAQ + 헤딩 + 리스트
     {
-      let v = 25;
-      v += s.channel * 14;                                                   // 0~28
-      v += s.hasDates ? 18 : 0;
-      v += s.lengthExcellent ? 22 : (s.lengthGood ? 12 : 0);
-      v += s.hasNumbers ? 8 : 0;
-      const reason = s.channel >= 1 && s.hasDates
-        ? '블로그/소식 채널과 날짜 표기가 있어 정기 발행 신호가 있습니다.'
-        : '정기적인 콘텐츠 발행 흐름과 최신성 표시가 부족합니다.';
-      scores.velocity = { value: cap(v), reason };
+      let v = 22;
+      v += s.schema * 18;        // 0~36
+      v += s.faq * 8;            // 0~32
+      v += s.heading * 4;        // 0~8
+      v += s.hasLists ? 6 : 0;
+      const reason = s.schema >= 1 && s.faq >= 2
+        ? 'Schema.org JSON-LD + FAQPage 마크업이 적용되어 AI 학습 친화적입니다.'
+        : 'Schema.org JSON-LD·FAQPage·Organization 마크업이 부족합니다.';
+      scores.structuredData = { value: cap(v), reason };
     }
 
-    // 3. authority (E-E-A-T 신뢰도): 전문성 + 경험 + 권위 + 신뢰 4종 종합
+    // 5. pageInfo (페이지 메타): 헤딩 + 본문 + 신뢰 정보(연락처/주소)
+    {
+      let v = 30;
+      v += s.heading * 14;                                                   // 0~28
+      v += s.trust * 6;                                                      // 0~18
+      v += s.lengthGood ? 12 : (s.lengthOK ? 6 : 0);
+      v += s.hasLists ? 6 : 0;
+      const reason = s.heading >= 2 && s.trust >= 2
+        ? '메타 태그·H1/H2·연락처 등 페이지 정보가 충실합니다.'
+        : '메타 태그·canonical·OG·H1/H2 완비도를 보강해야 합니다.';
+      scores.pageInfo = { value: cap(v), reason };
+    }
+
+    // 6. contentDepth (콘텐츠 깊이): 본문 양 + 채널 + 날짜 + 숫자/리스트
+    {
+      let v = 22;
+      v += s.lengthExcellent ? 26 : (s.lengthGood ? 16 : (s.lengthOK ? 8 : 0));
+      v += s.channel * 12;                                                   // 0~24
+      v += s.hasDates ? 14 : 0;
+      v += s.hasNumbers ? 6 : 0;
+      v += s.hasLists ? 4 : 0;
+      const reason = s.lengthGood && s.channel >= 1 && s.hasDates
+        ? '블로그/소식 채널과 충분한 본문, 날짜 표기로 콘텐츠 깊이가 풍부합니다.'
+        : '본문 깊이·발행 빈도·최신성 중 보강 필요 영역이 있습니다.';
+      scores.contentDepth = { value: cap(v), reason };
+    }
+
+    // 7. externalAuthority (외부 권위): authority 신호 + review + 신뢰
+    {
+      let v = 28;
+      v += s.authority * 9;       // 0~27 (언론·수상·고객사)
+      v += s.review * 8;          // 0~16
+      v += s.trust * 5;           // 0~15
+      v += s.competitive >= 1 ? 6 : 0;
+      const reason = s.authority >= 2
+        ? '언론 보도·수상·외부 언급 등 외부 권위 신호가 잘 노출되어 있습니다.'
+        : '언론 보도·외부 백링크·외부 언급이 부족해 외부 권위가 약합니다.';
+      scores.externalAuthority = { value: cap(v), reason };
+    }
+
+    // 8. eeat (E-E-A-T 신호): 전문성 + 경험 + 권위 + 신뢰
     {
       let v = 25;
       v += s.expert * 7;        // 0~28
@@ -327,110 +399,48 @@
         : totalEEAT >= 4
           ? `E-E-A-T 일부 신호 확인 (총 ${totalEEAT}/13). 저자 정보·실적·인증 보강 필요.`
           : `E-E-A-T 신호 부족 (총 ${totalEEAT}/13). 전문성·경험·권위 입증 자료가 거의 없습니다.`;
-      scores.authority = { value: cap(v), reason };
+      scores.eeat = { value: cap(v), reason };
     }
 
-    // 4. citation (AI 인용 가능성): FAQ + Schema + 헤딩 구조 + ai_writing 4신호
-    // 출처: ai_writing.md — 측정 4신호 (질문형 H2 / 브랜드 반복 / 외부 신호 / CTA 도달률)
+    // 9. aiCitation (AI 인용 5신호 ⭐): 자체 차별점
+    //    ai_writing 5 측정 신호 (질문형/정의문 H2 · 브랜드 반복 · 외부 신호 · CTA 도달률) + FAQ/Schema 보강
     {
       let v = 18;
-      // 기존 구조 신호
-      v += s.faq * 7;            // 0~28
-      v += s.schema * 9;         // 0~18
+      v += s.faq * 6;            // 0~24
+      v += s.schema * 8;         // 0~16
       v += s.heading * 3;        // 0~6
-      v += s.hasLists ? 4 : 0;
-      // ai_writing 5 측정 신호 (각 0~3 = 최대 15)
+      // ai_writing 5 측정 신호 (각 0~3 = 최대 15) → 가중 2.5
       v += (s.questionHeadings || 0) * 2.5; // 0~7.5
-      v += (s.definitionH2     || 0) * 2.5; // 0~7.5 (원칙 2)
+      v += (s.definitionH2     || 0) * 2.5; // 0~7.5
       v += (s.brandRepetition  || 0) * 2.5; // 0~7.5
       v += (s.externalSignal   || 0) * 2.5; // 0~7.5
       v += (s.ctaReach         || 0) * 2.5; // 0~7.5
-      // 18 + 28 + 18 + 6 + 4 + 37.5 = 111.5 → cap 95
 
       const aiwTotal = (s.questionHeadings || 0) + (s.definitionH2 || 0) + (s.brandRepetition || 0)
                      + (s.externalSignal || 0) + (s.ctaReach || 0); // 0~15
 
       const reason = s.faq >= 2 && s.schema >= 1 && aiwTotal >= 10
-        ? `FAQ + 구조화 데이터 + AI 인용 5신호(질문형 H2 ${Math.round((s.questionH2Rate||0)*100)}% · 정의문 H2 ${Math.round((s.definitionH2Rate||0)*100)}% · 브랜드반복 ${Math.round((s.brandRepetitionRate||0)*100)}% · 외부신호 ${Math.round((s.externalSignalRate||0)*100)}% · CTA도달 ${Math.round((s.ctaReachRate||0)*100)}%)가 모두 갖춰져 LLM 인용에 최적입니다.`
+        ? `AI 인용 5신호 모두 충족 (질문형 H2 ${Math.round((s.questionH2Rate||0)*100)}% · 정의문 H2 ${Math.round((s.definitionH2Rate||0)*100)}% · 브랜드반복 ${Math.round((s.brandRepetitionRate||0)*100)}% · 외부신호 ${Math.round((s.externalSignalRate||0)*100)}% · CTA도달 ${Math.round((s.ctaReachRate||0)*100)}%) — LLM 인용에 최적입니다.`
         : s.faq >= 2 && s.schema >= 1
-          ? `FAQ + Schema는 있으나 ai_writing 5신호 보강 필요 (질문형 H2 ${Math.round((s.questionH2Rate||0)*100)}% · 정의문 H2 ${Math.round((s.definitionH2Rate||0)*100)}% · 브랜드반복 ${Math.round((s.brandRepetitionRate||0)*100)}% · CTA도달 ${Math.round((s.ctaReachRate||0)*100)}%, 목표 50%+).`
-          : s.faq >= 2
-            ? 'FAQ 구조는 있으나 Schema.org JSON-LD 마크업과 ai_writing 5신호(질문형/정의문 H2·브랜드 반복·외부 인용·CTA)가 빠져 AI 인식률이 낮습니다.'
-            : 'FAQ/Q&A·Schema·ai_writing 5신호(질문형 H2·정의문 H2·브랜드반복·외부신호·CTA도달)가 모두 부족해 AI 답변에 인용되기 어렵습니다.';
-      scores.citation = { value: cap(v), reason };
+          ? `FAQ + Schema는 있으나 AI 인용 5신호 보강 필요 (질문형 H2 ${Math.round((s.questionH2Rate||0)*100)}% · 정의문 H2 ${Math.round((s.definitionH2Rate||0)*100)}% · 브랜드반복 ${Math.round((s.brandRepetitionRate||0)*100)}% · CTA도달 ${Math.round((s.ctaReachRate||0)*100)}%, 목표 50%+).`
+          : 'AI 인용 5신호(질문형/정의문 H2·브랜드 반복·외부 신호·CTA 도달)가 부족해 LLM 답변 등장 가능성이 낮습니다.';
+      scores.aiCitation = { value: cap(v), reason };
     }
 
-    // 5. engagement (고객 참여도): 리뷰 + 채널 + 신뢰 신호
-    {
-      let v = 26;
-      v += s.review * 18;
-      v += s.channel * 10;
-      v += s.trust * 6;
-      v += s.hasNumbers ? 6 : 0;
-      const reason = s.review >= 2
-        ? '리뷰/후기 시스템과 정량 평가 신호가 노출되어 있습니다.'
-        : '리뷰·평점·고객 사례 등 사회적 증거 신호가 부족합니다.';
-      scores.engagement = { value: cap(v), reason };
-    }
-
-    // 6. conversion (전환 설계): CTA 신호
-    {
-      let v = 25;
-      v += s.cta * 18;          // 0~54
-      v += s.trust * 7;         // 0~21
-      const reason = s.cta >= 2
-        ? 'CTA(상담/예약/문의)와 행동 유도 장치가 명확합니다.'
-        : 'CTA가 약하거나 명확한 다음 단계 안내가 부족해 전환이 일어나기 어렵습니다.';
-      scores.conversion = { value: cap(v), reason };
-    }
-
-    // 7. channel (채널 확장): 멀티채널
-    {
-      let v = 25;
-      v += s.channel * 22;
-      v += s.heading >= 1 ? 8 : 0;
-      v += s.lengthGood ? 8 : 0;
-      const reason = s.channel >= 2
-        ? '블로그·SNS·외부 채널 분포가 양호합니다.'
-        : '단일 채널 중심으로 멀티채널 확장 여지가 큽니다.';
-      scores.channel = { value: cap(v), reason };
-    }
-
-    // 8. brand (브랜드 일관성): 브랜드 명칭 반복 + 가치 표현
-    {
-      let v = 25;
-      v += s.brand * 20;
-      v += s.lengthGood ? 10 : (s.lengthOK ? 5 : 0);
-      v += s.heading >= 2 ? 8 : 0;
-      const reason = s.brand >= 2
-        ? '브랜드 명칭이 반복되고 미션/가치 메시지가 함께 노출됩니다.'
-        : '브랜드 정체성·미션·약속을 명시하는 메시지가 부족합니다.';
-      scores.brand = { value: cap(v), reason };
-    }
-
-    // 9. competitive (경쟁 점유율): 비교/차별화 신호
-    {
-      let v = 30;
-      v += s.competitive * 22;
-      v += s.authority >= 2 ? 12 : 0;
-      v += s.hasNumbers ? 8 : 0;
-      const reason = s.competitive >= 1
-        ? '경쟁사 대비 차별점 또는 시장 위치를 언급하고 있습니다.'
-        : '경쟁 환경에서의 차별화 포인트나 시장 위치 정보가 부족합니다.';
-      scores.competitive = { value: cap(v), reason };
-    }
-
-    // 10. aio (AI 최적화 준비도): Schema + FAQ + 헤딩 + 리스트 종합
+    // 10. cepScene (CEP 장면 점유 ⭐): 자체 차별점
+    //     "순간(scene)" 콘텐츠 — 질문형 H2(상황 가정) + 외부 신호(후기) + 브랜드 반복 + 콘텐츠 깊이
     {
       let v = 22;
-      v += s.schema * 18;        // 0~36
-      v += s.faq * 8;            // 0~32
-      v += s.heading * 6;
-      v += s.hasLists ? 8 : 0;
-      const reason = s.schema >= 1 && s.faq >= 2
-        ? '구조화 마크업 + FAQ 조합으로 AI 학습 친화적 형식입니다.'
-        : 'Schema.org JSON-LD, FAQ 구조 등 LLM 친화적 마크업이 부족합니다.';
-      scores.aio = { value: cap(v), reason };
+      v += (s.questionHeadings || 0) * 5;  // 0~15 (질문형 H2 = 장면 가정)
+      v += (s.externalSignal || 0) * 4;    // 0~12 (후기/인용 = 실제 장면)
+      v += (s.brandRepetition || 0) * 3;   // 0~9
+      v += s.lengthExcellent ? 16 : (s.lengthGood ? 8 : 0);
+      v += s.faq >= 2 ? 8 : 0;             // FAQ = 상황별 답변
+      v += s.review * 4;                   // 0~8
+      const reason = (s.questionHeadings || 0) >= 2 && s.lengthGood
+        ? '질문형 H2·후기·브랜드 반복으로 소비자 결정 순간(CEP)을 잘 포착하고 있습니다.'
+        : 'CEP 장면(상황별 질문 + 실제 후기 + 브랜드 노출) 콘텐츠를 보강해야 순간 점유가 가능합니다.';
+      scores.cepScene = { value: cap(v), reason };
     }
 
     return scores;
@@ -447,9 +457,9 @@
     const signals = detectSignals(analysisText, companyName);
     const scores = scoreFromSignals(signals, mode);
 
-    // citation에 ai_writing 5신호 부착 (UI 세부 카드용)
-    if (scores.citation) {
-      scores.citation.aiwSignals = {
+    // aiCitation에 ai_writing 5신호 부착 (UI 세부 카드용 — 새 KPI 키)
+    if (scores.aiCitation) {
+      scores.aiCitation.aiwSignals = {
         h2Count: signals.h2Count,
         questionH2Count: signals.questionH2Count,
         questionH2Rate: signals.questionH2Rate,
@@ -471,32 +481,56 @@
       };
     }
 
-    const scoreValues = Object.values(scores).map(s => s.value);
-    const totalScore = Math.round(scoreValues.reduce((a, b) => a + b, 0) / 10);
+    // 가중치 적용 totalScore (kpi-config.js의 KPI_WEIGHTS와 동일)
+    let weightedSum = 0;
+    let weightTotal = 0;
+    Object.entries(KPI_WEIGHTS).forEach(([id, w]) => {
+      if (scores[id] && typeof scores[id].value === 'number') {
+        weightedSum += scores[id].value * w;
+        weightTotal += w;
+      }
+    });
+    const totalScore = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : 0;
 
+    // 6단계 등급
     const grade = (() => {
-      if (totalScore >= 90) return { key: 'dominant', label: 'AI Dominant' };
-      if (totalScore >= 70) return { key: 'strong', label: 'Strong' };
-      if (totalScore >= 50) return { key: 'growing', label: 'Growing' };
-      if (totalScore >= 30) return { key: 'weak', label: 'Weak' };
-      return { key: 'critical', label: 'Critical' };
+      if (totalScore >= 90) return { key: 'dominant', label: 'A+ Premium' };
+      if (totalScore >= 75) return { key: 'strong',   label: 'A 우수' };
+      if (totalScore >= 60) return { key: 'growing',  label: 'B 보통' };
+      if (totalScore >= 45) return { key: 'weak',     label: 'C 미흡' };
+      if (totalScore >= 30) return { key: 'poor',     label: 'D 부족' };
+      return                       { key: 'critical', label: 'F 잠금' };
     })();
 
     // topProblems: 점수 낮은 KPI 3개에서 동적 생성
     const sorted = Object.entries(scores).sort((a, b) => a[1].value - b[1].value);
     const PROBLEM_TEXT = {
-      visibility: '메타 태그·헤딩 구조 보강 필요',
-      velocity: '정기 콘텐츠 발행 흐름 부재',
-      authority: 'E-E-A-T(전문성·경험·권위·신뢰) 신호 부족',
-      citation: 'FAQ/Schema.org 구조화 데이터 미적용',
-      engagement: '리뷰/후기/사회적 증거 부족',
-      conversion: 'CTA(전환 유도) 설계 약함',
-      channel: '멀티채널 확장 부족',
-      brand: '브랜드 메시지 일관성 부족',
-      competitive: '경쟁 차별화 포인트 부족',
-      aio: 'AI 최적화 마크업(Schema/시맨틱) 부재'
+      botAccess: 'AI 봇 접근(robots.txt·헤더 허용) 점검 필요',
+      sitemapStatus: 'sitemap.xml 정상 작동 + URL 등록 보강 필요',
+      indexExposure: '구글·네이버 색인 페이지 부족',
+      structuredData: 'Schema.org JSON-LD·FAQPage 마크업 미적용',
+      pageInfo: '메타 태그·canonical·OG·H1/H2 완비도 부족',
+      contentDepth: '본문 깊이·발행 빈도·최신성 부족',
+      externalAuthority: '백링크·언론 보도·외부 언급 부족',
+      eeat: 'E-E-A-T(작성자·자격·연혁·연락처) 신호 부족',
+      aiCitation: 'AI 인용 5신호(질문형/정의문 H2·브랜드 반복·외부 신호·CTA) 부족',
+      cepScene: 'CEP 장면(순간 콘텐츠) 점유 미흡'
     };
     const topProblems = sorted.slice(0, 3).map(([k]) => PROBLEM_TEXT[k]).filter(Boolean);
+
+    // legacyScores: 옛 10 KPI 키로도 노출 (호환성)
+    const legacyScores = {
+      visibility: scores.indexExposure,
+      velocity: scores.contentDepth,
+      authority: scores.eeat,
+      citation: scores.aiCitation,
+      engagement: scores.externalAuthority,
+      conversion: scores.aiCitation,
+      channel: scores.contentDepth,
+      brand: scores.aiCitation,
+      competitive: scores.externalAuthority,
+      aio: scores.structuredData
+    };
 
     const opportunities = [
       sorted[0] ? `${PROBLEM_TEXT[sorted[0][0]]} 우선 개선 시 종합 점수 +15점 가능` : '약점 영역 보강 시 종합 점수 상승 가능',
@@ -524,6 +558,7 @@
       totalScore,
       grade,
       scores,
+      legacyScores,
       summary: {
         headline: `현재 ${companyName}의 GEO 종합 점수는 ${totalScore}점입니다`,
         diagnosis,
@@ -541,32 +576,43 @@
         siteFetchOk: false,
         contentLength: signals.contentLength,
         signalsDetected: signals,
+        kpiVersion: 'v2-2026',
         standaloneDemo: true
       }
     };
   }
 
   function generateMockRecommend({ scores, totalScore }) {
+    // 새 10 KPI 액션 (legacy 키도 폴백 매핑으로 지원)
     const KPI_ACTIONS = {
-      visibility: { action: '메타 태그 + 타이틀 최적화', detail: '핵심 키워드 + AI 검색 의도 반영 (제목, description, og 태그 통합 정비)', impact: '검색 노출 +40%', cost: 'Quick Win' },
-      velocity:   { action: '주 5회 콘텐츠 자동 발행 시스템', detail: 'GEO-AIO 콘텐츠 엔진 도입 → 월 150건 블로그 + 웹사이트 자동 반영', impact: 'AI 학습 데이터 +500%', cost: '월 구독' },
-      authority:  { action: 'E-E-A-T 신호 강화 (저자/경력/실적)', detail: '대표 프로필, 인증서, 사례 연구 페이지 추가', impact: 'AI 신뢰도 +60%', cost: '1개월 컨설팅' },
-      citation:   { action: 'FAQ + Schema.org 구조화 적용', detail: 'FAQPage Schema, JSON-LD 마크업 + 50개 FAQ 자동 생성', impact: 'AI 인용률 +80%', cost: 'Quick Win' },
-      engagement: { action: '리뷰/후기 시스템 + SNS 인터랙션', detail: '구글 리뷰 임베드, 인스타 피드, 카카오 채널 연동', impact: '체류시간 +120%', cost: '2주 작업' },
-      conversion: { action: 'CTA 반복 노출 + 상담 예약 시스템', detail: '히어로 + 미들 + 푸터 3중 CTA, 챗봇 상담, 카카오톡 연동', impact: '전환율 +200%', cost: 'Quick Win' },
-      channel:    { action: '멀티채널 자동 배포 인프라', detail: '블로그 + 인스타 + 유튜브 쇼츠 + 네이버 블로그 동시 배포', impact: '도달 +400%', cost: '월 구독' },
-      brand:      { action: '브랜드 가이드라인 + 톤앤매너 통일', detail: '컬러 팔레트, 톤 가이드, 키 메시지 5개 정립', impact: '인지도 +50%', cost: '2주 작업' },
-      competitive:{ action: '경쟁사 키워드 + 콘텐츠 갭 분석', detail: '상위 5개 경쟁사 모니터링 → 빈틈 키워드 100개 점유', impact: '점유율 +35%', cost: '월 구독' },
-      aio:        { action: 'AI 최적화 풀스택 구축', detail: 'GEO-AIO 인프라 전면 도입 (Schema + 구조화 + LLM 친화 글쓰기)', impact: 'AIO 준비도 100% 달성', cost: 'AI Dominance Package' }
+      botAccess:         { action: 'AI 봇 접근 허용 (robots.txt + 헤더)', detail: 'GPTBot·ClaudeBot·PerplexityBot·GoogleOther 등을 robots.txt에 명시 허용 + Cloudflare WAF 화이트리스트', impact: 'AI 학습 가능 +100%', cost: 'Quick Win' },
+      sitemapStatus:     { action: 'sitemap.xml 재구축 + URL 갱신 자동화', detail: '동적 sitemap 생성 + lastmod 자동 갱신 + Search Console 제출', impact: '색인 속도 +60%', cost: 'Quick Win' },
+      indexExposure:     { action: '구글·네이버 색인 정상화', detail: 'Search Console·네이버 서치어드바이저 색인 요청 + canonical 정리', impact: '색인 페이지 +200%', cost: 'Quick Win' },
+      structuredData:    { action: 'Schema.org JSON-LD + FAQPage 적용', detail: 'Organization·FAQPage·Article·LocalBusiness 마크업 + 50개 FAQ 자동 생성', impact: 'AI 인용률 +80%', cost: 'Quick Win' },
+      pageInfo:          { action: '페이지 메타 정보 풀세트 정비', detail: 'meta description·canonical·OG·H1/H2 자동 점검 + 보강 도구 도입', impact: '검색 CTR +35%', cost: '2주 작업' },
+      contentDepth:      { action: '주 5회 콘텐츠 자동 발행 시스템', detail: 'GEO-AIO 콘텐츠 엔진 도입 → 월 150건 블로그 + 본문 1500자+ 자동 발행', impact: 'AI 학습 데이터 +500%', cost: '월 구독' },
+      externalAuthority: { action: '보도자료 + 외부 백링크 캠페인', detail: '월 2회 보도자료 배포 + 매체 인터뷰 + 협력사 백링크 확보', impact: '도메인 권위 +50%', cost: '1개월 컨설팅' },
+      eeat:              { action: 'E-E-A-T 신호 강화 (저자/경력/실적)', detail: '대표 프로필, 인증서, 자격증, 사례 연구, 연락처·주소 노출', impact: 'AI 신뢰도 +60%', cost: '1개월 컨설팅' },
+      aiCitation:        { action: 'AI 인용 5신호(질문형/정의문 H2·브랜드 반복·외부 신호·CTA) 풀세트 적용', detail: 'ai_writing 5원칙 자동 점검 + 90점 글 자동 생성 시스템', impact: 'AI 인용률 +120%', cost: 'AI Dominance Package' },
+      cepScene:          { action: 'CEP 장면 콘텐츠 30개 자동 생성', detail: '소비자 결정 순간 30개 발굴 → 장면별 질문-답변 콘텐츠 발행', impact: '순간 점유 +200%', cost: '월 구독' }
     };
 
-    const sorted = Object.entries(scores)
-      .map(([id, s]) => ({ id, value: s.value || 0 }))
+    // 옛 키가 들어와도 동작하도록 매핑 폴백
+    const LEGACY_FALLBACK = {
+      visibility: 'indexExposure', velocity: 'contentDepth', authority: 'eeat',
+      citation: 'aiCitation', engagement: 'externalAuthority', conversion: 'aiCitation',
+      channel: 'contentDepth', brand: 'aiCitation', competitive: 'externalAuthority',
+      aio: 'structuredData'
+    };
+
+    const sorted = Object.entries(scores || {})
+      .map(([id, s]) => ({ id, value: (s && typeof s.value === 'number') ? s.value : 0 }))
       .sort((a, b) => a.value - b.value);
     const weakest3 = sorted.slice(0, 3);
-    const priorityActions = weakest3.map((w, idx) => ({
-      rank: idx + 1, kpiId: w.id, score: w.value, ...KPI_ACTIONS[w.id]
-    }));
+    const priorityActions = weakest3.map((w, idx) => {
+      const actionKey = KPI_ACTIONS[w.id] ? w.id : (LEGACY_FALLBACK[w.id] || 'aiCitation');
+      return { rank: idx + 1, kpiId: w.id, score: w.value, ...KPI_ACTIONS[actionKey] };
+    });
 
     let packageTier;
     if (totalScore < 30) {

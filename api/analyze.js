@@ -1,22 +1,25 @@
 /**
  * GEO Score AI - 진단 분석 API
- * Gemini AI로 기업 URL 분석 → 10대 KPI 점수 산출
+ * Gemini AI로 기업 URL 분석 → 새 10대 KPI 점수 산출 (가중치 합 100%)
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// 새 10 KPI 명세 (가중치 합 100%)
 const KPI_LIST = [
-  { id: 'visibility', name: '검색 가시성 지수' },
-  { id: 'velocity', name: '콘텐츠 생산력 지수' },
-  { id: 'authority', name: 'E-E-A-T 신뢰도 지수' },
-  { id: 'citation', name: 'AI 인용 가능성 지수' },
-  { id: 'engagement', name: '고객 참여도 지수' },
-  { id: 'conversion', name: '전환 설계 지수' },
-  { id: 'channel', name: '채널 확장 지수' },
-  { id: 'brand', name: '브랜드 일관성 지수' },
-  { id: 'competitive', name: '경쟁 대비 점유율 지수' },
-  { id: 'aio', name: 'AI 최적화 준비도' }
+  { id: 'botAccess',          name: 'AI 봇 접근',         weight: 14 },
+  { id: 'sitemapStatus',      name: 'Sitemap 상태',       weight: 10 },
+  { id: 'indexExposure',      name: '검색 색인',          weight: 13 },
+  { id: 'structuredData',     name: '구조화 데이터',       weight: 12 },
+  { id: 'pageInfo',           name: '페이지 정보',         weight:  8 },
+  { id: 'contentDepth',       name: '콘텐츠 깊이',         weight: 10 },
+  { id: 'externalAuthority',  name: '외부 권위',          weight:  9 },
+  { id: 'eeat',               name: 'E-E-A-T 신호',       weight:  8 },
+  { id: 'aiCitation',         name: 'AI 인용 5신호',      weight: 10 },
+  { id: 'cepScene',           name: 'CEP 장면 점유',      weight:  6 }
 ];
+
+const WEIGHTS = KPI_LIST.reduce((acc, k) => { acc[k.id] = k.weight; return acc; }, {});
 
 async function fetchWebsiteContent(url) {
   try {
@@ -34,7 +37,7 @@ async function fetchWebsiteContent(url) {
     clearTimeout(timeout);
 
     if (!res.ok) {
-      return { ok: false, status: res.status, content: '', meta: {} };
+      return { ok: false, status: res.status, content: '', meta: {}, rawHtml: '' };
     }
 
     const html = await res.text();
@@ -44,6 +47,8 @@ async function fetchWebsiteContent(url) {
     const descMatch = truncated.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
     const ogTitle = truncated.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i);
     const ogDesc = truncated.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']/i);
+    const ogImage = truncated.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']/i);
+    const canonical = truncated.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*)["']/i);
     const h1Matches = [...truncated.matchAll(/<h1[^>]*>([^<]+)<\/h1>/gi)].map(m => m[1].trim()).slice(0, 5);
     const h2Matches = [...truncated.matchAll(/<h2[^>]*>([^<]+)<\/h2>/gi)].map(m => m[1].trim()).slice(0, 10);
 
@@ -57,37 +62,49 @@ async function fetchWebsiteContent(url) {
 
     const hasFaq = /FAQ|자주\s*묻는|Q&A|Q\.\s|질문/i.test(truncated);
     const hasSchema = /application\/ld\+json|itemtype=|schema\.org/i.test(truncated);
+    const hasJsonLd = /application\/ld\+json/i.test(truncated);
     const hasCTA = /상담|문의|예약|가입|신청|구독|지금\s*시작|무료|체험/i.test(truncated);
     const hasReview = /리뷰|후기|평점|별점|review/i.test(truncated);
     const hasBlog = /blog|블로그|news|소식|공지/i.test(truncated);
     const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|kakao|naver\s*blog)/i.test(truncated);
+    const hasAuthor = /(작성자|저자|글쓴이|by\s+[A-Za-z가-힣]|author)/i.test(truncated);
+    const hasCertification = /(자격|면허|학위|박사|교수|전문의|인증|certified|MD|PhD)/i.test(truncated);
+    const hasContact = /(연락처|전화|이메일|tel:|mailto:|02-|010-)/i.test(truncated);
+    const hasHistory = /(연혁|설립|since|founded|since\s+\d{4}|\d{4}년\s*설립)/i.test(truncated);
 
     return {
       ok: true,
       status: res.status,
       content: text,
+      rawHtml: truncated,
       meta: {
         title: titleMatch?.[1]?.trim() || ogTitle?.[1]?.trim() || '',
         description: descMatch?.[1]?.trim() || ogDesc?.[1]?.trim() || '',
+        ogImage: ogImage?.[1]?.trim() || '',
+        canonical: canonical?.[1]?.trim() || '',
         h1: h1Matches,
         h2: h2Matches,
         hasFaq,
         hasSchema,
+        hasJsonLd,
         hasCTA,
         hasReview,
         hasBlog,
         hasSocial,
+        hasAuthor,
+        hasCertification,
+        hasContact,
+        hasHistory,
         contentLength: text.length
       }
     };
   } catch (e) {
-    return { ok: false, error: e.message, content: '', meta: {} };
+    return { ok: false, error: e.message, content: '', meta: {}, rawHtml: '' };
   }
 }
 
-// AI 인프라 4신호 검증: robots.txt + sitemap.xml 외부 인프라 체크
-// 7개 AI 봇 차단 여부 + sitemap 유효성 검출 → robotsScore/sitemapScore (0~5)
-async function fetchInfraSignals(url) {
+// AI 인프라 + 외부 측정 신호: robots.txt + sitemap.xml + 색인 추정 + 백링크 추정
+async function fetchInfraSignals(url, mainPageHtml) {
   const AI_BOTS = ['GPTBot', 'ClaudeBot', 'ChatGPT-User', 'PerplexityBot', 'Google-Extended', 'Amazonbot', 'CCBot'];
   const result = {
     robotsTxtFound: false,
@@ -101,13 +118,23 @@ async function fetchInfraSignals(url) {
     sitemapLastMod: null,
     sitemapStatus: 0,
     robotsScore: 0,
-    sitemapScore: 0
+    sitemapScore: 0,
+    // 외부 측정 휴리스틱 (확장)
+    indexExposureCount: 0,        // 0~150+ 추정
+    indexExposureLevel: 0,        // 0~5 환산
+    backlinkEstimate: 0,          // 0~50+ 추정
+    backlinkScore: 0,             // 0~5 환산
+    pressMentionHits: 0,          // 언론 키워드 빈도
+    externalLinkCount: 0,         // 본문 외부 링크 수
+    internalLinkCount: 0          // 본문 내부 링크 수
   };
 
   let origin = '';
+  let host = '';
   try {
     const u = new URL(url);
     origin = u.origin;
+    host = u.hostname.replace(/^www\./, '');
   } catch (e) {
     return result;
   }
@@ -146,9 +173,8 @@ async function fetchInfraSignals(url) {
       result.robotsTxtFound = true;
       result.robotsContent = text.slice(0, 1000);
 
-      // User-agent 그룹 단위로 파싱
       const lines = text.split(/\r?\n/);
-      const groups = []; // [{ agents: [...], disallows: [...] }]
+      const groups = [];
       let cur = null;
       let lastWasAgent = false;
       for (let raw of lines) {
@@ -173,7 +199,6 @@ async function fetchInfraSignals(url) {
         }
       }
 
-      // 전체 차단(*) 여부
       const wildcardBlocksAll = groups.some(g =>
         g.agents.some(a => a === '*') &&
         g.disallows.some(d => d === '/' )
@@ -186,16 +211,13 @@ async function fetchInfraSignals(url) {
         if (grp) {
           if (grp.disallows.some(d => d === '/')) blockedSet.add(bot);
         } else if (wildcardBlocksAll) {
-          // 명시적 그룹 없고 *가 전체 차단이면 차단으로 간주
           blockedSet.add(bot);
         }
       }
       result.blockedBots = Array.from(blockedSet);
       result.blockedBotsCount = result.blockedBots.length;
       result.allowedBotsCount = 7 - result.blockedBotsCount;
-    } catch (e) {
-      // 파싱 실패 시 기본값 유지
-    }
+    } catch (e) {}
   }
 
   // sitemap.xml 파싱
@@ -205,7 +227,6 @@ async function fetchInfraSignals(url) {
       result.sitemapFound = true;
       try {
         const xml = await sitemapRes.text();
-        // 유효성: <urlset 또는 <sitemapindex 태그 + <loc> 1개 이상
         const isXml = /<\?xml|<urlset|<sitemapindex/i.test(xml);
         const locMatches = xml.match(/<loc>[\s\S]*?<\/loc>/gi) || [];
         result.sitemapUrlCount = locMatches.length;
@@ -214,9 +235,7 @@ async function fetchInfraSignals(url) {
         const lastModMatch = xml.match(/<lastmod>([\s\S]*?)<\/lastmod>/i);
         if (lastModMatch) result.sitemapLastMod = lastModMatch[1].trim();
 
-        // 외부 도메인 sitemap 여부 (자기 도메인 URL이 하나도 없으면 외부로 간주)
         if (locMatches.length > 0 && origin) {
-          const host = new URL(origin).hostname.replace(/^www\./, '');
           const ownDomain = locMatches.some(loc => {
             const inner = loc.replace(/<\/?loc>/gi, '').trim();
             try {
@@ -234,10 +253,8 @@ async function fetchInfraSignals(url) {
     }
   }
 
-  // 별점 환산 (0~5)
-  // robotsScore: 모두 허용 = 5, 차단 1봇 = 4, 2 = 3, 3 = 2, 4 = 1, 5+ = 0
+  // robots score
   if (!result.robotsTxtFound) {
-    // robots.txt 없으면 모든 봇 허용으로 간주 → 5점
     result.robotsScore = 5;
     result.allowedBotsCount = 7;
     result.blockedBotsCount = 0;
@@ -245,7 +262,7 @@ async function fetchInfraSignals(url) {
     result.robotsScore = Math.max(0, 5 - result.blockedBotsCount);
   }
 
-  // sitemapScore: 자기도메인+50+URL = 5, 자기도메인+10+URL = 4, 1+URL = 3, 발견 but 손상 = 1, 미발견 = 0
+  // sitemap score
   if (!result.sitemapFound) {
     result.sitemapScore = 0;
   } else if (!result.sitemapValid) {
@@ -260,6 +277,74 @@ async function fetchInfraSignals(url) {
     result.sitemapScore = 2;
   } else {
     result.sitemapScore = 1;
+  }
+
+  // === 추가: 색인 수 / 백링크 휴리스틱 (외부 검색 API 없이) ===
+  const html = mainPageHtml || '';
+  if (html && host) {
+    // 모든 링크 수집
+    const hrefMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["']/gi)].map(m => m[1]);
+    const internalSet = new Set();
+    let externalCnt = 0;
+    let pressHits = 0;
+
+    for (const href of hrefMatches) {
+      if (!href) continue;
+      if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) continue;
+      try {
+        const abs = href.startsWith('http') ? new URL(href) : new URL(href, origin);
+        const linkHost = abs.hostname.replace(/^www\./, '');
+        if (linkHost === host || linkHost.endsWith('.' + host)) {
+          // 내부 링크: pathname을 unique 카운트
+          internalSet.add(abs.pathname.replace(/\/$/, '') || '/');
+        } else {
+          externalCnt++;
+        }
+      } catch (_) {}
+    }
+
+    result.internalLinkCount = internalSet.size;
+    result.externalLinkCount = externalCnt;
+
+    // 언론/인용 키워드 빈도
+    const pressPatterns = [
+      /에\s*따르면/g,
+      /에\s*의하면/g,
+      /보도/g,
+      /언론/g,
+      /기사/g,
+      /인용/g,
+      /발표/g,
+      /(KBS|MBC|SBS|JTBC|YTN|연합뉴스|한겨레|중앙일보|조선일보|동아일보|매일경제|한국경제)/g
+    ];
+    for (const re of pressPatterns) {
+      const m = html.match(re);
+      if (m) pressHits += m.length;
+    }
+    result.pressMentionHits = pressHits;
+
+    // 색인 수 추정: 내부 링크 다양성 + sitemap URL 수 가중평균
+    // 내부링크 30개 + sitemap 100개 → ~130 정도 추정
+    const sitemapUrls = result.sitemapUrlCount;
+    const internalDiversity = Math.min(80, internalSet.size); // 캡 80
+    result.indexExposureCount = Math.round(sitemapUrls * 0.6 + internalDiversity * 1.2);
+    // 0~5 환산
+    if (result.indexExposureCount >= 100) result.indexExposureLevel = 5;
+    else if (result.indexExposureCount >= 50) result.indexExposureLevel = 4;
+    else if (result.indexExposureCount >= 20) result.indexExposureLevel = 3;
+    else if (result.indexExposureCount >= 10) result.indexExposureLevel = 2;
+    else if (result.indexExposureCount >= 3) result.indexExposureLevel = 1;
+    else result.indexExposureLevel = 0;
+
+    // 백링크 추정: 외부 링크 수 + 언론 키워드 빈도
+    // 외부 5개 + 언론 3회 → ~8 추정
+    result.backlinkEstimate = Math.round(externalCnt * 0.6 + pressHits * 1.5);
+    if (result.backlinkEstimate >= 30) result.backlinkScore = 5;
+    else if (result.backlinkEstimate >= 15) result.backlinkScore = 4;
+    else if (result.backlinkEstimate >= 8) result.backlinkScore = 3;
+    else if (result.backlinkEstimate >= 4) result.backlinkScore = 2;
+    else if (result.backlinkEstimate >= 1) result.backlinkScore = 1;
+    else result.backlinkScore = 0;
   }
 
   return result;
@@ -279,12 +364,15 @@ function extractJSON(text) {
   }
 }
 
-function buildPrompt({ companyName, websiteUrl, industry, fetchResult }) {
+function buildPrompt({ companyName, websiteUrl, industry, fetchResult, infraSignals }) {
   const meta = fetchResult.meta || {};
+  const infra = infraSignals || {};
   const signals = [
     `사이트 응답: ${fetchResult.ok ? '성공' : '실패'} (${fetchResult.status || 'N/A'})`,
     `타이틀: ${meta.title || '없음'}`,
     `메타 설명: ${meta.description || '없음'}`,
+    `Canonical: ${meta.canonical || '없음'}`,
+    `OG 이미지: ${meta.ogImage ? '있음' : '없음'}`,
     `H1 (${(meta.h1 || []).length}개): ${(meta.h1 || []).join(' | ') || '없음'}`,
     `H2 (${(meta.h2 || []).length}개): ${(meta.h2 || []).slice(0, 5).join(' | ') || '없음'}`,
     `FAQ 구조: ${meta.hasFaq ? '있음' : '없음'}`,
@@ -293,10 +381,19 @@ function buildPrompt({ companyName, websiteUrl, industry, fetchResult }) {
     `리뷰/후기 영역: ${meta.hasReview ? '있음' : '없음'}`,
     `블로그/소식: ${meta.hasBlog ? '있음' : '없음'}`,
     `SNS 채널 링크: ${meta.hasSocial ? '있음' : '없음'}`,
-    `본문 길이: ${meta.contentLength || 0}자`
+    `작성자/저자 정보: ${meta.hasAuthor ? '있음' : '없음'}`,
+    `자격/면허/학위 신호: ${meta.hasCertification ? '있음' : '없음'}`,
+    `연락처 정보: ${meta.hasContact ? '있음' : '없음'}`,
+    `연혁/설립 정보: ${meta.hasHistory ? '있음' : '없음'}`,
+    `본문 길이: ${meta.contentLength || 0}자`,
+    `--- 외부 인프라 신호 ---`,
+    `robots.txt: ${infra.robotsTxtFound ? '발견' : '없음'} / 7봇 중 ${infra.allowedBotsCount || 0}봇 허용`,
+    `sitemap.xml: ${infra.sitemapFound ? '발견' : '없음'} / 유효 ${infra.sitemapValid ? '예' : '아니오'} / URL ${infra.sitemapUrlCount || 0}개`,
+    `색인 추정 수: ${infra.indexExposureCount || 0}개`,
+    `백링크 추정: ${infra.backlinkEstimate || 0}개 (외부 링크 ${infra.externalLinkCount || 0}, 언론 키워드 ${infra.pressMentionHits || 0}회)`
   ].join('\n');
 
-  return `당신은 한국의 AI 검색 최적화(GEO/AIO) 전문가입니다. 아래 기업의 마케팅·홍보 활동을 10가지 KPI로 진단해주세요.
+  return `당신은 한국의 AI 검색 최적화(GEO/AIO) 전문가입니다. 아래 기업의 웹 인프라와 콘텐츠를 새 10대 KPI(가중치 합 100%)로 진단해주세요.
 
 # 진단 대상
 - 기업명: ${companyName}
@@ -309,37 +406,36 @@ ${signals}
 # 사이트 본문 발췌 (최대 6000자)
 ${fetchResult.content || '(본문을 가져오지 못함)'}
 
-# 평가 기준 (각 0~100점)
-1. visibility (검색 가시성 지수): 구글·네이버 노출 가능성, 키워드 점유 신호, 메타 태그 품질
-2. velocity (콘텐츠 생산력 지수): 블로그/소식 존재, 콘텐츠 양, 최신성 추정
-3. authority (E-E-A-T 신뢰도): 전문성·경험 노출, 저자 정보, 자격·실적 신호
-4. citation (AI 인용 가능성): FAQ/Q&A 구조, 구조화 데이터(Schema), LLM 친화 형식
-5. engagement (고객 참여도): 리뷰/후기, 댓글, SNS 링크 다수, 인터랙션 장치
-6. conversion (전환 설계): CTA 존재·반복, 상담/예약/문의 경로, 랜딩 완성도
-7. channel (채널 확장): 블로그+SNS+유튜브 등 멀티채널 분포
-8. brand (브랜드 일관성): 메시지 통일성, 톤·디자인 일관성
-9. competitive (경쟁 점유율): 업종 평균 대비 추정 위치
-10. aio (AI 최적화 준비도): 구조화·시맨틱 마크업, AI 시대 대응 인프라
+# 평가 기준 (각 0~100점, 가중치는 별도)
+1. botAccess (AI 봇 접근, 가중치 14%): robots.txt에서 7개 AI 봇(GPTBot/ClaudeBot/ChatGPT-User/PerplexityBot/Google-Extended/Amazonbot/CCBot) 허용 비율. 모두 허용=90+, 1~2봇 차단=70대, 3봇 이상 차단=50 이하.
+2. sitemapStatus (Sitemap 상태, 가중치 10%): sitemap.xml 정상 + URL 수. 50개 이상=90+, 10~49=70대, 1~9=50대, 없음=20 이하.
+3. indexExposure (검색 색인, 가중치 13%): site:domain 검색 색인 수 추정 (위 색인 추정 수 활용). 100+=90, 50~99=75, 20~49=60, 10~19=45, 그 이하 30 이하.
+4. structuredData (구조화 데이터, 가중치 12%): Schema.org + FAQ + JSON-LD 적용 여부. 셋 다 있음=85+, 둘=65, 하나=45, 없음=25 이하.
+5. pageInfo (페이지 정보, 가중치 8%): 메타 태그·canonical·OG·H1/H2 완성도. 모두 있음=85+, 부분=50~70, 부재=30 이하.
+6. contentDepth (콘텐츠 깊이, 가중치 10%): 블로그 발행 여부 + 본문 양. 블로그+5000자 이상=85+, 블로그만=60~70, 본문 짧음=30~45.
+7. externalAuthority (외부 권위, 가중치 9%): 백링크 + 언론 언급 (위 백링크 추정 활용). 30+=90, 15~29=75, 8~14=60, 4~7=45, 그 이하 25 이하.
+8. eeat (E-E-A-T 신호, 가중치 8%): 작성자·자격·연혁·연락처 노출. 4개 모두=85+, 3개=70, 2개=55, 1개 이하=35.
+9. aiCitation (AI 인용 5신호, 가중치 10%): 질문형 H2, 정의형 문장, 브랜드 반복, 외부 인용, CTA 도달의 균형.
+10. cepScene (CEP 장면 점유, 가중치 6%): "순간/장면(scene)" 콘텐츠. 사용자가 처한 구체적 상황(예: "야근 후 피곤할 때")을 다루는가.
 
 # 평가 가이드
-- 사이트 분석 신호와 본문을 모두 활용해 보수적이고 구체적인 점수를 매겨주세요.
-- 신호가 거의 없거나 fetch 실패면 25~45점 범위에서 판단합니다.
-- 강력한 증거(예: FAQ 다수 + Schema + CTA + 다채널)가 있을 때만 70점 이상을 줍니다.
-- 점수만 말고 근거 1줄(reason)도 함께 적어주세요.
+- 외부 인프라 신호(robots/sitemap/색인/백링크)가 명확히 측정된 KPI는 그 측정값을 우선 반영합니다.
+- 신호가 거의 없으면 25~45점 범위로 보수적으로 책정합니다.
+- 점수와 함께 근거 1줄(reason)을 적어주세요.
 
 # 출력 형식 (반드시 이 JSON만 반환, 다른 텍스트 금지)
 {
   "scores": {
-    "visibility": { "value": 0, "reason": "..." },
-    "velocity": { "value": 0, "reason": "..." },
-    "authority": { "value": 0, "reason": "..." },
-    "citation": { "value": 0, "reason": "..." },
-    "engagement": { "value": 0, "reason": "..." },
-    "conversion": { "value": 0, "reason": "..." },
-    "channel": { "value": 0, "reason": "..." },
-    "brand": { "value": 0, "reason": "..." },
-    "competitive": { "value": 0, "reason": "..." },
-    "aio": { "value": 0, "reason": "..." }
+    "botAccess": { "value": 0, "reason": "..." },
+    "sitemapStatus": { "value": 0, "reason": "..." },
+    "indexExposure": { "value": 0, "reason": "..." },
+    "structuredData": { "value": 0, "reason": "..." },
+    "pageInfo": { "value": 0, "reason": "..." },
+    "contentDepth": { "value": 0, "reason": "..." },
+    "externalAuthority": { "value": 0, "reason": "..." },
+    "eeat": { "value": 0, "reason": "..." },
+    "aiCitation": { "value": 0, "reason": "..." },
+    "cepScene": { "value": 0, "reason": "..." }
   },
   "summary": {
     "headline": "한 줄 충격 메시지 (예: 현재 귀사의 AI 인용 가능성은 23%입니다)",
@@ -356,7 +452,7 @@ ${fetchResult.content || '(본문을 가져오지 못함)'}
 }`;
 }
 
-// ai_writing 4 측정 신호 검출 (서버측 — citation KPI 보강용)
+// ai_writing 5 측정 신호 검출 (서버측 — aiCitation KPI 보강용)
 function detectAIWritingSignals(content, companyName) {
   const aiwSrc = content || '';
   const cnShort = (companyName || '').slice(0, 5);
@@ -369,7 +465,6 @@ function detectAIWritingSignals(content, companyName) {
   const questionH2Count = h2List.filter(h => qPattern.test(h)).length;
   const questionH2Rate = h2Count > 0 ? questionH2Count / h2Count : 0;
 
-  // 정의문 H2 (원칙 2) — 주어 ≥ 3자, 형용사 어미 오탐 방지
   const isDefSent = (s) => {
     if (!s) return false;
     const t = s.trim();
@@ -440,32 +535,117 @@ function detectAIWritingSignals(content, companyName) {
   };
 }
 
-function fallbackResult({ companyName, websiteUrl, fetchResult, hasGeminiKey }) {
+function fallbackResult({ companyName, websiteUrl, fetchResult, infraSignals, hasGeminiKey }) {
   const meta = fetchResult.meta || {};
+  const infra = infraSignals || {};
   const baseScore = fetchResult.ok ? 35 : 22;
   const adjust = (cond, delta) => cond ? delta : 0;
 
   const scores = {};
-  KPI_LIST.forEach(k => {
-    let v = baseScore;
-    if (k.id === 'visibility') v += adjust(!!meta.title, 8) + adjust(!!meta.description, 6);
-    if (k.id === 'velocity') v += adjust(meta.hasBlog, 12);
-    if (k.id === 'authority') v += adjust((meta.h2 || []).length > 3, 8);
-    if (k.id === 'citation') v += adjust(meta.hasFaq, 10) + adjust(meta.hasSchema, 12);
-    if (k.id === 'engagement') v += adjust(meta.hasReview, 14);
-    if (k.id === 'conversion') v += adjust(meta.hasCTA, 14);
-    if (k.id === 'channel') v += adjust(meta.hasSocial, 12);
-    if (k.id === 'brand') v += adjust(!!meta.title && !!meta.description, 10);
-    if (k.id === 'competitive') v += 0;
-    if (k.id === 'aio') v += adjust(meta.hasSchema, 14) + adjust(meta.hasFaq, 6);
-    scores[k.id] = {
-      value: Math.max(5, Math.min(95, Math.round(v))),
-      reason: `자동 휴리스틱 점수 (Gemini 분석 미사용)`
-    };
-  });
 
+  // 1. botAccess: robotsScore(0~5) → 0~95
+  const botAccessVal = infra.robotsTxtFound !== undefined
+    ? Math.max(10, Math.min(95, 30 + (infra.robotsScore || 0) * 13))
+    : baseScore;
+  scores.botAccess = {
+    value: botAccessVal,
+    reason: `robots.txt 7봇 중 ${infra.allowedBotsCount ?? 7}봇 허용`
+  };
+
+  // 2. sitemapStatus: sitemapScore(0~5) → 0~95
+  const sitemapVal = infra.sitemapFound !== undefined
+    ? Math.max(10, Math.min(95, 25 + (infra.sitemapScore || 0) * 14))
+    : baseScore;
+  scores.sitemapStatus = {
+    value: sitemapVal,
+    reason: `sitemap URL ${infra.sitemapUrlCount || 0}개`
+  };
+
+  // 3. indexExposure: indexExposureLevel(0~5) → 0~95
+  const indexVal = infra.indexExposureCount !== undefined
+    ? Math.max(10, Math.min(95, 25 + (infra.indexExposureLevel || 0) * 14))
+    : baseScore;
+  scores.indexExposure = {
+    value: indexVal,
+    reason: `색인 추정 ${infra.indexExposureCount || 0}개`
+  };
+
+  // 4. structuredData: Schema + FAQ + JSON-LD
+  let sdVal = baseScore;
+  sdVal += adjust(meta.hasSchema, 18);
+  sdVal += adjust(meta.hasFaq, 12);
+  sdVal += adjust(meta.hasJsonLd, 8);
+  scores.structuredData = {
+    value: Math.max(5, Math.min(95, Math.round(sdVal))),
+    reason: `Schema=${meta.hasSchema ? 'O' : 'X'}, FAQ=${meta.hasFaq ? 'O' : 'X'}, JSON-LD=${meta.hasJsonLd ? 'O' : 'X'}`
+  };
+
+  // 5. pageInfo: 메타·canonical·OG·H1/H2
+  let piVal = baseScore;
+  piVal += adjust(!!meta.title, 8);
+  piVal += adjust(!!meta.description, 8);
+  piVal += adjust(!!meta.canonical, 6);
+  piVal += adjust(!!meta.ogImage, 6);
+  piVal += adjust((meta.h1 || []).length > 0, 5);
+  piVal += adjust((meta.h2 || []).length > 0, 5);
+  scores.pageInfo = {
+    value: Math.max(5, Math.min(95, Math.round(piVal))),
+    reason: `타이틀/설명/canonical/OG/H 태그 종합`
+  };
+
+  // 6. contentDepth: 블로그 + 본문 양
+  let cdVal = baseScore;
+  cdVal += adjust(meta.hasBlog, 14);
+  if ((meta.contentLength || 0) > 5000) cdVal += 14;
+  else if ((meta.contentLength || 0) > 2000) cdVal += 8;
+  else if ((meta.contentLength || 0) > 800) cdVal += 4;
+  scores.contentDepth = {
+    value: Math.max(5, Math.min(95, Math.round(cdVal))),
+    reason: `블로그=${meta.hasBlog ? 'O' : 'X'}, 본문 ${meta.contentLength || 0}자`
+  };
+
+  // 7. externalAuthority: backlinkScore(0~5) + 언론 키워드
+  const eaVal = infra.backlinkEstimate !== undefined
+    ? Math.max(10, Math.min(95, 25 + (infra.backlinkScore || 0) * 13))
+    : baseScore;
+  scores.externalAuthority = {
+    value: eaVal,
+    reason: `백링크 추정 ${infra.backlinkEstimate || 0}개, 언론 키워드 ${infra.pressMentionHits || 0}회`
+  };
+
+  // 8. eeat: 작성자·자격·연혁·연락처
+  let eeatVal = baseScore;
+  eeatVal += adjust(meta.hasAuthor, 9);
+  eeatVal += adjust(meta.hasCertification, 9);
+  eeatVal += adjust(meta.hasContact, 7);
+  eeatVal += adjust(meta.hasHistory, 7);
+  scores.eeat = {
+    value: Math.max(5, Math.min(95, Math.round(eeatVal))),
+    reason: `저자/자격/연혁/연락처 4신호 합산`
+  };
+
+  // 9. aiCitation: 본문 길이 기반 휴리스틱 (실제 ai_writing 5신호는 후처리에서 가산)
+  let aicVal = baseScore;
+  aicVal += adjust(meta.hasFaq, 10);
+  aicVal += adjust(meta.hasSchema, 8);
+  aicVal += adjust((meta.h2 || []).length > 3, 6);
+  scores.aiCitation = {
+    value: Math.max(5, Math.min(95, Math.round(aicVal))),
+    reason: `FAQ/Schema/H2 기반 1차 추정 (5신호 측정 후 보정)`
+  };
+
+  // 10. cepScene: 본문 내 "장면/순간" 키워드
+  const sceneRe = /(순간|장면|상황|할\s*때|밤에|새벽|퇴근|출근|식사|이후|전에|직후|앞두고)/i;
+  const hasScene = sceneRe.test(fetchResult.content || '');
+  const cepVal = baseScore + (hasScene ? 14 : 0);
+  scores.cepScene = {
+    value: Math.max(5, Math.min(95, Math.round(cepVal))),
+    reason: hasScene ? '본문에 장면/순간 키워드 포함' : '장면 키워드 미검출'
+  };
+
+  // 가중 평균 종합
   const total = Math.round(
-    Object.values(scores).reduce((s, x) => s + x.value, 0) / 10
+    Object.entries(scores).reduce((sum, [k, s]) => sum + (s.value || 0) * (WEIGHTS[k] || 0) / 100, 0)
   );
 
   return {
@@ -478,9 +658,10 @@ function fallbackResult({ companyName, websiteUrl, fetchResult, hasGeminiKey }) 
             : 'AI 분석 엔진(Gemini API)이 설정되지 않아 규칙 기반 점수로 진단했습니다. 정밀 진단을 위해 환경 변수 GEMINI_API_KEY 설정이 필요합니다.')
         : '사이트 데이터를 가져오지 못했습니다. URL을 확인하거나 robots.txt 정책을 점검해주세요.',
       topProblems: [
-        meta.hasFaq ? null : 'FAQ/Q&A 구조 부재',
+        infra.robotsTxtFound === false ? 'robots.txt 부재' : null,
+        infra.sitemapFound === false ? 'sitemap.xml 부재' : null,
         meta.hasSchema ? null : 'Schema.org 구조화 데이터 미적용',
-        meta.hasCTA ? null : 'CTA(전환 유도) 부재'
+        meta.hasFaq ? null : 'FAQ/Q&A 구조 부재'
       ].filter(Boolean).slice(0, 3),
       opportunities: [
         '구조화 데이터 적용 시 AI 인용 가능성 30~50% 상승',
@@ -493,6 +674,24 @@ function fallbackResult({ companyName, websiteUrl, fetchResult, hasGeminiKey }) 
       { label: '업계 평균', value: 45 },
       { label: '상위 10% 기업', value: 78 }
     ]
+  };
+}
+
+// 옛 KPI alias 매핑 (마이그레이션 호환성)
+function buildLegacyScores(scores, meta) {
+  const v = (k) => scores?.[k]?.value || 0;
+  const ctaCnt = meta?.hasCTA ? 60 : 30;
+  return {
+    visibility:  { value: Math.round((v('indexExposure') + v('pageInfo')) / 2), legacy: true },
+    velocity:    { value: v('contentDepth'), legacy: true },
+    authority:   { value: v('eeat'), legacy: true },
+    citation:    { value: Math.round((v('aiCitation') + v('structuredData')) / 2), legacy: true },
+    engagement:  { value: v('externalAuthority'), legacy: true },
+    conversion:  { value: ctaCnt, legacy: true },
+    channel:     { value: v('contentDepth'), legacy: true },
+    brand:       { value: v('aiCitation'), legacy: true },
+    competitive: { value: v('externalAuthority'), legacy: true },
+    aio:         { value: Math.round(v('structuredData') * 0.6 + v('botAccess') * 0.4), legacy: true }
   };
 }
 
@@ -533,31 +732,38 @@ export default async function handler(req, res) {
     let infraSignals = null;
 
     if (mode === 'content' && content) {
-      // 직접 입력 콘텐츠 모드 — fetch 생략, 콘텐츠 자체를 분석 대상으로
       const text = content.slice(0, 6000);
       const hasFaq = /FAQ|자주\s*묻는|Q&A|Q\.\s|질문/i.test(content);
       const hasSchema = /application\/ld\+json|itemtype=|schema\.org/i.test(content);
+      const hasJsonLd = /application\/ld\+json/i.test(content);
       const hasCTA = /상담|문의|예약|가입|신청|구독|지금\s*시작|무료|체험/i.test(content);
       const hasReview = /리뷰|후기|평점|별점|review/i.test(content);
       const hasBlog = /blog|블로그|news|소식|공지/i.test(content);
       const hasSocial = /(instagram|facebook|youtube|twitter|linkedin|kakao|naver\s*blog)/i.test(content);
+      const hasAuthor = /(작성자|저자|글쓴이|by\s+[A-Za-z가-힣]|author)/i.test(content);
+      const hasCertification = /(자격|면허|학위|박사|교수|전문의|인증|certified|MD|PhD)/i.test(content);
+      const hasContact = /(연락처|전화|이메일|tel:|mailto:|02-|010-)/i.test(content);
+      const hasHistory = /(연혁|설립|since|founded|since\s+\d{4}|\d{4}년\s*설립)/i.test(content);
       fetchResult = {
         ok: true,
         status: 200,
         content: text,
+        rawHtml: content.slice(0, 30000),
         meta: {
           title: companyName,
           description: text.slice(0, 200),
+          ogImage: '',
+          canonical: '',
           h1: [],
           h2: [],
-          hasFaq, hasSchema, hasCTA, hasReview, hasBlog, hasSocial,
+          hasFaq, hasSchema, hasJsonLd, hasCTA, hasReview, hasBlog, hasSocial,
+          hasAuthor, hasCertification, hasContact, hasHistory,
           contentLength: content.length,
           inputMode: 'content'
         }
       };
       url = '직접 입력 콘텐츠';
     } else {
-      // URL 모드 (기본)
       if (!websiteUrl) {
         return res.status(400).json({ error: 'URL이 필요합니다' });
       }
@@ -566,12 +772,9 @@ export default async function handler(req, res) {
       try { new URL(url); } catch (e) {
         return res.status(400).json({ error: '올바른 URL이 아닙니다' });
       }
-      const [_fr, _is] = await Promise.all([
-        fetchWebsiteContent(url),
-        fetchInfraSignals(url)
-      ]);
-      fetchResult = _fr;
-      infraSignals = _is;
+      // fetchWebsiteContent 먼저 → rawHtml을 fetchInfraSignals에 전달
+      fetchResult = await fetchWebsiteContent(url);
+      infraSignals = await fetchInfraSignals(url, fetchResult.rawHtml || '');
     }
 
     let analysis = null;
@@ -589,7 +792,7 @@ export default async function handler(req, res) {
           }
         });
 
-        const prompt = buildPrompt({ companyName, websiteUrl: url, industry, fetchResult });
+        const prompt = buildPrompt({ companyName, websiteUrl: url, industry, fetchResult, infraSignals });
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
         analysis = extractJSON(responseText);
@@ -600,50 +803,86 @@ export default async function handler(req, res) {
     }
 
     if (!analysis) {
-      analysis = fallbackResult({ companyName, websiteUrl: url, fetchResult, hasGeminiKey: !!process.env.GEMINI_API_KEY });
+      analysis = fallbackResult({ companyName, websiteUrl: url, fetchResult, infraSignals, hasGeminiKey: !!process.env.GEMINI_API_KEY });
     }
 
-    // ai_writing 4 신호 검출 — content 모드면 입력 콘텐츠, URL 모드면 fetch한 본문
+    // 누락된 KPI 보강 (Gemini가 일부 키만 반환했을 경우)
+    if (!analysis.scores) analysis.scores = {};
+    const fb = fallbackResult({ companyName, websiteUrl: url, fetchResult, infraSignals, hasGeminiKey: !!process.env.GEMINI_API_KEY });
+    for (const k of KPI_LIST) {
+      if (!analysis.scores[k.id] || typeof analysis.scores[k.id].value !== 'number') {
+        analysis.scores[k.id] = fb.scores[k.id];
+      }
+    }
+
+    // ai_writing 5 신호 검출
     const aiwSource = (mode === 'content' && content)
       ? content
       : (fetchResult.content || '');
     const aiwSignals = detectAIWritingSignals(aiwSource, companyName);
 
-    // citation 점수: Gemini 점수와 ai_writing 4신호 측정값을 가중평균
-    // (단순 가산 시 같은 신호로 double-counting되어 과대평가될 수 있어 가중평균으로 보정)
-    if (analysis.scores?.citation && aiwSource.length > 200) {
+    // aiCitation 점수: Gemini 점수와 ai_writing 5신호 측정값을 가중평균 + aiwSignals 부착
+    if (analysis.scores?.aiCitation && aiwSource.length > 200) {
       const aiwTotal = (aiwSignals.questionHeadings + aiwSignals.definitionH2
                       + aiwSignals.brandRepetition + aiwSignals.externalSignal
                       + aiwSignals.ctaReach); // 0~15
-      // 5신호 측정만으로 산출한 citation 환산 점수 (0~15 → 0~95)
-      const aiwScore = Math.min(95, Math.max(5, Math.round(20 + aiwTotal * 5))); // 15점이면 95
-      const geminiScore = analysis.scores.citation.value || 0;
-      // 0.6 * Gemini + 0.4 * aiw 가중평균
+      const aiwScore = Math.min(95, Math.max(5, Math.round(20 + aiwTotal * 5)));
+      const geminiScore = analysis.scores.aiCitation.value || 0;
       const blended = Math.round(geminiScore * 0.6 + aiwScore * 0.4);
-      analysis.scores.citation.value = Math.max(5, Math.min(95, blended));
-      analysis.scores.citation.aiwSignals = aiwSignals;
-      analysis.scores.citation.geminiScore = geminiScore;
-      analysis.scores.citation.aiwScore = aiwScore;
+      analysis.scores.aiCitation.value = Math.max(5, Math.min(95, blended));
+      analysis.scores.aiCitation.aiwSignals = aiwSignals;
+      analysis.scores.aiCitation.geminiScore = geminiScore;
+      analysis.scores.aiCitation.aiwScore = aiwScore;
+    } else if (analysis.scores?.aiCitation) {
+      // aiwSignals는 항상 부착 (UI 호환성)
+      analysis.scores.aiCitation.aiwSignals = aiwSignals;
     }
 
-    // 외부 인프라 신호로 visibility/citation KPI 가산 (URL 모드 전용)
+    // 외부 인프라 신호로 botAccess/sitemapStatus/indexExposure/externalAuthority 측정값 우선 반영
+    // (Gemini가 추정한 값보다 측정값이 더 정확함)
     if (infraSignals) {
-      if (analysis.scores?.visibility) {
-        const bonus = Math.min(25, infraSignals.robotsScore * 3 + infraSignals.sitemapScore * 2);
-        const v = (analysis.scores.visibility.value || 0) + bonus;
-        analysis.scores.visibility.value = Math.max(5, Math.min(95, v));
-        analysis.scores.visibility.infraBonus = bonus;
+      // botAccess: 측정값 70% + Gemini 30%
+      if (analysis.scores?.botAccess && infraSignals.robotsTxtFound !== undefined) {
+        const measured = Math.max(10, Math.min(95, 30 + (infraSignals.robotsScore || 0) * 13));
+        const gemini = analysis.scores.botAccess.value || 0;
+        analysis.scores.botAccess.value = Math.round(measured * 0.7 + gemini * 0.3);
+        analysis.scores.botAccess.measuredScore = measured;
+        analysis.scores.botAccess.allowedBotsCount = infraSignals.allowedBotsCount;
       }
-      if (analysis.scores?.citation) {
-        const bonus = infraSignals.robotsScore * 2;
-        const v = (analysis.scores.citation.value || 0) + bonus;
-        analysis.scores.citation.value = Math.max(5, Math.min(95, v));
-        analysis.scores.citation.infraBonus = bonus;
+      // sitemapStatus: 측정값 70% + Gemini 30%
+      if (analysis.scores?.sitemapStatus && infraSignals.sitemapFound !== undefined) {
+        const measured = Math.max(10, Math.min(95, 25 + (infraSignals.sitemapScore || 0) * 14));
+        const gemini = analysis.scores.sitemapStatus.value || 0;
+        analysis.scores.sitemapStatus.value = Math.round(measured * 0.7 + gemini * 0.3);
+        analysis.scores.sitemapStatus.measuredScore = measured;
+        analysis.scores.sitemapStatus.sitemapUrlCount = infraSignals.sitemapUrlCount;
+      }
+      // indexExposure: 측정값 60% + Gemini 40%
+      if (analysis.scores?.indexExposure) {
+        const measured = Math.max(10, Math.min(95, 25 + (infraSignals.indexExposureLevel || 0) * 14));
+        const gemini = analysis.scores.indexExposure.value || 0;
+        analysis.scores.indexExposure.value = Math.round(measured * 0.6 + gemini * 0.4);
+        analysis.scores.indexExposure.measuredScore = measured;
+        analysis.scores.indexExposure.indexExposureCount = infraSignals.indexExposureCount;
+      }
+      // externalAuthority: 측정값 60% + Gemini 40%
+      if (analysis.scores?.externalAuthority) {
+        const measured = Math.max(10, Math.min(95, 25 + (infraSignals.backlinkScore || 0) * 13));
+        const gemini = analysis.scores.externalAuthority.value || 0;
+        analysis.scores.externalAuthority.value = Math.round(measured * 0.6 + gemini * 0.4);
+        analysis.scores.externalAuthority.measuredScore = measured;
+        analysis.scores.externalAuthority.backlinkEstimate = infraSignals.backlinkEstimate;
       }
     }
 
-    const scoreValues = KPI_LIST.map(k => analysis.scores?.[k.id]?.value ?? 0);
-    const totalScore = Math.round(scoreValues.reduce((a, b) => a + b, 0) / 10);
+    // 가중 평균 종합 점수
+    const totalScore = Math.round(
+      Object.entries(analysis.scores).reduce((sum, [k, s]) => {
+        const w = WEIGHTS[k];
+        if (!w) return sum;
+        return sum + (s.value || 0) * w / 100;
+      }, 0)
+    );
 
     const grade = (() => {
       if (totalScore >= 90) return { key: 'dominant', label: 'AI Dominant' };
@@ -652,6 +891,9 @@ export default async function handler(req, res) {
       if (totalScore >= 30) return { key: 'weak', label: 'Weak' };
       return { key: 'critical', label: 'Critical' };
     })();
+
+    // 옛 KPI alias (마이그레이션 호환)
+    const legacyScores = buildLegacyScores(analysis.scores, fetchResult.meta);
 
     return res.status(200).json({
       success: true,
@@ -663,6 +905,8 @@ export default async function handler(req, res) {
       totalScore,
       grade,
       scores: analysis.scores,
+      legacyScores,
+      weights: WEIGHTS,
       summary: analysis.summary,
       competitors: analysis.competitors || [
         { label: '업계 평균', value: 45 },
@@ -673,7 +917,8 @@ export default async function handler(req, res) {
         siteFetchOk: fetchResult.ok,
         contentLength: fetchResult.meta?.contentLength || 0,
         aiwSignals,
-        infraSignals
+        infraSignals,
+        kpiVersion: '2.0-weighted-10kpi'
       }
     });
   } catch (e) {

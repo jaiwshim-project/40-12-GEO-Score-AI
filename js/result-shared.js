@@ -17,6 +17,23 @@ window.ResultShared = (function() {
       const data = JSON.parse(stored);
       _result = data.result;
       _recommendation = data.recommendation;
+
+      // KPI 마이그레이션: 옛 진단 데이터(visibility/citation/...)와 새 데이터(botAccess/...) 양쪽 호환
+      if (_result && _result.scores) {
+        const keys = Object.keys(_result.scores);
+        const hasNewKpi = keys.some(k => ['botAccess','sitemapStatus','indexExposure','aiCitation','cepScene'].includes(k));
+        const hasLegacyKpi = keys.some(k => ['visibility','velocity','citation','aio'].includes(k));
+
+        if (!hasNewKpi && hasLegacyKpi && window.migrateLegacyScores) {
+          // 옛 진단 → 새 KPI 추가 (양쪽 보유)
+          const migrated = window.migrateLegacyScores(_result.scores);
+          _result.scores = Object.assign({}, _result.scores, migrated);
+        } else if (hasNewKpi && !hasLegacyKpi && _result.legacyScores) {
+          // 새 진단 + 서버에서 보낸 legacyScores 병합 (옛 코드 호환)
+          _result.scores = Object.assign({}, _result.scores, _result.legacyScores);
+        }
+      }
+
       return _result;
     } catch (e) { return null; }
   }

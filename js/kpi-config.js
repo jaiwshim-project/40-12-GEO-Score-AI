@@ -1,151 +1,262 @@
 /**
- * GEO Score AI - 10대 KPI 정의
- * AI 검색 시대 기업 존재력 측정 프레임워크
+ * GEO Score AI - 새 10 KPI 정의 (옵션 B: 카카오톡 표준 8 + 자체 차별점 2)
+ * AI 검색 시대 기업 존재력 측정 프레임워크 (가중치 합 100%)
  */
 
 window.KPI_DEFINITIONS = [
   {
-    id: 'visibility',
-    name: '검색 가시성 지수',
-    nameEn: 'Search Visibility Index',
+    id: 'botAccess',
+    name: 'AI 봇 접근',
+    nameEn: 'AI Bot Accessibility',
+    icon: '🤖',
+    color: '#1F6BFF',
+    color2: '#0d4ed1',
+    weight: 14,
+    desc: 'ChatGPT/Claude/Perplexity 등 AI 봇이 사이트에 접근 가능한지 측정',
+    insightHigh: 'GPTBot·ClaudeBot·PerplexityBot 등 주요 AI 봇이 자유롭게 크롤링 가능합니다.',
+    insightMid: '일부 AI 봇만 허용되어 있어 robots.txt·헤더 설정 보강이 필요합니다.',
+    insightLow: 'AI 봇 차단으로 인해 ChatGPT·Perplexity가 사이트를 학습할 수 없습니다.'
+  },
+  {
+    id: 'sitemapStatus',
+    name: 'Sitemap 상태',
+    nameEn: 'Sitemap Health',
+    icon: '🗺️',
+    color: '#06b6d4',
+    color2: '#0891b2',
+    weight: 10,
+    desc: '사이트 지도 정상 작동 + URL 등록 수',
+    insightHigh: 'sitemap.xml이 정상 작동하며 충분한 URL이 등록되어 있습니다.',
+    insightMid: 'sitemap은 존재하나 URL 누락이 많거나 lastmod 갱신이 미흡합니다.',
+    insightLow: 'sitemap.xml이 없거나 접근 불가 상태로 색인 효율이 매우 낮습니다.'
+  },
+  {
+    id: 'indexExposure',
+    name: '검색 색인',
+    nameEn: 'Search Index Volume',
     icon: '🔎',
     color: '#0095ff',
     color2: '#0073cc',
-    desc: '구글·네이버 노출 수준, 키워드 점유율, AI Overview 노출 가능성을 종합 평가합니다.',
-    insightHigh: '검색 결과에서 안정적으로 발견되는 단계입니다.',
-    insightMid: '주요 키워드 일부에서만 노출되고 있어 보강이 필요합니다.',
-    insightLow: '검색 결과에서 거의 보이지 않습니다. AI도 발견하지 못합니다.'
+    weight: 13,
+    desc: '구글·네이버에 색인된 페이지 수',
+    insightHigh: '구글·네이버에 다수 페이지가 색인되어 검색 노출 기반이 탄탄합니다.',
+    insightMid: '일부 페이지만 색인되어 있어 색인 누락 페이지 점검이 필요합니다.',
+    insightLow: '색인된 페이지가 거의 없어 검색에서 발견되지 않습니다.'
   },
   {
-    id: 'velocity',
-    name: '콘텐츠 생산력 지수',
-    nameEn: 'Content Velocity Index',
-    icon: '⚡',
+    id: 'structuredData',
+    name: '구조화 데이터',
+    nameEn: 'Structured Data',
+    icon: '📐',
+    color: '#a855f7',
+    color2: '#7c3aed',
+    weight: 12,
+    desc: 'Schema.org · FAQ · JSON-LD 마크업 적용도',
+    insightHigh: 'Schema.org JSON-LD·FAQPage 마크업이 잘 적용되어 AI 인용에 유리합니다.',
+    insightMid: '일부 구조화 데이터만 적용되어 있어 FAQPage·Organization 보강이 필요합니다.',
+    insightLow: '구조화 데이터가 없어 AI가 콘텐츠를 정확히 이해하기 어렵습니다.'
+  },
+  {
+    id: 'pageInfo',
+    name: '페이지 정보',
+    nameEn: 'Page Metadata',
+    icon: '📄',
+    color: '#00d68f',
+    color2: '#00b87c',
+    weight: 8,
+    desc: '메타 태그·canonical·OG·H1/H2 완비도',
+    insightHigh: '메타 태그·OG·canonical·H1/H2가 모두 갖춰져 있습니다.',
+    insightMid: '일부 메타 정보가 누락되어 있어 OG 태그·canonical 보강이 필요합니다.',
+    insightLow: '메타 태그·헤딩 구조가 부재해 페이지 정보가 AI에 전달되지 않습니다.'
+  },
+  {
+    id: 'contentDepth',
+    name: '콘텐츠 깊이',
+    nameEn: 'Content Depth',
+    icon: '📚',
     color: '#ff6b35',
     color2: '#ff4500',
-    desc: '블로그·웹 콘텐츠 발행 빈도, 최신성, 업데이트 주기를 측정합니다.',
-    insightHigh: '꾸준한 콘텐츠 생산으로 AI 학습 데이터가 풍부합니다.',
-    insightMid: '간헐적 발행 패턴. 일관된 발행 루틴 확립이 필요합니다.',
-    insightLow: '신규 콘텐츠가 거의 없어 AI에 학습될 기회가 없습니다.'
+    weight: 10,
+    desc: '블로그 발행 빈도 · 본문 양 · 최신성',
+    insightHigh: '꾸준한 발행과 충분한 본문 깊이로 AI 학습 데이터가 풍부합니다.',
+    insightMid: '간헐적 발행 또는 본문 길이가 부족해 콘텐츠 자산 누적이 더딥니다.',
+    insightLow: '신규 콘텐츠와 본문 깊이가 부족해 AI에 학습될 기회가 거의 없습니다.'
   },
   {
-    id: 'authority',
-    name: 'E-E-A-T 신뢰도 지수',
-    nameEn: 'Authority Index',
+    id: 'externalAuthority',
+    name: '외부 권위',
+    nameEn: 'External Authority',
+    icon: '🌐',
+    color: '#ec4899',
+    color2: '#be185d',
+    weight: 9,
+    desc: '백링크 · 언론 보도 · 외부 언급',
+    insightHigh: '언론 보도와 외부 백링크가 누적되어 권위가 충분합니다.',
+    insightMid: '일부 외부 언급이 있으나 보도자료·백링크 추가 확보가 필요합니다.',
+    insightLow: '외부 언급·백링크가 거의 없어 AI 신뢰 가중치가 낮습니다.'
+  },
+  {
+    id: 'eeat',
+    name: 'E-E-A-T 신호',
+    nameEn: 'E-E-A-T Signals',
     icon: '🏆',
     color: '#00d68f',
     color2: '#00b87c',
-    desc: '전문성, 경험 기반 콘텐츠, 저자 신뢰도를 평가합니다.',
-    insightHigh: '전문성과 경험이 잘 드러나 AI가 신뢰하는 출처로 인식됩니다.',
-    insightMid: '신뢰 신호가 일부 존재하지만 저자·경력 노출 강화가 필요합니다.',
-    insightLow: '신뢰 근거가 거의 없어 AI가 인용을 망설입니다.'
+    weight: 8,
+    desc: '작성자·자격·연혁·연락처 신뢰 신호',
+    insightHigh: '저자·자격·연혁·연락처가 노출되어 AI 신뢰 가중치가 높습니다.',
+    insightMid: '일부 신뢰 신호만 노출되어 저자 프로필·자격 강화가 필요합니다.',
+    insightLow: 'E-E-A-T 신뢰 신호가 부재해 AI가 인용을 망설입니다.'
   },
   {
-    id: 'citation',
-    name: 'AI 인용 가능성 지수',
-    nameEn: 'AI Citation Index',
-    icon: '🤖',
-    color: '#a855f7',
-    color2: '#7c3aed',
-    desc: '구조화된 콘텐츠, FAQ·Q&A 구조, LLM 친화적 형식을 평가합니다.',
-    insightHigh: '구조화 수준이 높아 AI가 답변에 인용하기 쉽습니다.',
-    insightMid: '일부 구조화는 있으나 FAQ·요약 영역 보강이 필요합니다.',
-    insightLow: '구조화가 거의 없어 AI 답변에 등장할 가능성이 매우 낮습니다.'
-  },
-  {
-    id: 'engagement',
-    name: '고객 참여도 지수',
-    nameEn: 'Engagement Index',
-    icon: '💬',
-    color: '#ec4899',
-    color2: '#be185d',
-    desc: '댓글, 리뷰, SNS 반응, 체류 시간을 종합 측정합니다.',
-    insightHigh: '활발한 참여로 콘텐츠 신뢰도가 강화됩니다.',
-    insightMid: '참여가 일부 존재하지만 인터랙션 유도 장치 보강이 필요합니다.',
-    insightLow: '참여 흔적이 거의 없어 콘텐츠가 정적 상태로 머물러 있습니다.'
-  },
-  {
-    id: 'conversion',
-    name: '전환 설계 지수',
-    nameEn: 'Conversion Architecture Index',
-    icon: '🎯',
+    id: 'aiCitation',
+    name: 'AI 인용 5신호 ⭐',
+    nameEn: 'AI Citation Signals',
+    icon: '⭐',
     color: '#ffa800',
     color2: '#ff8800',
-    desc: 'CTA 존재 여부, 상담 유도 구조, 랜딩 페이지 완성도를 측정합니다.',
-    insightHigh: '방문자가 자연스럽게 전환 액션으로 유도됩니다.',
-    insightMid: 'CTA가 존재하지만 명확성·반복 노출이 부족합니다.',
-    insightLow: '전환 설계가 부재해 트래픽이 와도 매출로 이어지지 않습니다.'
+    weight: 10,
+    desc: 'ai_writing 5신호 (질문형/정의문 H2·브랜드반복·외부신호·CTA) — 자체 차별점',
+    insightHigh: '질문형·정의문 H2·브랜드 반복·외부신호·CTA 도달이 모두 충족되어 AI가 인용하기 좋습니다.',
+    insightMid: '일부 신호만 충족되어 질문형 H2·정의문·브랜드 반복 보강이 필요합니다.',
+    insightLow: 'AI 인용 5신호가 거의 부재해 LLM 답변에 등장할 가능성이 매우 낮습니다.'
   },
   {
-    id: 'channel',
-    name: '채널 확장 지수',
-    nameEn: 'Channel Diversification Index',
-    icon: '📡',
-    color: '#06b6d4',
-    color2: '#0891b2',
-    desc: '블로그, 유튜브, SNS 등 멀티채널 활용도를 평가합니다.',
-    insightHigh: '여러 채널에 일관된 메시지가 분산되어 AI 발견 확률이 높습니다.',
-    insightMid: '일부 채널에 의존하고 있어 확장이 필요합니다.',
-    insightLow: '단일 채널 의존도가 높아 AI 탐색 경로가 제한됩니다.'
-  },
-  {
-    id: 'brand',
-    name: '브랜드 일관성 지수',
-    nameEn: 'Brand Consistency Index',
-    icon: '🎨',
+    id: 'cepScene',
+    name: 'CEP 장면 점유 ⭐',
+    nameEn: 'CEP Scene Capture',
+    icon: '🎯',
     color: '#f59e0b',
     color2: '#d97706',
-    desc: '메시지 통일성, 디자인·톤앤매너의 일관성을 측정합니다.',
-    insightHigh: '브랜드 정체성이 강해 AI도 일관된 인식을 형성합니다.',
-    insightMid: '톤·메시지가 채널마다 다르게 흩어져 있습니다.',
-    insightLow: '일관성이 부족해 AI가 브랜드를 명확하게 학습하지 못합니다.'
-  },
-  {
-    id: 'competitive',
-    name: '경쟁 대비 점유율 지수',
-    nameEn: 'Competitive Position Index',
-    icon: '⚔️',
-    color: '#ef4444',
-    color2: '#b91c1c',
-    desc: '경쟁사 대비 콘텐츠량, 키워드 경쟁력을 분석합니다.',
-    insightHigh: '경쟁사 대비 우위에 있어 AI가 우선 추천합니다.',
-    insightMid: '비등한 경쟁 상태. 차별화 포인트 강화가 필요합니다.',
-    insightLow: '경쟁사가 시장을 장악한 상태로 AI는 경쟁사를 우선 추천합니다.'
-  },
-  {
-    id: 'aio',
-    name: 'AI 최적화 준비도',
-    nameEn: 'AIO Readiness Index',
-    icon: '🚀',
-    color: '#8b5cf6',
-    color2: '#6d28d9',
-    desc: 'GEO 구조, AI 검색 대응 구조, 콘텐츠 구조화 수준을 종합합니다.',
-    insightHigh: 'AI 시대 요구 수준에 맞는 인프라가 갖춰져 있습니다.',
-    insightMid: '일부 AIO 요소가 적용되었으나 풀스택 적용은 미흡합니다.',
-    insightLow: 'AI 시대 인프라가 부재해 즉각적인 AIO 도입이 시급합니다.'
+    weight: 6,
+    desc: '"순간(scene)" 콘텐츠 — 자체 차별점',
+    insightHigh: '소비자의 결정적 순간(CEP)을 정조준한 장면형 콘텐츠가 풍부합니다.',
+    insightMid: '일부 CEP 장면을 다루고 있으나 장면 다양성과 깊이 보강이 필요합니다.',
+    insightLow: 'CEP 장면을 다룬 콘텐츠가 거의 없어 순간 점유 기회를 놓치고 있습니다.'
   }
 ];
 
+// 가중치 맵 (합 100)
+window.KPI_WEIGHTS = {
+  botAccess: 14,
+  sitemapStatus: 10,
+  indexExposure: 13,
+  structuredData: 12,
+  pageInfo: 8,
+  contentDepth: 10,
+  externalAuthority: 9,
+  eeat: 8,
+  aiCitation: 10,
+  cepScene: 6
+};
+
+// 6단계 등급 체계
 window.GRADE_CONFIG = [
-  { min: 90, max: 100, key: 'dominant', label: 'AI Dominant', desc: '시장 지배 수준', emoji: '👑' },
-  { min: 70, max: 89, key: 'strong', label: 'Strong', desc: '상위권', emoji: '💪' },
-  { min: 50, max: 69, key: 'growing', label: 'Growing', desc: '성장 가능', emoji: '📈' },
-  { min: 30, max: 49, key: 'weak', label: 'Weak', desc: '위험 단계', emoji: '⚠️' },
-  { min: 0, max: 29, key: 'critical', label: 'Critical', desc: '거의 없음', emoji: '🚨' }
+  { min: 90, max: 100, key: 'dominant', label: 'A+ Premium', desc: '최상위', emoji: '👑' },
+  { min: 75, max: 89,  key: 'strong',   label: 'A 우수',     desc: '우수',   emoji: '💪' },
+  { min: 60, max: 74,  key: 'growing',  label: 'B 보통',     desc: '보통',   emoji: '📈' },
+  { min: 45, max: 59,  key: 'weak',     label: 'C 미흡',     desc: '미흡',   emoji: '⚠️' },
+  { min: 30, max: 44,  key: 'poor',     label: 'D 부족',     desc: '부족',   emoji: '🚨' },
+  { min: 0,  max: 29,  key: 'critical', label: 'F 잠금',     desc: '잠금',   emoji: '🔒' }
 ];
 
 window.getGrade = function(score) {
-  return window.GRADE_CONFIG.find(g => score >= g.min && score <= g.max) || window.GRADE_CONFIG[4];
+  return window.GRADE_CONFIG.find(g => score >= g.min && score <= g.max) || window.GRADE_CONFIG[window.GRADE_CONFIG.length - 1];
 };
 
 window.getKpiInsight = function(kpi, score) {
-  if (score >= 70) return kpi.insightHigh;
-  if (score >= 40) return kpi.insightMid;
+  if (score >= 75) return kpi.insightHigh;
+  if (score >= 45) return kpi.insightMid;
   return kpi.insightLow;
 };
 
 window.getScoreClass = function(score) {
-  if (score >= 70) return 'high';
-  if (score >= 40) return 'mid';
+  if (score >= 75) return 'high';
+  if (score >= 45) return 'mid';
   return 'low';
+};
+
+// 옛 10 KPI → 새 10 KPI 매핑 (legacy 호환)
+window.LEGACY_KPI_MAP = {
+  visibility: 'indexExposure',
+  velocity: 'contentDepth',
+  authority: 'eeat',
+  citation: 'aiCitation',
+  engagement: 'externalAuthority',
+  conversion: 'aiCitation',
+  channel: 'contentDepth',
+  brand: 'aiCitation',
+  competitive: 'externalAuthority',
+  aio: 'structuredData'
+};
+
+/**
+ * 옛 진단 데이터(visibility/velocity/...)를 새 KPI 점수로 변환.
+ * 이미 새 KPI 키(botAccess 등)가 들어있으면 그대로 반환.
+ * 입력은 { kpiId: { value, reason, ... } } 또는 { kpiId: number } 둘 다 허용.
+ */
+window.migrateLegacyScores = function(scores) {
+  if (!scores || typeof scores !== 'object') return scores;
+
+  const newKeys = Object.keys(window.KPI_WEIGHTS);
+  const inputKeys = Object.keys(scores);
+
+  // 새 KPI 데이터로 판단되면 그대로 반환
+  const hasNewKey = inputKeys.some(k => newKeys.includes(k));
+  const hasLegacyKey = inputKeys.some(k => Object.prototype.hasOwnProperty.call(window.LEGACY_KPI_MAP, k));
+  if (hasNewKey && !hasLegacyKey) return scores;
+
+  // 매핑 누적용 버킷 (다대일 매핑이 있으므로 평균 처리)
+  const buckets = {};
+  newKeys.forEach(k => { buckets[k] = { sum: 0, count: 0, reasons: [], legacyFrom: [] }; });
+
+  inputKeys.forEach(legacyKey => {
+    const target = window.LEGACY_KPI_MAP[legacyKey];
+    if (!target) return;
+    const raw = scores[legacyKey];
+    const value = (raw && typeof raw === 'object') ? Number(raw.value) : Number(raw);
+    if (!isFinite(value)) return;
+    const reason = (raw && typeof raw === 'object' && raw.reason) ? raw.reason : null;
+    buckets[target].sum += value;
+    buckets[target].count += 1;
+    buckets[target].legacyFrom.push(legacyKey);
+    if (reason) buckets[target].reasons.push(reason);
+  });
+
+  // 매핑되지 않은 새 KPI는 50(중립)으로 채움
+  const migrated = {};
+  newKeys.forEach(k => {
+    const b = buckets[k];
+    if (b.count > 0) {
+      migrated[k] = {
+        value: Math.round(b.sum / b.count),
+        reason: b.reasons[0] || `legacy 매핑 (${b.legacyFrom.join(', ')})`,
+        legacyFrom: b.legacyFrom
+      };
+    } else {
+      migrated[k] = { value: 50, reason: '레거시 데이터 없음 — 중립값 적용', legacyFrom: [] };
+    }
+  });
+
+  return migrated;
+};
+
+/**
+ * 새 KPI 가중치 평균. scores는 { kpiId: { value } } 또는 { kpiId: number }.
+ * 누락된 KPI는 가중치에서 제외(분모 보정).
+ */
+window.computeWeightedTotal = function(scores) {
+  if (!scores || typeof scores !== 'object') return 0;
+  let weightedSum = 0;
+  let weightTotal = 0;
+  Object.entries(window.KPI_WEIGHTS).forEach(([id, weight]) => {
+    const raw = scores[id];
+    if (raw === undefined || raw === null) return;
+    const value = (typeof raw === 'object') ? Number(raw.value) : Number(raw);
+    if (!isFinite(value)) return;
+    weightedSum += value * weight;
+    weightTotal += weight;
+  });
+  if (weightTotal === 0) return 0;
+  return Math.round(weightedSum / weightTotal);
 };

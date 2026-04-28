@@ -1,22 +1,38 @@
 /**
  * GEO Score AI - 영업용 단일 HTML 리포트 생성 API
  *
- * 기존 SaaS 다중 페이지 진단 결과를 AX Biz Group 브랜딩의
- * 단일 HTML 파일(외부 CSS/JS 의존 없음)로 패키징한다.
+ * 카카오톡 받은 파일(삼일자동차운전전문학원 제안서) 양식을 베이스로
+ * GEO Score AI 진단 결과를 단일 HTML 영업 리포트로 패키징한다.
+ *
+ * 카카오톡 양식 보존 요소
+ *  - CSS 변수: --bg #f5f1e8(아이보리), --ink-darkest #0a0e1a, --gold #b8945a, --critical #8b1f1f 등
+ *  - 폰트: Pretendard / Noto Serif KR / Cormorant Garamond
+ *  - 레이아웃: 1100px 컨테이너 + 다크 헤더(#0a0e1a → #14213d) + 골드 라인
+ *  - 3탭: 진단 리포트 / 신규 개발 제안 / 대표 프로필 (wine·emerald·gold tones)
+ *  - 컴포넌트: summary-box, score-grid, score-card.critical/warning/good, kpi-row, alert.danger,
+ *              phase 카드, principal-grid, premium-footer
+ *
+ * GEO Score AI 자체 차별점
+ *  - 새 10 KPI → 8 score-card 매핑 (별점 환산 규칙: 0~19★ / 20~39★★ / 40~59★★★ / 60~79★★★★ / 80~100★★★★★)
+ *  - 자체 차별점 2섹션: AI 인용 5신호 (aiwSignals) + CEP 장면 점유 (cepScenes)
+ *  - 권장 경로 자동 매트릭스 (점수 + infraSignals 기반):
+ *      ≥ 75 → 콘텐츠 강화
+ *      60~74 → 부분 개선
+ *      45~59 → 비교 검토
+ *      30~44 → 신규 개발 권장
+ *      0~29 또는 봇 5+ 차단 / sitemap 손상 → 신규 개발 필수
+ *  - 견적표(400만원/3주)는 신규 개발 권장 시 자동 펼침
  *
  * 입력 (POST JSON):
- *  - result: analyze.js 응답 객체 (companyName, totalScore, scores, summary, meta)
- *  - recommendation: recommend.js 응답 객체 (priorityActions, packageTier, expectedOutcome)
+ *  - result: analyze.js 응답 객체 (companyName, totalScore, scores, summary, meta, websiteUrl)
+ *  - recommendation: recommend.js 응답 (priorityActions 등) — 선택
  *  - brand: 브랜드명 (선택, 기본 result.companyName)
  *  - industry: 업종 (선택, 기본 result.industry)
  *
- * 응답: { success: true, html: "<!DOCTYPE html>..." }
- *
- * 사용처: generate-report.html 폼이 호출 → 받은 html을 미리보기/다운로드.
- * 클라이언트가 직접 만들 수도 있으나, 서버 측에서 검증/표준화된 템플릿 보장 목적.
+ * 응답: { success, brand, industry, totalScore, recommendation: <path key>, htmlLength, html }
  */
 
-// 한글 인코딩 보정 (Vercel에서 latin1로 들어오는 경우 대응)
+// ===== 한글 인코딩 보정 (Vercel latin1 → utf8) =====
 function fixKorean(str) {
   if (!str || typeof str !== 'string') return str;
   if (/[^\x00-\x7F]/.test(str) && /[ -ÿ]/.test(str)) {
@@ -51,799 +67,1314 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-function todayKR() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}.${m}.${day}`;
-}
-
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
-function stars(score) {
-  // 0~100 → 5점 만점 별
-  const v = clamp(Math.round((score / 100) * 5), 0, 5);
-  return '★'.repeat(v) + '☆'.repeat(5 - v);
+// 점수(0~100) → 별점(1~5)
+function starsFor(score) {
+  const v = Number(score) || 0;
+  let n;
+  if (v < 20) n = 1;
+  else if (v < 40) n = 2;
+  else if (v < 60) n = 3;
+  else if (v < 80) n = 4;
+  else n = 5;
+  return { count: n, html: '★'.repeat(n) + `<span class="empty">${'★'.repeat(5 - n)}</span>` };
 }
 
-/**
- * 10 KPI → 8개 영업용 항목으로 재구성
- * - 점수는 가중치 평균 또는 단일 매핑
- * - 설명은 일반인 의사결정자 어휘 (기술 용어 배제)
- */
-function buildEightKpis(result) {
+function statusFor(score) {
+  const v = Number(score) || 0;
+  if (v < 40) return 'critical';
+  if (v < 60) return 'warning';
+  return 'good';
+}
+
+// ===== 새 10 KPI → 8 score-card 매핑 =====
+function buildEightCards(result) {
   const s = result?.scores || {};
   const v = (id) => Number(s[id]?.value) || 0;
   const infra = result?.meta?.infraSignals || {};
-  const robotsScore = Number(infra.robotsScore) || 0;
-  const sitemapScore = Number(infra.sitemapScore) || 0;
+  const robotsScore5 = Number(infra.robotsScore) || 0;       // 0~5
+  const sitemapScore5 = Number(infra.sitemapScore) || 0;     // 0~5
+  const blockedBots = Number(infra.blockedBotsCount) || 0;
+  const allowedBots = Number(infra.allowedBotsCount) || 7;
+  const sitemapValid = !!infra.sitemapValid;
+  const sitemapUrls = Number(infra.sitemapUrlCount) || 0;
 
-  const items = [
+  // visibility/citation/authority/velocity 등 기존 10 KPI를 8 카드에 재구성
+  const aibot = clamp(Math.round(robotsScore5 * 20), 0, 100);
+  const sitemap = clamp(Math.round(sitemapScore5 * 20), 0, 100);
+  const indexExposure = v('visibility');
+  const structuredData = v('citation');
+  const pageInfo = clamp(Math.round((v('visibility') + v('brand')) / 2), 0, 100);
+  const contentDepth = clamp(Math.round((v('velocity') + v('brand') + v('channel')) / 3), 0, 100);
+  const externalAuthority = clamp(Math.round((v('engagement') + v('competitive')) / 2), 0, 100);
+  const eeat = clamp(Math.round((v('authority') * 0.7 + v('aio') * 0.3)), 0, 100);
+
+  return [
     {
-      key: 'aibot',
-      name: 'AI 봇 접근',
-      desc: 'ChatGPT·Perplexity 같은 AI가 우리 사이트를 읽을 수 있는지',
-      score: clamp(Math.round(v('visibility') * 0.5 + robotsScore * 10), 0, 100)
+      key: 'botAccess',
+      title: 'AI 봇 접근',
+      score: aibot,
+      note: blockedBots === 0
+        ? `7개 AI 봇 모두 접근 허용. ChatGPT·Claude·Perplexity가 사이트를 자유롭게 읽을 수 있습니다.`
+        : `${blockedBots}개 AI 봇 차단됨 — ChatGPT·Perplexity 일부가 우리 정보를 읽지 못하는 상태`
     },
     {
-      key: 'sitemap',
-      name: '사이트 지도 상태',
-      desc: '검색·AI가 모든 페이지를 빠짐없이 발견할 수 있는 안내도',
-      score: clamp(Math.round(sitemapScore * 20 + v('visibility') * 0.3), 0, 100)
+      key: 'sitemapStatus',
+      title: '사이트 지도 상태',
+      score: sitemap,
+      note: sitemapValid
+        ? `사이트 지도 작동 중 (${sitemapUrls}개 페이지 안내). AI가 사이트 전체를 빠짐없이 발견할 수 있습니다.`
+        : (sitemapScore5 === 0
+            ? '사이트 지도가 발견되지 않습니다. 검색·AI가 페이지 일부만 인지하는 상태'
+            : '사이트 지도가 손상되었거나 외부 도메인을 가리킵니다 — 정비 필요')
     },
     {
-      key: 'discovery',
-      name: '검색 노출',
-      desc: '구글·네이버에서 우리 브랜드가 얼마나 노출되는가',
-      score: v('visibility')
+      key: 'indexExposure',
+      title: '검색 색인 (구글·네이버)',
+      score: indexExposure,
+      note: indexExposure < 40
+        ? '검색에서 거의 노출되지 않습니다. 28년 업력이라도 온라인에서 발견될 수 없습니다.'
+        : indexExposure < 70
+          ? '주요 키워드 일부에서만 노출됩니다 — 페이지 정보 보강이 필요합니다.'
+          : '검색에서 안정적으로 발견되는 단계입니다.'
     },
     {
-      key: 'structure',
-      name: '구조화 정보',
-      desc: 'AI가 답변에 그대로 인용할 수 있는 형태로 정리된 정도',
-      score: v('citation')
+      key: 'structuredData',
+      title: '구조화 정보',
+      score: structuredData,
+      note: structuredData < 40
+        ? 'AI가 인용할 수 있는 형태로 정리된 정보가 거의 없습니다.'
+        : structuredData < 70
+          ? '구조화가 일부 적용되었으나 FAQ·요약 영역 보강이 필요합니다.'
+          : 'AI가 답변에 그대로 인용하기 좋은 형태로 잘 정리되어 있습니다.'
     },
     {
-      key: 'pageinfo',
-      name: '페이지 정보',
-      desc: '페이지 제목·요약·태그 등 첫인상 정보의 완성도',
-      score: clamp(Math.round((v('visibility') + v('brand')) / 2), 0, 100)
+      key: 'pageInfo',
+      title: '페이지 정보 (제목·요약)',
+      score: pageInfo,
+      note: pageInfo < 40
+        ? '페이지 제목·요약·태그 첫인상 정보가 부족합니다.'
+        : '제목·설명·미리보기 정보의 완성도가 양호합니다.'
     },
     {
-      key: 'depth',
-      name: '콘텐츠 깊이',
-      desc: '브랜드 메시지의 일관성과 콘텐츠 발행 누적량',
-      score: clamp(Math.round((v('velocity') + v('brand')) / 2), 0, 100)
+      key: 'contentDepth',
+      title: '콘텐츠 깊이',
+      score: contentDepth,
+      note: contentDepth < 40
+        ? '신규 콘텐츠 발행이 거의 없어 AI 학습 데이터가 부족합니다.'
+        : contentDepth < 70
+          ? '간헐적 발행 — 일관된 발행 루틴 확립 필요'
+          : '꾸준한 콘텐츠 생산으로 AI 학습 자산이 풍부합니다.'
     },
     {
-      key: 'mention',
-      name: '외부 언급',
-      desc: '리뷰·SNS·외부 채널에서 우리 브랜드가 회자되는 정도',
-      score: clamp(Math.round((v('engagement') + v('competitive')) / 2), 0, 100)
+      key: 'externalAuthority',
+      title: '외부 권위 (리뷰·언급)',
+      score: externalAuthority,
+      note: externalAuthority < 40
+        ? '리뷰·블로그·커뮤니티에서 우리 브랜드 언급이 거의 없습니다.'
+        : externalAuthority < 70
+          ? '외부 언급이 일부 존재 — 후기·기고 시스템 강화 필요'
+          : '외부 채널에서 활발히 회자되는 단계입니다.'
     },
     {
-      key: 'trust',
-      name: '신뢰 신호',
-      desc: '대표·전문가·실적 등 신뢰할 만한 근거가 노출된 정도',
-      score: v('authority')
+      key: 'eeat',
+      title: 'E-E-A-T (전문성·신뢰)',
+      score: eeat,
+      note: eeat < 40
+        ? '대표·전문가·실적 등 신뢰 근거 노출이 부족합니다.'
+        : eeat < 70
+          ? '신뢰 신호가 일부 존재 — 저자·경력 노출 강화 필요'
+          : '전문성과 경험이 잘 드러나 AI가 신뢰하는 출처로 인식됩니다.'
     }
   ];
-  return items;
 }
 
-function getCriticalIssues(result) {
-  // 점수 낮은 KPI 3개 추출 (사람이 읽는 문장으로)
-  const labels = {
-    visibility: '검색에 거의 노출되지 않습니다',
-    velocity: '신규 콘텐츠 발행이 거의 없습니다',
-    authority: '대표/전문가 신뢰 근거가 부족합니다',
-    citation: 'AI가 인용할 수 있는 구조화가 없습니다',
-    engagement: '리뷰·후기 등 참여 흔적이 부족합니다',
-    conversion: '상담·예약 등 전환 유도가 약합니다',
-    channel: '채널이 한쪽에 치우쳐 있습니다',
-    brand: '브랜드 메시지가 흩어져 있습니다',
-    competitive: '경쟁사 대비 시장 점유가 약합니다',
-    aio: 'AI 시대 인프라가 부재합니다'
+// ===== 권장 경로 매트릭스 =====
+function decideRecommendedPath(totalScore, infra) {
+  const blocked = Number(infra?.blockedBotsCount) || 0;
+  const sitemapScore = Number(infra?.sitemapScore) || 0;
+  const sitemapValid = !!infra?.sitemapValid;
+
+  // 인프라 손상 트리거: 5개 이상 봇 차단 OR sitemap 미발견·손상
+  const infraBroken = blocked >= 5 || sitemapScore <= 1 || !sitemapValid;
+  const t = Number(totalScore) || 0;
+
+  if (t < 30 || (t < 45 && infraBroken)) {
+    return {
+      key: 'must-rebuild',
+      title: '신규 개발 필수',
+      shortLabel: 'Must Rebuild',
+      tabSubtitle: '3 Weeks · 4 Million KRW',
+      level: 'critical',
+      summary: '현재 기반이 무너져 있어 부분 개선으로는 회복이 어렵습니다. 처음부터 새로 짓는 편이 시간·비용 모두 효율적입니다.',
+      period: '3주 신규 개발 + 6개월 운영',
+      cost: '400만원 (개발) + 월 50~150만원 (운영)',
+      showQuote: true,
+      reason: infraBroken
+        ? `핵심 인프라 손상 (AI 봇 ${blocked}개 차단 / 사이트 지도 ${sitemapValid ? '약함' : '미발견'})`
+        : '종합 점수가 회복 임계치 아래입니다.'
+    };
+  }
+  if (t < 45) {
+    return {
+      key: 'rebuild-recommend',
+      title: '신규 개발 권장',
+      shortLabel: 'Rebuild Recommended',
+      tabSubtitle: '3 Weeks · 4 Million KRW',
+      level: 'critical',
+      summary: '여러 약점이 동시에 누적되어 있어 부분 패치보다 신규 개발이 ROI 측면에서 유리합니다.',
+      period: '3주 신규 개발 + 6개월 운영',
+      cost: '400만원 (개발) + 월 50~150만원 (운영)',
+      showQuote: true,
+      reason: '여러 KPI에 약점이 분산되어 있어 부분 개선의 한계가 큽니다.'
+    };
+  }
+  if (t < 60) {
+    return {
+      key: 'compare',
+      title: '비교 검토 (개선 vs 신규 개발)',
+      shortLabel: 'Compare Options',
+      tabSubtitle: 'Selective vs Rebuild',
+      level: 'warning',
+      summary: '회복 가능한 자산도 있고 손봐야 할 부분도 있습니다. 부분 개선과 신규 개발 양쪽을 비교해 결정하세요.',
+      period: '4~6개월 단계 진행',
+      cost: '월 200~500만원 (부분 개선) 또는 400만원+운영 (신규 개발)',
+      showQuote: true,
+      reason: '점수가 회복 가능 구간에 있으나 인프라 일부에 손상이 있습니다.'
+    };
+  }
+  if (t < 75) {
+    return {
+      key: 'selective',
+      title: '부분 개선 (Selective Boost)',
+      shortLabel: 'Selective Boost',
+      tabSubtitle: '3~6 Months · Targeted',
+      level: 'warning',
+      summary: '핵심 자산은 살아 있어 약점 KPI만 집중 보강하면 충분합니다.',
+      period: '3~6개월',
+      cost: '월 200~500만원',
+      showQuote: false,
+      reason: '핵심 인프라가 작동 중이며 회복이 빠를 영역이 명확합니다.'
+    };
+  }
+  return {
+    key: 'reinforce',
+    title: '콘텐츠 강화 (Reinforce)',
+    shortLabel: 'Reinforce',
+    tabSubtitle: 'Sustain & Scale',
+    level: 'good',
+    summary: '상위권 수준입니다. 미세 조정과 콘텐츠 누적 발행으로 우위를 굳히면 됩니다.',
+    period: '월간 운영',
+    cost: '월 50~150만원',
+    showQuote: false,
+    reason: '인프라·콘텐츠 모두 양호해 신규 개발이 불필요합니다.'
   };
-  const arr = Object.entries(result?.scores || {})
-    .map(([id, s]) => ({ id, value: Number(s?.value) || 0 }))
-    .sort((a, b) => a.value - b.value)
-    .slice(0, 3);
-  return arr.map(x => ({ id: x.id, score: x.value, msg: labels[x.id] || '개선이 필요합니다' }));
 }
 
-function getStrengths(result) {
-  const labels = {
-    visibility: '검색 노출 기반이 형성되어 있음',
-    velocity: '꾸준한 콘텐츠 생산 흐름이 있음',
-    authority: '전문성·신뢰 근거가 노출되어 있음',
-    citation: 'AI 인용 가능한 구조가 일부 존재',
-    engagement: '고객 참여 채널이 작동 중',
-    conversion: '전환 동선이 설계되어 있음',
-    channel: '다채널 노출 기반이 있음',
-    brand: '브랜드 톤이 일관됨',
-    competitive: '경쟁사 대비 우위 영역이 있음',
-    aio: 'AI 최적화 일부 적용됨'
-  };
-  const arr = Object.entries(result?.scores || {})
-    .map(([id, s]) => ({ id, value: Number(s?.value) || 0 }))
-    .filter(x => x.value >= 50)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 3);
-  if (arr.length === 0) return [];
-  return arr.map(x => ({ id: x.id, score: x.value, msg: labels[x.id] || '비교적 양호한 영역' }));
+// ===== AI 인용 5신호 (자체 차별점 9번) =====
+function buildAIWritingSignals(result) {
+  const aiw = result?.meta?.aiwSignals || {};
+  const items = [
+    {
+      key: 'questionHeadings',
+      title: '질문형 H2',
+      desc: '본문에 “어떻게/왜/무엇을” 형태의 질문 헤딩이 얼마나 들어 있는가',
+      score3: Number(aiw.questionHeadings) || 0
+    },
+    {
+      key: 'definitionH2',
+      title: '정의문 H2',
+      desc: '“X는 Y이다” 형태의 정의 문장이 섹션 첫 줄에 얼마나 등장하는가',
+      score3: Number(aiw.definitionH2) || 0
+    },
+    {
+      key: 'brandRepetition',
+      title: '브랜드 반복',
+      desc: '주요 섹션에서 브랜드명이 일관되게 반복 노출되는가',
+      score3: Number(aiw.brandRepetition) || 0
+    },
+    {
+      key: 'externalSignal',
+      title: '외부 신호',
+      desc: '리뷰·언론·외부 매체가 본문에 인용되는가',
+      score3: Number(aiw.externalSignal) || 0
+    },
+    {
+      key: 'ctaReach',
+      title: 'CTA 도달성',
+      desc: '본문 곳곳에서 상담·예약 등 행동 유도가 자연스럽게 노출되는가',
+      score3: Number(aiw.ctaReach) || 0
+    }
+  ];
+  const total = items.reduce((sum, it) => sum + it.score3, 0); // 0~15
+  const total100 = clamp(Math.round((total / 15) * 100), 0, 100);
+  return { items, total, total100 };
 }
 
-function buildContentIdeas(result, brand) {
-  // 6~10개의 콘텐츠 아이디어 (KPI 약점 기반 일반화)
-  const industry = result?.industry || '귀사';
+// ===== CEP 장면 점유 (자체 차별점 10번) =====
+function buildCEPScenes(result, brand, industry) {
+  // result.cepScenes가 있으면 사용 (외부 주입 가능), 없으면 산업 기반 생성
+  const provided = Array.isArray(result?.cepScenes) ? result.cepScenes : null;
+  if (provided && provided.length > 0) return provided.slice(0, 5);
+
   return [
-    `${brand} 대표가 직접 말하는 ${industry} 핵심 가치 — 인터뷰 영상`,
-    `${industry} 의사결정자가 가장 자주 묻는 7가지 질문 — FAQ 콘텐츠`,
-    `${brand} 실제 사례 3건 — 상황·해결·결과 구조의 케이스 스터디`,
-    `${industry} 시장에서 흔한 오해 5가지와 진실 — 해명형 콘텐츠`,
-    `${brand}의 일하는 방식 — 비하인드 스토리·현장 사진 시리즈`,
-    `${industry} 용어 30개 — 일반인도 이해하는 한 줄 사전`,
-    `${brand}이(가) 거절하는 일 — 우리는 왜 이건 하지 않는가`,
-    `${industry} 선택 체크리스트 — 좋은 곳 vs 피해야 할 곳`
+    { scene: `“${industry} 어떻게 시작해야 할지 모르겠다” — 첫 문의 직전 30분`, content: `${brand} 첫 상담 가이드 — 5분 안에 결정 가능 체크리스트` },
+    { scene: `“가격이 너무 차이나서 불안하다” — 견적 비교 직후`, content: `${brand} 가격 투명 공개 — 3가지 등급별 포함 항목 한눈에` },
+    { scene: `“실제 후기를 보고 싶다” — 결정 직전 의심 단계`, content: `${brand} 실제 사례 12건 — 상황·해결·결과 구조 케이스 스터디` },
+    { scene: `“우리 같은 케이스도 가능한가” — 적합성 판단 단계`, content: `${brand} 적합성 자가 진단 — 7문항 체크 + 즉시 추천` },
+    { scene: `“이 사람을 믿어도 될까” — 대표 신뢰 검증 단계`, content: `${brand} 대표 인터뷰 — 28년 업력의 결정적 순간 5가지` }
   ];
 }
 
+// ===== 핵심 결함 / 강점 (사람 어휘) =====
+function getCriticalIssues(eightCards) {
+  return eightCards
+    .filter(c => c.score < 60)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 5);
+}
+
+function getStrengthCards(eightCards) {
+  return eightCards
+    .filter(c => c.score >= 60)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+}
+
+// ===== HTML 빌더 =====
 function buildHTML(result, recommendation, brand, industry) {
   const totalScore = Number(result?.totalScore) || 0;
   const grade = result?.grade?.label || '-';
-  const gradeKey = result?.grade?.key || '';
-  const headline = result?.summary?.headline || `현재 점수는 ${totalScore}점입니다`;
-  const diagnosis = result?.summary?.diagnosis || '';
   const websiteUrl = result?.websiteUrl || '';
+  const headline = result?.summary?.headline || `${brand}의 GEO 점수는 ${totalScore}점입니다.`;
+  const diagnosis = result?.summary?.diagnosis || '';
   const analyzedAt = result?.analyzedAt ? new Date(result.analyzedAt) : new Date();
-  const dateStr = `${analyzedAt.getFullYear()}.${String(analyzedAt.getMonth()+1).padStart(2,'0')}.${String(analyzedAt.getDate()).padStart(2,'0')}`;
+  const dateStr = `${analyzedAt.getFullYear()}년 ${analyzedAt.getMonth() + 1}월 ${analyzedAt.getDate()}일`;
 
-  const eightKpis = buildEightKpis(result);
-  const criticals = getCriticalIssues(result);
-  const strengths = getStrengths(result);
-  const contentIdeas = buildContentIdeas(result, brand);
-
-  const pkg = recommendation?.packageTier || {};
-  const priorityActions = recommendation?.priorityActions || [];
-  const expected = recommendation?.expectedOutcome || {};
-
-  // 권장 경로 결정 (점수 기반)
-  const isFullBuild = totalScore < 40;
-  const recommendedPath = isFullBuild
-    ? { title: '신규 개발 (Full Rebuild)', why: '현재 기반이 약해 부분 개선보다 새로 짓는 편이 효율적입니다.', period: '6~12개월' }
-    : { title: '부분 개선 (Selective Boost)', why: '핵심 자산은 살아있어 약점 KPI만 집중 보강하면 충분합니다.', period: '3~6개월' };
+  const eightCards = buildEightCards(result);
+  const criticals = getCriticalIssues(eightCards);
+  const strengths = getStrengthCards(eightCards);
+  const aiw = buildAIWritingSignals(result);
+  const cepScenes = buildCEPScenes(result, brand, industry);
+  const path = decideRecommendedPath(totalScore, result?.meta?.infraSignals);
+  const reportCode = `GEO-${String(Date.now()).slice(-8)}`;
 
   const e = escapeHtml;
 
-  // KPI 그리드 HTML
-  const kpiGridHTML = eightKpis.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-name">${e(k.name)}</div>
-      <div class="kpi-desc">${e(k.desc)}</div>
-      <div class="kpi-score-row">
-        <span class="kpi-score">${k.score}<span class="kpi-score-max">/100</span></span>
-        <span class="kpi-stars">${stars(k.score)}</span>
+  // KPI 미리보기 3개 (kpi-row)
+  const kpiPreviewHTML = `
+    <div class="kpi"><div class="kpi-value">${totalScore}</div><div class="kpi-label">종합 GEO Score</div></div>
+    <div class="kpi"><div class="kpi-value">${aiw.total}/15</div><div class="kpi-label">AI 인용 5신호 합계</div></div>
+    <div class="kpi"><div class="kpi-value">${cepScenes.length}</div><div class="kpi-label">발굴된 CEP 장면</div></div>`;
+
+  // 8 score-card
+  const scoreGridHTML = eightCards.map(c => {
+    const st = starsFor(c.score);
+    const cls = statusFor(c.score);
+    return `
+      <div class="score-card ${cls}">
+        <div class="item-title">${e(c.title)}</div>
+        <div class="stars" aria-label="${st.count}점/5점">${st.html}</div>
+        <div class="note">${e(c.note)}</div>
+      </div>`;
+  }).join('');
+
+  // AI 인용 5신호 (자체 차별점)
+  const aiwHTML = aiw.items.map(it => `
+    <tr>
+      <td>${e(it.title)}</td>
+      <td>${e(it.desc)}</td>
+      <td style="text-align:center;font-weight:700;color:var(--gold-deep);">${it.score3}/3</td>
+      <td style="text-align:right;">
+        <span class="aiw-bar"><span class="aiw-bar-fill" style="width:${(it.score3 / 3) * 100}%"></span></span>
+      </td>
+    </tr>`).join('');
+
+  // CEP 장면 (자체 차별점)
+  const cepHTML = cepScenes.map((c, i) => `
+    <div class="cep-card">
+      <div class="cep-num">${String(i + 1).padStart(2, '0')}</div>
+      <div class="cep-body">
+        <div class="cep-scene">${e(c.scene)}</div>
+        <div class="cep-content"><strong>표적 콘텐츠</strong> · ${e(c.content)}</div>
       </div>
-      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${k.score}%"></div></div>
     </div>`).join('');
 
-  const criticalsHTML = criticals.length ? criticals.map((c, i) => `
-    <div class="issue-item">
-      <span class="issue-num">${i + 1}</span>
-      <div class="issue-body">
-        <div class="issue-msg">${e(c.msg)}</div>
-        <div class="issue-score">현재 점수 ${c.score}점</div>
-      </div>
-    </div>`).join('') : '<div class="empty">분석된 결함이 없습니다.</div>';
+  // 결함 / 강점
+  const criticalsHTML = criticals.length ? criticals.map(c => `
+    <div class="alert danger">
+      <strong>${e(c.title)} — ${c.score}점</strong>
+      ${e(c.note)}
+    </div>`).join('') : '<p>현재 발견된 핵심 결함이 없습니다.</p>';
 
-  const strengthsHTML = strengths.length ? strengths.map(s => `
-    <div class="strength-item">
-      <span class="strength-dot">●</span>
-      <span>${e(s.msg)} <span class="muted">(${s.score}점)</span></span>
-    </div>`).join('') : '<div class="empty">아직 두드러진 강점이 형성되어 있지 않습니다.</div>';
+  const strengthsHTML = strengths.length ? `
+    <div class="alert success">
+      <strong>이미 가지고 계신 강점</strong>
+      <ul style="margin-top:8px;">
+        ${strengths.map(s => `<li><strong>${e(s.title)} (${s.score}점)</strong> — ${e(s.note)}</li>`).join('')}
+      </ul>
+    </div>` : '<p>아직 두드러진 강점 KPI가 형성되어 있지 않습니다.</p>';
 
-  // 4 Phase 액션
+  // 진단 종합 박스
+  const summaryBoxHTML = `
+    <div class="summary-box">
+      <h3>Executive Summary</h3>
+      <p>${e(brand)}의 AI 검색 시대 존재력을 10가지 신호로 진단한 결과, <strong>현재 상태는 ${e(grade)} (${totalScore}/100)</strong> 수준입니다. ${e(headline)}</p>
+      <div class="big-number">${totalScore} <span class="em">/ 100</span></div>
+      <p>${e(diagnosis || '인프라·구조·콘텐츠·외부 권위 4축을 종합 분석했습니다.')}</p>
+      <p style="margin-top:10px;">권장 경로: <strong>${e(path.title)}</strong> — ${e(path.summary)}</p>
+    </div>`;
+
+  // 4 phase
   const phasesHTML = `
-    <div class="phase-row">
-      <div class="phase-card">
-        <div class="phase-num">Phase 1</div>
-        <div class="phase-title">기반 정비 (1개월)</div>
+    <div class="timeline">
+      <div class="phase urgent">
+        <span class="phase-tag">Week 1 — 기반 정비</span>
+        <h3>1주차: AI 봇 접근 · 사이트 지도 · 페이지 정보 표준화</h3>
         <ul>
-          <li>AI 봇 접근 설정 정비</li>
-          <li>사이트 지도·페이지 정보 표준화</li>
-          <li>대표·전문가 신뢰 페이지 신설</li>
+          <li><strong>1~2일차</strong>: AI 봇 접근 설정 정비 — ChatGPT·Claude·Perplexity 등 7개 AI가 사이트를 자유롭게 읽도록 허용</li>
+          <li><strong>3~4일차</strong>: 사이트 지도 자동 생성·최신화 — 모든 페이지가 빠짐없이 검색·AI에 노출</li>
+          <li><strong>5~7일차</strong>: 페이지 제목·요약·태그 표준화, 대표·전문가 신뢰 페이지 신설</li>
         </ul>
       </div>
-      <div class="phase-card">
-        <div class="phase-num">Phase 2</div>
-        <div class="phase-title">콘텐츠 생산 (2~3개월)</div>
+      <div class="phase short">
+        <span class="phase-tag">Week 2 — 구조화 + 콘텐츠</span>
+        <h3>2주차: AI가 인용하기 좋은 형태로 정보 재조립</h3>
         <ul>
-          <li>주 5회 콘텐츠 자동 발행 체계</li>
-          <li>FAQ 50개 + 사례 콘텐츠 적재</li>
-          <li>리뷰·후기 시스템 활성화</li>
+          <li><strong>8~10일차</strong>: FAQ 30개 + 사례 콘텐츠 12건 적재, 질문형·정의형 헤딩으로 재구성</li>
+          <li><strong>11~12일차</strong>: 리뷰·후기 시스템 활성화, 외부 매체 인용 링크 정비</li>
+          <li><strong>13~14일차</strong>: 본문 곳곳에 자연스러운 상담·예약 유도 동선 삽입</li>
         </ul>
       </div>
-      <div class="phase-card">
-        <div class="phase-num">Phase 3</div>
-        <div class="phase-title">채널 확장 (4~5개월)</div>
+      <div class="phase mid">
+        <span class="phase-tag">Week 3 — 채널 확장 + 오픈</span>
+        <h3>3주차: CEP 장면별 표적 콘텐츠 6편 + 정식 오픈</h3>
         <ul>
-          <li>블로그+SNS+영상 동시 배포</li>
-          <li>외부 매체 기고·언론 노출</li>
-          <li>경쟁사 갭 키워드 점유</li>
+          <li><strong>15~17일차</strong>: 발굴된 CEP 장면 5개 각각의 표적 콘텐츠 6편 작성·게시</li>
+          <li><strong>18~19일차</strong>: 페이지 속도 최적화 (3초 이내), 모든 브라우저·모바일 점검</li>
+          <li><strong>20~21일차</strong>: 도메인 이관 + 보안 인증서 + 검색·지도 등록 + 정식 오픈</li>
         </ul>
       </div>
-      <div class="phase-card">
-        <div class="phase-num">Phase 4</div>
-        <div class="phase-title">최적화 (6개월~)</div>
+      <div class="phase long">
+        <span class="phase-tag">오픈 이후 — 무상 안정화 2주</span>
+        <h3>오픈 후 사후 지원 (포함)</h3>
         <ul>
-          <li>AI 인용률 모니터링 리포트</li>
-          <li>전환 동선 미세 튜닝</li>
-          <li>분기별 KPI 재평가</li>
+          <li><strong>오픈 후 14일</strong>: 발견되는 오류·미세 조정 무상 대응</li>
+          <li><strong>운영자 매뉴얼 PDF + 1회 운영 교육</strong> (화상 60분)</li>
+          <li><strong>30일차 검색 노출 점검 리포트</strong> 1회 제공</li>
         </ul>
       </div>
     </div>`;
 
-  const ideasHTML = contentIdeas.map((idea, i) => `
-    <div class="idea-card">
-      <span class="idea-num">${String(i + 1).padStart(2, '0')}</span>
-      <span class="idea-text">${e(idea)}</span>
-    </div>`).join('');
+  // 견적표 (카카오톡 양식 그대로 — 400만원/3주)
+  const quoteHTML = path.showQuote ? `
+    <h2>견적 (총 400만원 / VAT 별도)</h2>
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>내용</th>
+        <th width="130" style="text-align:right;">금액</th>
+      </tr>
+      <tr>
+        <td>기획 · 정보 구조 설계</td>
+        <td>메뉴 구성, 핵심 키워드 정리, 기존 정보 재구성</td>
+        <td style="text-align:right;">600,000원</td>
+      </tr>
+      <tr>
+        <td>디자인 (PC + 모바일)</td>
+        <td>${e(brand)} 톤에 맞춘 디자인 시안 — 메인 + 서브 페이지 12종</td>
+        <td style="text-align:right;">800,000원</td>
+      </tr>
+      <tr>
+        <td>홈페이지 화면 개발</td>
+        <td>전체 18페이지 화면 구현 + 모바일 반응형</td>
+        <td style="text-align:right;">1,200,000원</td>
+      </tr>
+      <tr>
+        <td>AI 검색·일반 검색 최적화</td>
+        <td>AI 봇 접근 · 사이트 지도 · 구조화 정보 일괄 작업</td>
+        <td style="text-align:right;">700,000원</td>
+      </tr>
+      <tr>
+        <td>블로그 시스템 구축</td>
+        <td>운영자가 직접 글을 올릴 수 있는 글쓰기 화면 제작</td>
+        <td style="text-align:right;">400,000원</td>
+      </tr>
+      <tr>
+        <td>초기 콘텐츠 작성</td>
+        <td>CEP 장면 기반 표적 콘텐츠 6편 직접 작성</td>
+        <td style="text-align:right;">300,000원</td>
+      </tr>
+      <tr style="background:var(--surface-warm);">
+        <td colspan="2"><strong>합계 (VAT 별도)</strong></td>
+        <td style="text-align:right;font-size:16px;color:var(--gold-deep);"><strong>4,000,000원</strong></td>
+      </tr>
+    </table>
+    <div class="alert info" style="margin-top:14px;">
+      <strong>지급 방식</strong>
+      계약 시 50%(200만원) · 정식 오픈 시 50%(200만원) — 이체 또는 세금계산서 발행 가능
+    </div>` : `
+    <h2>운영 견적 (월간)</h2>
+    <table>
+      <tr><th>항목</th><th>내용</th><th width="130" style="text-align:right;">금액</th></tr>
+      <tr><td>월간 콘텐츠 발행</td><td>주 5회 자동 발행 (CEP 장면 기반)</td><td style="text-align:right;">월 1,500,000원</td></tr>
+      <tr><td>AI 인용 모니터링</td><td>월 리포트 + 약점 KPI 재진단</td><td style="text-align:right;">월 500,000원</td></tr>
+      <tr><td>분기 전략 컨설팅</td><td>경영진 미팅 (분기 1회)</td><td style="text-align:right;">회당 1,000,000원</td></tr>
+    </table>`;
 
-  // 견적표
-  const quoteRows = [
-    ['초기 진단·설계', '300만원~', '1회', '-'],
-    ['콘텐츠 자동 발행 시스템', '월 200만원', '월간', '주 5회 자동 게시'],
-    [pkg.name || '맞춤 패키지', e(pkg.price || '협의'), e(pkg.duration || '6개월'), '풀스택 운영'],
-    ['AI 인용 모니터링', '월 50만원', '월간', '월 리포트 발행'],
-    ['전략 컨설팅', '회당 100만원', '분기', '경영진 미팅']
-  ];
-  const quoteHTML = quoteRows.map(r => `
-    <tr>
-      <td>${e(r[0])}</td>
-      <td class="num">${e(r[1])}</td>
-      <td>${e(r[2])}</td>
-      <td class="muted">${e(r[3])}</td>
-    </tr>`).join('');
+  // 권장 경로 카드
+  const pathCardHTML = `
+    <div class="alert ${path.level === 'critical' ? 'danger' : path.level === 'warning' ? 'warning' : 'success'}">
+      <strong>권장 경로 — ${e(path.title)}</strong>
+      <p style="margin-top:6px;">${e(path.summary)}</p>
+      <ul style="margin-top:10px;">
+        <li><strong>판정 근거</strong> — ${e(path.reason)}</li>
+        <li><strong>예상 기간</strong> — ${e(path.period)}</li>
+        <li><strong>예상 비용</strong> — ${e(path.cost)}</li>
+      </ul>
+    </div>`;
 
-  // 예상 성과 표
-  const newScore = expected.newScoreEstimate || Math.min(95, totalScore + 30);
-  const outcomeRows = [
-    ['종합 점수', `${totalScore}점`, `${newScore}점`, `+${newScore - totalScore}`],
-    ['검색 노출', '기준', expected.improvement || '+200%', '↑'],
-    ['AI 인용률', '낮음', '상위권', '↑'],
-    ['상담 문의량', '기준', '월 +3~5배', '↑']
-  ];
-  const outcomeHTML = outcomeRows.map(r => `
-    <tr>
-      <td>${e(r[0])}</td>
-      <td class="num muted">${e(r[1])}</td>
-      <td class="num strong">${e(r[2])}</td>
-      <td class="delta">${e(r[3])}</td>
-    </tr>`).join('');
+  // 우선순위 액션 (recommend.js)
+  const priorityActions = Array.isArray(recommendation?.priorityActions) ? recommendation.priorityActions : [];
+  const priorityHTML = priorityActions.length ? `
+    <h3>우선순위 액션 Top ${Math.min(3, priorityActions.length)}</h3>
+    <ol>
+      ${priorityActions.slice(0, 3).map(p => `
+        <li><strong>${e(p.action || '-')}</strong> — ${e(p.detail || '')}
+        ${p.impact ? ` <span style="color:var(--gold-deep);font-size:12px;">(${e(p.impact)})</span>` : ''}</li>
+      `).join('')}
+    </ol>` : '';
 
-  // 우선순위 액션
-  const priorityHTML = priorityActions.length ? priorityActions.map(p => `
-    <div class="priority-item">
-      <span class="priority-rank">#${p.rank}</span>
-      <div class="priority-body">
-        <div class="priority-action">${e(p.action || '-')}</div>
-        <div class="priority-detail">${e(p.detail || '')}</div>
-        <div class="priority-meta">
-          <span class="tag tag-impact">${e(p.impact || '-')}</span>
-          <span class="tag tag-cost">${e(p.cost || '-')}</span>
-        </div>
-      </div>
-    </div>`).join('') : '';
+  // 푸터의 견적/일정 라인 (권장 경로에 따라 동적)
+  const footerCost = path.showQuote ? '400만원 (VAT 별도)' : path.cost;
+  const footerPeriod = path.showQuote ? '3주 개발' : path.period;
 
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
+<title>${e(brand)} — AI 검색 시대 GEO 진단 리포트</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="${e(brand)} GEO 진단 영업 리포트 - AX Biz Group" />
-<title>${e(brand)} GEO 진단 리포트 | AX Biz Group</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+<meta name="description" content="${e(brand)} GEO 진단 리포트 - AX Biz Group" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;900&family=Pretendard:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --gold: #d4af37;
-  --gold-light: #e8c97c;
-  --gold-accent: #b8941f;
-  --ink-darkest: #0a0e1a;
-  --ink-dark: #1a1f2e;
-  --ink-mid: #3a4258;
-  --ink-soft: #6b7280;
-  --ivory: #f5f1e8;
-  --ivory-warm: #faf6ed;
-  --ivory-deep: #ede5d0;
-  --wine: #722f37;
-  --wine-light: #8d3d46;
-  --emerald: #1a4d3e;
-  --emerald-light: #2a6b56;
-  --line: rgba(10, 14, 26, 0.12);
-  --shadow: 0 6px 24px rgba(10, 14, 26, 0.08);
-}
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--ivory-warm);
-  color: var(--ink-darkest);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.7;
-  -webkit-font-smoothing: antialiased;
-}
-h1, h2, h3, h4 {
-  font-family: 'Noto Serif KR', serif;
-  letter-spacing: -0.01em;
-  color: var(--ink-darkest);
-  margin: 0;
-}
-.accent-en {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  color: var(--gold-accent);
-}
-.container { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+  :root {
+    --bg: #f5f1e8;
+    --bg-tint: #ebe4d3;
+    --surface: #ffffff;
+    --surface-warm: #fdfbf6;
+    --ink-darkest: #0a0e1a;
+    --ink-dark: #14213d;
+    --ink-mid: #1e3a5f;
+    --ink-soft: #4a5568;
+    --ink-light: #718096;
+    --line: #e6dec8;
+    --line-dark: #cbb98e;
+    --gold: #b8945a;
+    --gold-bright: #d4b078;
+    --gold-deep: #8b6f3f;
+    --gold-dark: #6b5430;
+    --critical: #8b1f1f;
+    --warning: #a05d1c;
+    --success: #2f5d3f;
+    --info: #1e3a5f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.75;
+    color: var(--ink-dark);
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(184,148,90,.06) 0%, transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(20,33,61,.04) 0%, transparent 40%);
+    background-attachment: fixed;
+    padding: 56px 20px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 0;
+    box-shadow:
+      0 1px 0 rgba(184,148,90,.15),
+      0 2px 4px rgba(20,33,61,.04),
+      0 24px 60px rgba(20,33,61,.10),
+      0 0 0 1px rgba(184,148,90,.08);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .container::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--gold-deep) 0%, var(--gold-bright) 50%, var(--gold-deep) 100%);
+  }
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 60%, var(--ink-mid) 100%);
+    color: #fff;
+    padding: 70px 80px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+  header::before {
+    content: "";
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(184,148,90,.12) 0%, transparent 70%);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; position: relative; z-index: 1; }
+  .crest { display: inline-flex; align-items: center; gap: 12px; }
+  .crest-line { width: 40px; height: 1px; background: var(--gold-bright); }
+  .label {
+    color: var(--gold-bright);
+    font-size: 11px;
+    letter-spacing: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+  }
+  .header-ax-mark {
+    display: flex; align-items: center; gap: 12px;
+    padding: 4px 14px 4px 4px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(184,148,90,.25);
+    border-radius: 4px;
+  }
+  .header-ax-mark .ax-mini-img {
+    width: 36px; height: 36px; background: #fff; border-radius: 3px; padding: 3px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-ax-mark .ax-mini-img img { width: 100%; height: 100%; object-fit: contain; }
+  .header-ax-mark .ax-mini-text { display: flex; flex-direction: column; line-height: 1.2; }
+  .header-ax-mark .ax-mini-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px; letter-spacing: 0.25em; color: var(--gold-bright); font-weight: 600;
+  }
+  .header-ax-mark .ax-mini-by {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 9.5px; letter-spacing: 0.32em; color: rgba(255,255,255,.5);
+    text-transform: uppercase; margin-top: 2px; font-style: italic;
+  }
+  h1 {
+    font-family: 'Noto Serif KR', 'Cormorant Garamond', serif;
+    font-size: 38px; font-weight: 700; color: #fff;
+    margin-bottom: 18px; line-height: 1.35; letter-spacing: -0.02em;
+    position: relative;
+  }
+  h1 .accent {
+    color: var(--gold-bright);
+    font-weight: 400; font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .subtitle {
+    color: rgba(255,255,255,.78);
+    font-size: 15px; line-height: 1.7;
+    max-width: 720px; font-weight: 300; letter-spacing: 0.01em;
+  }
+  .meta {
+    display: flex; gap: 0; margin-top: 36px; padding-top: 28px;
+    font-size: 13px; color: rgba(255,255,255,.6); flex-wrap: wrap;
+    border-top: 1px solid rgba(184,148,90,.25);
+  }
+  .meta span {
+    padding: 4px 28px 4px 0;
+    margin-right: 28px;
+    border-right: 1px solid rgba(184,148,90,.2);
+    letter-spacing: 0.02em;
+  }
+  .meta span:last-child { border-right: none; }
+  .meta span strong {
+    display: block; color: var(--gold-bright);
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    font-weight: 500; margin-bottom: 4px;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .meta span em { color: #fff; font-style: normal; font-weight: 500; font-size: 14px; }
 
-/* ===== 상단 헤더 ===== */
-.report-header {
-  background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
-  color: var(--ivory);
-  padding: 48px 0 56px;
-  border-bottom: 4px solid var(--gold);
-  position: relative;
-}
-.report-header::after {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: -4px; height: 4px;
-  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
-}
-.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
-.brand-block { display: flex; align-items: center; gap: 16px; }
-.brand-logo { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--ivory); padding: 4px; }
-.brand-name { font-family: 'Noto Serif KR', serif; font-size: 1.15rem; font-weight: 700; color: var(--gold-light); letter-spacing: 0.02em; }
-.brand-tag { font-size: 0.78rem; color: rgba(245, 241, 232, 0.6); margin-top: 2px; }
-.report-meta { text-align: right; font-size: 0.82rem; color: rgba(245, 241, 232, 0.7); }
-.report-meta .accent-en { color: var(--gold-light); font-size: 0.95rem; }
-.report-title-row h1 { color: var(--ivory); font-size: 2.4rem; font-weight: 700; margin-bottom: 8px; }
-.report-title-row .subject { font-size: 1.05rem; color: var(--gold-light); }
-.report-title-row .url { font-size: 0.85rem; color: rgba(245, 241, 232, 0.55); margin-top: 4px; word-break: break-all; }
+  /* CONTENT */
+  .content { padding: 60px 80px; }
+  h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 26px; font-weight: 700; color: var(--ink-darkest);
+    margin: 64px 0 24px; padding-bottom: 16px;
+    position: relative; letter-spacing: -0.01em;
+    border-bottom: 1px solid var(--line);
+  }
+  h2::before {
+    content: ""; position: absolute; bottom: -1px; left: 0;
+    width: 60px; height: 2px; background: var(--gold);
+  }
+  h2:first-child { margin-top: 0; }
+  h3 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 19px; font-weight: 600; color: var(--ink-dark);
+    margin: 32px 0 14px; letter-spacing: -0.01em;
+  }
+  p { margin-bottom: 14px; color: var(--ink-soft); font-size: 15px; line-height: 1.8; }
+  strong { color: var(--ink-darkest); font-weight: 600; }
 
-/* ===== 탭 네비게이션 ===== */
-.tabs-nav {
-  background: var(--ink-darkest);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
-  position: sticky; top: 0; z-index: 100;
-}
-.tabs-row { display: flex; gap: 0; }
-.tab-btn {
-  flex: 1; padding: 20px 16px; background: transparent; color: var(--ivory);
-  border: none; cursor: pointer; font-family: 'Pretendard', sans-serif;
-  font-size: 0.95rem; font-weight: 600; letter-spacing: 0.02em;
-  border-bottom: 3px solid transparent; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.tab-btn:hover { background: rgba(212, 175, 55, 0.08); }
-.tab-btn.active.t1 { border-bottom-color: var(--wine-light); background: rgba(114, 47, 55, 0.18); color: var(--gold-light); }
-.tab-btn.active.t2 { border-bottom-color: var(--emerald-light); background: rgba(26, 77, 62, 0.18); color: var(--gold-light); }
-.tab-btn.active.t3 { border-bottom-color: var(--gold); background: rgba(212, 175, 55, 0.12); color: var(--gold-light); }
-.tab-num { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--gold); }
+  /* SCORE GRID — 카카오톡 양식 그대로 */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 28px 0;
+  }
+  .score-card {
+    padding: 22px 24px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--ink-light);
+    transition: all .2s;
+  }
+  .score-card:hover { box-shadow: 0 4px 16px rgba(20,33,61,.06); transform: translateY(-1px); }
+  .score-card.critical { border-left-color: var(--critical); background: linear-gradient(to right, rgba(139,31,31,.025), var(--surface) 30%); }
+  .score-card.warning { border-left-color: var(--warning); background: linear-gradient(to right, rgba(160,93,28,.025), var(--surface) 30%); }
+  .score-card.good { border-left-color: var(--success); background: linear-gradient(to right, rgba(47,93,63,.025), var(--surface) 30%); }
+  .score-card .item-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; color: var(--ink-darkest); letter-spacing: -0.01em; }
+  .score-card .stars { font-size: 16px; color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; }
+  .score-card .stars .empty { color: var(--line-dark); }
+  .score-card .note { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
 
-/* ===== 탭 패널 ===== */
-.tab-panel { display: none; padding: 48px 0 64px; }
-.tab-panel.active { display: block; }
-.panel-1 { background: linear-gradient(180deg, var(--ivory-warm) 0%, var(--ivory) 100%); }
-.panel-2 { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-warm) 100%); }
-.panel-3 { background: linear-gradient(180deg, var(--ivory-warm) 0%, var(--ivory-deep) 100%); }
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; background: var(--surface); border: 1px solid var(--line); }
+  th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line); line-height: 1.6; }
+  th {
+    background: var(--surface-warm); color: var(--ink-darkest);
+    font-weight: 600; font-size: 13px; letter-spacing: 0.04em;
+    text-transform: uppercase; border-bottom: 2px solid var(--gold);
+  }
+  td { color: var(--ink-soft); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-warm); }
+  table tr td:first-child { font-weight: 500; color: var(--ink-dark); }
 
-.panel-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid var(--line); }
-.panel-1 .panel-header { border-bottom-color: rgba(114, 47, 55, 0.3); }
-.panel-2 .panel-header { border-bottom-color: rgba(26, 77, 62, 0.3); }
-.panel-3 .panel-header { border-bottom-color: rgba(212, 175, 55, 0.45); }
-.panel-header .label-en { display: block; font-size: 0.85rem; margin-bottom: 6px; }
-.panel-header h2 { font-size: 1.85rem; font-weight: 700; }
-.panel-1 .panel-header h2 { color: var(--wine); }
-.panel-2 .panel-header h2 { color: var(--emerald); }
-.panel-3 .panel-header h2 { color: var(--gold-accent); }
+  /* ALERTS */
+  .alert { padding: 20px 24px; border-radius: 4px; margin: 18px 0; border-left: 3px solid; background: var(--surface-warm); position: relative; }
+  .alert.danger { background: linear-gradient(to right, rgba(139,31,31,.04), var(--surface-warm)); border-color: var(--critical); color: #5c1818; }
+  .alert.warning { background: linear-gradient(to right, rgba(160,93,28,.04), var(--surface-warm)); border-color: var(--warning); color: #6e3e10; }
+  .alert.info { background: linear-gradient(to right, rgba(30,58,95,.04), var(--surface-warm)); border-color: var(--info); color: #1a2540; }
+  .alert.success { background: linear-gradient(to right, rgba(47,93,63,.04), var(--surface-warm)); border-color: var(--success); color: #1d3d29; }
+  .alert strong { display: block; margin-bottom: 8px; font-size: 14px; letter-spacing: 0.03em; text-transform: uppercase; font-weight: 700; }
+  ul, ol { margin: 10px 0 18px 22px; }
+  li { margin-bottom: 8px; color: var(--ink-soft); font-size: 14.5px; line-height: 1.75; }
+  li strong { color: var(--ink-darkest); }
 
-/* ===== 탭1: 진단 ===== */
-.score-hero {
-  background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--wine) 100%);
-  color: var(--ivory); border-radius: 20px; padding: 48px 40px;
-  text-align: center; margin-bottom: 40px; box-shadow: var(--shadow);
-  position: relative; overflow: hidden;
-}
-.score-hero::before {
-  content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%;
-  background: radial-gradient(ellipse, rgba(212, 175, 55, 0.18), transparent 70%);
-  pointer-events: none;
-}
-.score-hero .meta-line { font-size: 0.85rem; color: var(--gold-light); margin-bottom: 16px; letter-spacing: 0.05em; }
-.score-big { font-size: 6.5rem; font-weight: 900; line-height: 1; font-family: 'Cormorant Garamond', serif; color: var(--gold); }
-.score-big-suffix { font-size: 1.4rem; color: var(--ivory); margin-left: 4px; }
-.score-grade-line { margin-top: 12px; font-size: 1.2rem; color: var(--gold-light); font-weight: 600; }
-.score-headline { margin-top: 24px; font-size: 1.15rem; color: var(--ivory); max-width: 720px; margin-left: auto; margin-right: auto; }
-.score-diag { margin-top: 12px; font-size: 0.9rem; color: rgba(245, 241, 232, 0.75); max-width: 720px; margin-left: auto; margin-right: auto; }
+  /* PHASE TIMELINE */
+  .timeline { margin: 28px 0; }
+  .phase {
+    padding: 24px 28px; margin-bottom: 18px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--gold); border-radius: 4px;
+    position: relative; transition: all .2s;
+  }
+  .phase:hover { box-shadow: 0 6px 20px rgba(20,33,61,.06); transform: translateX(2px); }
+  .phase.urgent { border-left-color: var(--critical); }
+  .phase.short { border-left-color: var(--warning); }
+  .phase.mid { border-left-color: var(--success); }
+  .phase.long { border-left-color: var(--info); }
+  .phase-tag {
+    display: inline-block; padding: 6px 14px; border-radius: 2px;
+    font-size: 11px; font-weight: 700; margin-bottom: 14px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+  }
+  .phase.urgent .phase-tag { background: var(--critical); color: #fff; }
+  .phase.short .phase-tag { background: var(--warning); color: #fff; }
+  .phase.mid .phase-tag { background: var(--success); color: #fff; }
+  .phase.long .phase-tag { background: var(--info); color: #fff; }
+  .phase h3 { margin-top: 0; color: var(--ink-darkest); font-size: 18px; }
 
-.section-title { font-size: 1.25rem; margin: 40px 0 20px; padding-left: 14px; border-left: 4px solid var(--wine); font-weight: 700; }
-.panel-2 .section-title { border-left-color: var(--emerald); }
-.panel-3 .section-title { border-left-color: var(--gold); }
+  /* SUMMARY HERO BOX */
+  .summary-box {
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    color: #fff; padding: 44px 50px;
+    border-radius: 4px; margin: 40px 0;
+    position: relative; overflow: hidden;
+    box-shadow: 0 12px 32px rgba(20,33,61,.15);
+  }
+  .summary-box::before {
+    content: ""; position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-deep));
+  }
+  .summary-box::after {
+    content: "❖"; position: absolute;
+    top: 30px; right: 36px;
+    color: var(--gold); font-size: 28px; opacity: .3;
+  }
+  .summary-box h3 {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    color: var(--gold-bright); margin-top: 0; margin-bottom: 18px;
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.4em; text-transform: uppercase;
+  }
+  .summary-box p { color: rgba(255,255,255,.85); font-size: 15px; line-height: 1.85; }
+  .summary-box strong { color: var(--gold-bright); font-weight: 600; }
+  .summary-box .big-number {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    font-size: 56px; font-weight: 600;
+    margin: 18px 0; color: #fff;
+    letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .summary-box .big-number .em { color: var(--gold-bright); font-style: italic; }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.kpi-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px; box-shadow: var(--shadow); transition: transform 0.2s; }
-.kpi-card:hover { transform: translateY(-2px); }
-.kpi-name { font-size: 1.05rem; font-weight: 700; color: var(--ink-darkest); margin-bottom: 4px; }
-.kpi-desc { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.55; }
-.kpi-score-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-.kpi-score { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--wine); }
-.kpi-score-max { font-size: 0.9rem; color: var(--ink-soft); margin-left: 2px; }
-.kpi-stars { color: var(--gold); letter-spacing: 2px; font-size: 0.95rem; }
-.kpi-bar { height: 6px; background: var(--ivory-deep); border-radius: 999px; overflow: hidden; }
-.kpi-bar-fill { height: 100%; background: linear-gradient(90deg, var(--wine), var(--gold-accent)); border-radius: 999px; }
+  /* KPI ROW */
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); padding: 24px 20px; border-radius: 4px; text-align: center; position: relative; }
+  .kpi::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 2px; background: var(--gold); }
+  .kpi-value { font-family: 'Noto Serif KR', serif; font-size: 32px; font-weight: 700; color: var(--ink-darkest); letter-spacing: -0.02em; }
+  .kpi-label { font-size: 12px; color: var(--ink-light); margin-top: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
 
-.issue-grid { display: grid; gap: 14px; }
-.issue-item { display: flex; gap: 18px; background: #fff; border-left: 4px solid var(--wine); padding: 18px 22px; border-radius: 10px; box-shadow: var(--shadow); }
-.issue-num { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; color: var(--wine); line-height: 1; }
-.issue-body { flex: 1; }
-.issue-msg { font-weight: 600; color: var(--ink-darkest); font-size: 1.02rem; }
-.issue-score { font-size: 0.82rem; color: var(--ink-soft); margin-top: 4px; }
+  /* AI 인용 5신호 (자체 차별점) */
+  .aiw-bar { display: inline-block; width: 80px; height: 6px; background: var(--bg-tint); border-radius: 3px; overflow: hidden; vertical-align: middle; }
+  .aiw-bar-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold-bright)); border-radius: 3px; }
 
-.strength-list { background: #fff; border-radius: 12px; padding: 22px 26px; border: 1px solid var(--line); box-shadow: var(--shadow); }
-.strength-item { display: flex; gap: 12px; padding: 8px 0; align-items: center; }
-.strength-item + .strength-item { border-top: 1px dashed var(--line); }
-.strength-dot { color: var(--emerald); font-size: 0.7rem; }
-.muted { color: var(--ink-soft); font-size: 0.85rem; }
-.empty { color: var(--ink-soft); font-style: italic; padding: 12px 0; }
+  /* CEP 장면 카드 */
+  .cep-card {
+    display: flex; gap: 18px;
+    padding: 18px 22px; margin-bottom: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--gold); border-radius: 4px;
+  }
+  .cep-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 600;
+    color: var(--gold-deep); line-height: 1;
+    min-width: 48px;
+  }
+  .cep-body { flex: 1; }
+  .cep-scene { font-weight: 600; color: var(--ink-darkest); font-size: 15.5px; margin-bottom: 6px; line-height: 1.55; }
+  .cep-content { font-size: 13.5px; color: var(--ink-soft); line-height: 1.65; }
+  .cep-content strong { color: var(--gold-deep); font-weight: 600; }
 
-/* ===== 탭2: 개선 ===== */
-.path-card {
-  background: linear-gradient(135deg, var(--emerald) 0%, var(--ink-darkest) 100%);
-  color: var(--ivory); padding: 36px 40px; border-radius: 16px;
-  margin-bottom: 36px; box-shadow: var(--shadow); position: relative; overflow: hidden;
-}
-.path-card::before {
-  content: ''; position: absolute; right: -30%; top: -30%; width: 70%; height: 160%;
-  background: radial-gradient(ellipse, rgba(212, 175, 55, 0.15), transparent 70%);
-}
-.path-label { font-size: 0.85rem; color: var(--gold-light); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-.path-title { font-family: 'Noto Serif KR', serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); margin-bottom: 14px; }
-.path-why { font-size: 1rem; color: var(--ivory); max-width: 640px; line-height: 1.7; }
-.path-period { display: inline-block; margin-top: 16px; padding: 6px 16px; background: rgba(212, 175, 55, 0.2); border: 1px solid var(--gold-light); border-radius: 999px; font-size: 0.85rem; color: var(--gold-light); }
+  /* 미니 그래프 (AXOS 온톨로지) */
+  .mini-graph {
+    margin: 24px 0;
+    padding: 20px; background: var(--surface);
+    border: 1px solid var(--line); border-left: 3px solid var(--gold);
+    border-radius: 4px;
+  }
+  .mini-graph svg { width: 100%; max-width: 920px; height: auto; display: block; margin: 0 auto; }
 
-.phase-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.phase-card { background: #fff; border-top: 4px solid var(--emerald); border-radius: 10px; padding: 22px 20px; box-shadow: var(--shadow); }
-.phase-num { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--emerald); font-weight: 600; font-size: 0.95rem; }
-.phase-title { font-family: 'Noto Serif KR', serif; font-weight: 700; font-size: 1.08rem; margin: 6px 0 14px; color: var(--ink-darkest); }
-.phase-card ul { padding-left: 18px; margin: 0; }
-.phase-card li { font-size: 0.88rem; color: var(--ink-mid); margin-bottom: 6px; line-height: 1.6; }
+  /* TABS */
+  .tabs {
+    display: flex; gap: 6px;
+    margin: 48px 0 0; padding: 6px;
+    background: var(--ink-darkest);
+    border-radius: 4px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 8px 24px rgba(20,33,61,.22);
+    border: 1px solid var(--gold-dark);
+  }
+  .tab-btn {
+    flex: 1; padding: 18px 22px;
+    border: 1px solid transparent; border-radius: 2px;
+    font-size: 15px; font-weight: 600; color: #fff;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.28s ease;
+    text-align: center; line-height: 1.4;
+    letter-spacing: 0.02em;
+    position: relative; overflow: hidden;
+  }
+  .tab-btn .tab-sub {
+    display: block; font-size: 11px; font-weight: 400;
+    color: rgba(255,255,255,.7); margin-top: 6px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  /* WINE / GARNET */
+  .tab-btn[data-tab="audit"] { background: linear-gradient(135deg, #3a0f15 0%, #5e1820 100%); color: #f5d4d4; }
+  .tab-btn[data-tab="audit"] .tab-sub { color: rgba(245,212,212,.55); }
+  .tab-btn[data-tab="audit"]:hover { background: linear-gradient(135deg, #5e1820 0%, #8b1f2c 100%); color: #fff; transform: translateY(-1px); }
+  .tab-btn[data-tab="audit"].active {
+    background: linear-gradient(135deg, #6b1d24 0%, #a02233 50%, #c92a3a 100%);
+    color: #fff;
+    box-shadow: 0 0 0 1px #d44b59, 0 6px 20px rgba(185,28,40,.45), inset 0 1px 0 rgba(255,255,255,.18);
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .tab-btn[data-tab="audit"].active .tab-sub { color: rgba(255,255,255,.85); }
+  /* EMERALD / FOREST */
+  .tab-btn[data-tab="solution"] { background: linear-gradient(135deg, #0d2017 0%, #1a3d29 100%); color: #c8e6d2; }
+  .tab-btn[data-tab="solution"] .tab-sub { color: rgba(200,230,210,.55); }
+  .tab-btn[data-tab="solution"]:hover { background: linear-gradient(135deg, #1a3d29 0%, #2d6644 100%); color: #fff; transform: translateY(-1px); }
+  .tab-btn[data-tab="solution"].active {
+    background: linear-gradient(135deg, #1f4d2e 0%, #2d7a4a 50%, #3aa364 100%);
+    color: #fff;
+    box-shadow: 0 0 0 1px #4ec07c, 0 6px 20px rgba(58,163,100,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .tab-btn[data-tab="solution"].active .tab-sub { color: rgba(255,255,255,.88); }
+  /* ROYAL GOLD */
+  .tab-btn[data-tab="profile"] { background: linear-gradient(135deg, #2a1d0a 0%, #4d3818 100%); color: #f0dfb8; }
+  .tab-btn[data-tab="profile"] .tab-sub { color: rgba(240,223,184,.55); }
+  .tab-btn[data-tab="profile"]:hover { background: linear-gradient(135deg, #4d3818 0%, #7a5d2c 100%); color: #fff; transform: translateY(-1px); }
+  .tab-btn[data-tab="profile"].active {
+    background: linear-gradient(135deg, var(--gold-deep) 0%, var(--gold) 55%, var(--gold-bright) 100%);
+    color: #fff;
+    box-shadow: 0 0 0 1px var(--gold-bright), 0 6px 20px rgba(184,148,90,.45), inset 0 1px 0 rgba(255,255,255,.25);
+    text-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  .tab-btn[data-tab="profile"].active .tab-sub { color: rgba(255,255,255,.92); }
 
-.idea-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.idea-card { background: #fff; padding: 16px 20px; border-radius: 10px; border: 1px solid var(--line); display: flex; gap: 14px; align-items: flex-start; transition: border-color 0.2s; }
-.idea-card:hover { border-color: var(--emerald-light); }
-.idea-num { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--emerald); font-weight: 700; font-size: 1.15rem; min-width: 32px; }
-.idea-text { font-size: 0.92rem; color: var(--ink-darkest); line-height: 1.55; }
+  .tab-panel { display: none; padding-top: 36px; animation: fadeIn 0.4s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.priority-grid { display: grid; gap: 12px; margin-top: 16px; }
-.priority-item { display: flex; gap: 18px; background: #fff; border-radius: 10px; padding: 18px 22px; border-left: 4px solid var(--emerald); box-shadow: var(--shadow); }
-.priority-rank { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; color: var(--emerald); font-size: 1.6rem; min-width: 44px; }
-.priority-body { flex: 1; }
-.priority-action { font-weight: 700; color: var(--ink-darkest); font-size: 1.02rem; margin-bottom: 4px; }
-.priority-detail { font-size: 0.88rem; color: var(--ink-mid); margin-bottom: 10px; line-height: 1.6; }
-.priority-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-.tag { font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
-.tag-impact { background: rgba(26, 77, 62, 0.12); color: var(--emerald); }
-.tag-cost { background: rgba(212, 175, 55, 0.18); color: var(--gold-accent); }
+  /* PRINCIPAL */
+  .principal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 56px; align-items: start; margin-top: 28px; }
+  .principal-photo-col { position: sticky; top: 120px; }
+  .principal-photo { width: 280px; height: 320px; position: relative; margin-bottom: 4px; }
+  .principal-photo::before { content: ""; position: absolute; inset: -10px; border: 1px solid var(--gold); border-radius: 2px; pointer-events: none; }
+  .principal-photo::after { content: ""; position: absolute; bottom: -22px; right: -22px; width: 50px; height: 50px; border-right: 2px solid var(--gold); border-bottom: 2px solid var(--gold); pointer-events: none; }
+  .principal-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; display: block; filter: contrast(1.04); box-shadow: 0 18px 44px rgba(20,33,61,.18); }
+  .principal-photo-fallback {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 64px; color: var(--gold-bright);
+    font-weight: 600; letter-spacing: 0.04em;
+    box-shadow: 0 18px 44px rgba(20,33,61,.18);
+  }
+  .principal-name-card {
+    text-align: center; padding: 20px 0 18px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    background: var(--surface-warm); margin-top: 36px;
+  }
+  .principal-name-card .ko-name { display: block; font-family: 'Noto Serif KR', serif; font-size: 26px; font-weight: 700; color: var(--ink-darkest); letter-spacing: -0.01em; line-height: 1.2; }
+  .principal-name-card .role-tag { display: block; font-family: 'Cormorant Garamond', serif; font-size: 11px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-deep); margin-top: 8px; font-style: italic; font-weight: 600; }
+  .principal-quote { font-family: 'Noto Serif KR', serif; font-size: 21px; font-style: italic; font-weight: 500; color: var(--ink-darkest); padding: 6px 0 16px 22px; border-left: 3px solid var(--gold); margin: 0 0 18px; line-height: 1.55; letter-spacing: -0.01em; }
+  .principal-summary { font-size: 15px; color: var(--ink-soft); line-height: 1.85; margin-bottom: 32px; }
+  .principal-stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 36px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: linear-gradient(180deg, var(--surface) 0%, var(--surface-warm) 100%); }
+  .principal-stats .stat { padding: 22px 8px 20px; text-align: center; border-right: 1px solid var(--line); position: relative; }
+  .principal-stats .stat::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 26px; height: 2px; background: var(--gold); }
+  .principal-stats .stat:last-child { border-right: none; }
+  .principal-stats .num { display: block; font-family: 'Noto Serif KR', serif; font-size: 32px; font-weight: 700; color: var(--gold-deep); letter-spacing: -0.02em; line-height: 1; }
+  .principal-stats .label { display: block; font-family: 'Cormorant Garamond', serif; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-light); margin-top: 8px; font-weight: 500; }
+  .principal-h3 { font-family: 'Cormorant Garamond', 'Noto Serif KR', serif; font-size: 12px; letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold-deep); margin: 28px 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .principal-list { list-style: none; margin: 0 0 18px; padding: 0; }
+  .principal-list li { position: relative; padding-left: 20px; font-size: 14.5px; margin-bottom: 9px; color: var(--ink-soft); line-height: 1.65; }
+  .principal-list li::before { content: "❖"; position: absolute; left: 0; top: 1px; color: var(--gold); font-size: 10px; }
+  .principal-text { font-size: 14.5px; color: var(--ink-soft); line-height: 1.9; margin-bottom: 18px; }
+  .principal-contact-card {
+    margin-top: 36px; padding: 22px 28px;
+    background: linear-gradient(135deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
+    border-radius: 4px; position: relative; overflow: hidden;
+  }
+  .principal-contact-card::before {
+    content: ""; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-deep));
+  }
+  .contact-row { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid rgba(184,148,90,.18); }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-label { font-family: 'Cormorant Garamond', serif; font-size: 11px; letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold-bright); width: 80px; font-weight: 600; }
+  .contact-val { color: #fff; font-size: 15px; letter-spacing: 0.02em; }
 
-table.report-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
-table.report-table th { background: var(--ink-darkest); color: var(--gold-light); font-family: 'Noto Serif KR', serif; font-weight: 600; padding: 14px 18px; text-align: left; font-size: 0.92rem; letter-spacing: 0.02em; }
-table.report-table td { padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 0.93rem; }
-table.report-table tbody tr:last-child td { border-bottom: none; }
-table.report-table tbody tr:nth-child(even) { background: var(--ivory-warm); }
-table.report-table .num { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--ink-darkest); }
-table.report-table .num.strong { color: var(--emerald); font-size: 1.05rem; }
-table.report-table .delta { color: var(--gold-accent); font-weight: 700; }
+  /* FOOTER */
+  footer.premium-footer {
+    margin-top: 0; padding: 0;
+    background: linear-gradient(180deg, var(--ink-darkest) 0%, #050810 100%);
+    color: rgba(255,255,255,.7);
+    font-size: 13px; text-align: left;
+    position: relative; overflow: hidden;
+  }
+  footer.premium-footer::before {
+    content: ""; position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+  .footer-inner { display: grid; grid-template-columns: 1.3fr 2fr; gap: 60px; padding: 60px 80px 40px; position: relative; z-index: 1; }
+  .footer-brand .ax-logo-row { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+  .ax-logo-img {
+    width: 76px; height: 76px; flex-shrink: 0;
+    background: linear-gradient(145deg, #ffffff 0%, #faf6ec 100%);
+    border-radius: 6px; padding: 8px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 1px rgba(184,148,90,.45), 0 6px 20px rgba(184,148,90,.25), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .ax-logo-img img { width: 100%; height: 100%; object-fit: contain; }
+  .ax-wordmark { display: flex; flex-direction: column; }
+  .ax-name { font-family: 'Cormorant Garamond', 'Noto Serif KR', serif; font-size: 22px; font-weight: 700; letter-spacing: 0.22em; color: #fff; line-height: 1; }
+  .ax-tagline { font-family: 'Cormorant Garamond', serif; font-size: 11px; letter-spacing: 0.32em; color: var(--gold-bright); margin-top: 6px; font-style: italic; text-transform: uppercase; font-weight: 500; }
+  .brand-desc { color: rgba(255,255,255,.55); font-size: 13px; line-height: 1.75; font-weight: 300; max-width: 320px; margin: 0; }
+  .brand-desc strong { color: rgba(255,255,255,.85); font-weight: 500; }
+  .footer-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .footer-col h5 { font-family: 'Cormorant Garamond', serif; font-size: 11px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-bright); margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(184,148,90,.22); font-weight: 600; }
+  .footer-col ul { list-style: none; margin: 0; padding: 0; }
+  .footer-col li { color: rgba(255,255,255,.6); font-size: 13px; margin-bottom: 9px; line-height: 1.65; padding-left: 0; letter-spacing: 0.01em; }
+  .footer-col li strong { color: rgba(255,255,255,.88); font-weight: 500; }
+  .footer-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(184,148,90,.25) 20%, rgba(184,148,90,.25) 80%, transparent); margin: 0 80px; }
+  .footer-bottom { padding: 24px 80px 32px; text-align: center; font-size: 12px; color: rgba(255,255,255,.45); letter-spacing: 0.04em; position: relative; z-index: 1; }
+  .footer-bottom strong { color: var(--gold-bright); font-weight: 600; letter-spacing: 0.1em; }
+  .footer-mark { display: inline-block; color: var(--gold); margin: 0 8px; font-size: 14px; }
 
-/* ===== 탭3: 대표 ===== */
-.ceo-hero {
-  display: grid; grid-template-columns: 280px 1fr; gap: 40px;
-  background: linear-gradient(135deg, #fff 0%, var(--ivory-warm) 100%);
-  border: 1px solid var(--gold-light); border-radius: 20px; padding: 40px;
-  box-shadow: var(--shadow); margin-bottom: 36px;
-}
-.ceo-photo {
-  width: 240px; height: 240px; border-radius: 50%; object-fit: cover;
-  border: 6px solid var(--gold); box-shadow: 0 8px 32px rgba(212, 175, 55, 0.3);
-  margin: 0 auto;
-}
-.ceo-info .ceo-tag { font-size: 0.85rem; color: var(--gold-accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-.ceo-info h3 { font-size: 2.2rem; color: var(--ink-darkest); margin-bottom: 4px; }
-.ceo-info .ceo-position { font-size: 1.05rem; color: var(--ink-mid); margin-bottom: 20px; }
-.ceo-bio { font-size: 0.95rem; color: var(--ink-mid); line-height: 1.8; }
+  /* PRINT */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; padding: 0; border: none; }
+    .container::before { display: none; }
+    header { padding: 30px 30px 20px; }
+    .content { padding: 30px; }
+    .tabs { display: none; }
+    .tab-panel { display: block !important; page-break-before: always; }
+    .tab-panel:first-of-type { page-break-before: auto; }
+    .summary-box, header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    footer.premium-footer { background: #fff !important; color: #333; }
+    footer.premium-footer * { color: #333 !important; }
+  }
 
-.ceo-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0 36px; }
-.ceo-kpi {
-  background: linear-gradient(180deg, var(--ink-darkest) 0%, var(--ink-dark) 100%);
-  color: var(--ivory); border-radius: 12px; padding: 24px 18px; text-align: center;
-  border: 1px solid var(--gold); box-shadow: var(--shadow);
-}
-.ceo-kpi-num { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--gold); line-height: 1; }
-.ceo-kpi-num-suffix { font-size: 1rem; color: var(--gold-light); margin-left: 2px; }
-.ceo-kpi-label { font-size: 0.88rem; color: var(--ivory); margin-top: 8px; font-weight: 600; }
-.ceo-kpi-sub { font-size: 0.75rem; color: rgba(245, 241, 232, 0.6); margin-top: 4px; }
-
-.ceo-expertise { background: #fff; border-radius: 12px; padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--line); }
-.ceo-expertise h4 { font-size: 1.15rem; margin-bottom: 14px; color: var(--ink-darkest); }
-.expertise-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.expertise-tag { padding: 7px 14px; background: var(--ivory-deep); color: var(--ink-darkest); border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--gold-light); }
-
-.contact-card {
-  background: linear-gradient(135deg, var(--gold-accent) 0%, var(--gold) 100%);
-  color: var(--ink-darkest); border-radius: 14px; padding: 32px 36px; box-shadow: var(--shadow);
-  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
-}
-.contact-card .label-en { font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--ink-darkest); opacity: 0.7; }
-.contact-card h4 { font-size: 1.5rem; margin: 4px 0 16px; color: var(--ink-darkest); }
-.contact-row { display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
-.contact-row span { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-.contact-cta { background: var(--ink-darkest); color: var(--gold); padding: 16px 28px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 1rem; text-decoration: none; white-space: nowrap; transition: transform 0.15s; }
-.contact-cta:hover { transform: scale(1.04); }
-
-/* ===== 푸터 ===== */
-.report-footer { background: var(--ink-darkest); color: rgba(245, 241, 232, 0.7); padding: 36px 0; border-top: 4px solid var(--gold); margin-top: 0; }
-.footer-row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; }
-.footer-brand { display: flex; align-items: center; gap: 12px; }
-.footer-brand img { width: 40px; height: 40px; border-radius: 6px; background: var(--ivory); padding: 3px; }
-.footer-brand-text { font-family: 'Noto Serif KR', serif; font-weight: 700; color: var(--gold-light); font-size: 1rem; }
-.footer-meta { font-size: 0.82rem; line-height: 1.7; }
-
-/* ===== 인쇄 ===== */
-@media print {
-  .tabs-nav { display: none; }
-  .tab-panel { display: block !important; page-break-after: always; padding: 24px 0; }
-  body { background: #fff; }
-  .report-header, .report-footer { background: var(--ink-darkest) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .score-hero, .path-card, .ceo-kpi, .contact-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-}
-
-/* ===== 반응형 ===== */
-@media (max-width: 720px) {
-  .container { padding: 0 20px; }
-  .kpi-grid, .idea-grid { grid-template-columns: 1fr; }
-  .phase-row, .ceo-kpi-row { grid-template-columns: repeat(2, 1fr); }
-  .ceo-hero { grid-template-columns: 1fr; }
-  .ceo-photo { width: 200px; height: 200px; }
-  .contact-card { grid-template-columns: 1fr; text-align: center; }
-  .score-big { font-size: 4.8rem; }
-  .report-title-row h1 { font-size: 1.8rem; }
-  .tab-btn { padding: 14px 8px; font-size: 0.82rem; }
-}
+  /* RESPONSIVE */
+  @media (max-width: 720px) {
+    body { padding: 20px 12px; }
+    header { padding: 40px 28px 32px; }
+    .content { padding: 36px 28px; }
+    h1 { font-size: 26px; }
+    .summary-box { padding: 28px; }
+    .summary-box .big-number { font-size: 36px; }
+    .score-grid, .kpi-row { grid-template-columns: 1fr; }
+    .meta span { padding-right: 16px; margin-right: 16px; }
+    .footer-inner { grid-template-columns: 1fr; gap: 40px; padding: 40px 28px 24px; }
+    .footer-cols { grid-template-columns: 1fr; gap: 28px; }
+    .footer-divider { margin: 0 28px; }
+    .footer-bottom { padding: 20px 28px 28px; }
+    .tabs { flex-direction: column; }
+    .principal-grid { grid-template-columns: 1fr; gap: 36px; }
+    .principal-photo-col { position: static; }
+    .principal-photo { width: 220px; height: 260px; margin: 0 auto; }
+    .principal-stats { grid-template-columns: repeat(2, 1fr); }
+    .principal-stats .stat:nth-child(2) { border-right: none; }
+    .header-top { flex-direction: column; gap: 16px; align-items: flex-start; }
+  }
 </style>
 </head>
 <body>
+<div class="container">
 
-<header class="report-header">
-  <div class="container">
-    <div class="brand-row">
-      <div class="brand-block">
-        <img class="brand-logo" src="https://jaiwshim-project.github.io/01-2-AXBizGroup/%EB%A1%9C%EA%B3%A0-AX%EB%B9%84%EC%A6%88%EA%B7%B8%EB%A3%B9.jpg" alt="AX Biz Group" onerror="this.style.display='none'" />
-        <div>
-          <div class="brand-name">AX Biz Group</div>
-          <div class="brand-tag accent-en">AI Transformation Partners</div>
-        </div>
+<header>
+  <div class="header-top">
+    <div class="crest">
+      <span class="crest-line"></span>
+      <span class="label">${e(brand)} · GEO Diagnostic Report</span>
+    </div>
+    <div class="header-ax-mark" title="Presented by AX Biz Group">
+      <div class="ax-mini-img">
+        <img src="https://jaiwshim-project.github.io/01-2-AXBizGroup/%EB%A1%9C%EA%B3%A0-AX%EB%B9%84%EC%A6%88%EA%B7%B8%EB%A3%B9.jpg" alt="AX Biz Group" onerror="this.style.display='none'">
       </div>
-      <div class="report-meta">
-        <div class="accent-en">GEO Diagnostic Report</div>
-        <div>발행일: ${e(dateStr)}</div>
-        <div>리포트 코드: GEO-${e(String(Date.now()).slice(-8))}</div>
+      <div class="ax-mini-text">
+        <span class="ax-mini-by">Presented by</span>
+        <span class="ax-mini-name">AX BIZ GROUP</span>
       </div>
     </div>
-    <div class="report-title-row">
-      <h1>${e(brand)} <span class="accent-en">Diagnosis</span></h1>
-      <div class="subject">${e(industry)} · AI 검색 시대 존재력 진단 결과</div>
-      ${websiteUrl ? `<div class="url">${e(websiteUrl)}</div>` : ''}
-    </div>
+  </div>
+  <h1>AI 검색 시대를 위한<br><span class="accent">${e(brand)}</span> 존재력 진단</h1>
+  <p class="subtitle">${e(industry)} — ChatGPT · Claude · Perplexity · Gemini가 우리 브랜드를 어떻게 인식하는지 10가지 신호로 측정하고, 신규 개발/부분 개선 중 어느 쪽이 효율적인지 자동으로 판단합니다.</p>
+  <div class="meta">
+    <span><strong>대상</strong><em>${e(websiteUrl || brand)}</em></span>
+    <span><strong>발행일</strong><em>${e(dateStr)}</em></span>
+    <span><strong>리포트 코드</strong><em>${e(reportCode)}</em></span>
+    <span><strong>권장 경로</strong><em>${e(path.shortLabel)}</em></span>
   </div>
 </header>
 
-<nav class="tabs-nav">
-  <div class="container">
-    <div class="tabs-row">
-      <button class="tab-btn t1 active" data-tab="1"><span class="tab-num">I.</span> 진단</button>
-      <button class="tab-btn t2" data-tab="2"><span class="tab-num">II.</span> 개선</button>
-      <button class="tab-btn t3" data-tab="3"><span class="tab-num">III.</span> 대표</button>
-    </div>
-  </div>
-</nav>
+<div class="content">
 
-<!-- ========== 탭 1: 진단 ========== -->
-<section class="tab-panel panel-1 active" data-panel="1">
-  <div class="container">
-    <div class="panel-header">
-      <span class="accent-en label-en">Section I — Where you stand</span>
-      <h2>현재 위치 진단</h2>
-    </div>
+${summaryBoxHTML}
 
-    <div class="score-hero">
-      <div class="meta-line accent-en">Total GEO Score</div>
-      <div>
-        <span class="score-big">${totalScore}</span><span class="score-big-suffix">/ 100</span>
-      </div>
-      <div class="score-grade-line">${e(grade)} ${gradeKey ? `· ${e(gradeKey)}` : ''}</div>
-      <div class="score-headline">${e(headline)}</div>
-      ${diagnosis ? `<div class="score-diag">${e(diagnosis)}</div>` : ''}
-    </div>
+<div class="kpi-row">${kpiPreviewHTML}</div>
 
-    <h3 class="section-title">8대 항목 점수표</h3>
-    <div class="kpi-grid">${kpiGridHTML}</div>
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" role="tab" aria-controls="panel-audit" aria-selected="true" data-tab="audit">
+    진단 리포트
+    <span class="tab-sub">Current State Analysis</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-controls="panel-solution" aria-selected="false" data-tab="solution">
+    ${e(path.showQuote ? '신규 개발 제안' : '개선 로드맵')}
+    <span class="tab-sub">${e(path.tabSubtitle)}</span>
+  </button>
+  <button class="tab-btn" role="tab" aria-controls="panel-profile" aria-selected="false" data-tab="profile">
+    대표 프로필
+    <span class="tab-sub">Principal Consultant</span>
+  </button>
+</div>
 
-    <h3 class="section-title">핵심 결함 3가지</h3>
-    <div class="issue-grid">${criticalsHTML}</div>
+<!-- ========== TAB 1: 진단 ========== -->
+<section class="tab-panel active" id="panel-audit" role="tabpanel">
 
-    <h3 class="section-title">강점 자산</h3>
-    <div class="strength-list">${strengthsHTML}</div>
-  </div>
+<h2>1. 8대 항목 점수표</h2>
+<p>새 10가지 KPI를 의사결정자가 한눈에 보는 8가지 항목으로 재구성했습니다. 별점은 0~19점 ★ / 20~39점 ★★ / 40~59점 ★★★ / 60~79점 ★★★★ / 80~100점 ★★★★★ 기준입니다.</p>
+<div class="score-grid">${scoreGridHTML}</div>
+
+<h2>2. 핵심 결함</h2>
+${criticalsHTML}
+
+<h2>3. 강점 자산</h2>
+${strengthsHTML}
+
+<h2>4. AI 인용 5신호 (자체 차별점)</h2>
+<p>일반 GEO 진단이 “구조화 정보가 있다/없다”로 끝나는 데 비해, GEO Score AI는 본문을 직접 분석해 <strong>AI가 발췌하기 좋은 5가지 신호</strong>를 0~3점으로 측정합니다.</p>
+<table>
+  <tr><th width="160">신호</th><th>설명</th><th width="80" style="text-align:center;">점수</th><th width="100" style="text-align:right;">시각화</th></tr>
+  ${aiwHTML}
+  <tr style="background:var(--surface-warm);">
+    <td colspan="2"><strong>합계</strong></td>
+    <td style="text-align:center;font-weight:700;color:var(--gold-deep);"><strong>${aiw.total} / 15</strong></td>
+    <td style="text-align:right;font-weight:700;color:var(--gold-deep);"><strong>${aiw.total100}점 환산</strong></td>
+  </tr>
+</table>
+
+<h2>5. CEP 장면 점유 (자체 차별점)</h2>
+<p>의사결정자가 <strong>실제로 검색하기 직전 30분</strong>의 장면을 좌표로 발굴하고, 각 장면에 맞는 표적 콘텐츠를 미리 설계합니다. AI가 “이 질문이면 이 브랜드”로 학습하는 핵심 자산입니다.</p>
+${cepHTML}
+
+<h2>6. AXOS 약점 사슬 (요약)</h2>
+<div class="mini-graph">
+  <svg viewBox="0 0 920 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="약점 KPI 사슬">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b6f3f"/>
+      </marker>
+    </defs>
+    <rect x="20" y="80" width="180" height="60" rx="6" fill="#fff" stroke="#8b1f1f" stroke-width="2"/>
+    <text x="110" y="105" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="14" fill="#0a0e1a" font-weight="700">Issue (약점)</text>
+    <text x="110" y="125" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="12" fill="#4a5568">${e(criticals[0]?.title || '핵심 약점')}</text>
+
+    <rect x="240" y="80" width="180" height="60" rx="6" fill="#fff" stroke="#a05d1c" stroke-width="2"/>
+    <text x="330" y="105" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="14" fill="#0a0e1a" font-weight="700">Root Cause</text>
+    <text x="330" y="125" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="12" fill="#4a5568">인프라·구조 부재</text>
+
+    <rect x="460" y="80" width="180" height="60" rx="6" fill="#fff" stroke="#1e3a5f" stroke-width="2"/>
+    <text x="550" y="105" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="14" fill="#0a0e1a" font-weight="700">Solution</text>
+    <text x="550" y="125" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="12" fill="#4a5568">${e(path.shortLabel)}</text>
+
+    <rect x="680" y="80" width="220" height="60" rx="6" fill="#fff" stroke="#2f5d3f" stroke-width="2"/>
+    <text x="790" y="105" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="14" fill="#0a0e1a" font-weight="700">Outcome</text>
+    <text x="790" y="125" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="12" fill="#4a5568">AI 추천 답변 등장 + 자연 유입</text>
+
+    <line x1="200" y1="110" x2="240" y2="110" stroke="#8b6f3f" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="420" y1="110" x2="460" y2="110" stroke="#8b6f3f" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="640" y1="110" x2="680" y2="110" stroke="#8b6f3f" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <text x="460" y="40" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="13" fill="#8b6f3f" letter-spacing="3">AXOS · ROOT-CAUSE CHAIN</text>
+    <line x1="280" y1="50" x2="640" y2="50" stroke="#b8945a" stroke-width="1"/>
+  </svg>
+</div>
+
 </section>
 
-<!-- ========== 탭 2: 개선 ========== -->
-<section class="tab-panel panel-2" data-panel="2">
-  <div class="container">
-    <div class="panel-header">
-      <span class="accent-en label-en">Section II — How we get there</span>
-      <h2>개선 로드맵</h2>
-    </div>
+<!-- ========== TAB 2: 개선/신규 개발 ========== -->
+<section class="tab-panel" id="panel-solution" role="tabpanel">
 
-    <div class="path-card">
-      <div class="path-label accent-en">Recommended Path</div>
-      <div class="path-title">${e(recommendedPath.title)}</div>
-      <div class="path-why">${e(recommendedPath.why)}</div>
-      <span class="path-period">예상 기간: ${e(recommendedPath.period)}</span>
-    </div>
+<h2>7. 권장 경로 자동 판정</h2>
+${pathCardHTML}
 
-    <h3 class="section-title">4단계 실행 플랜</h3>
-    ${phasesHTML}
+<h2>8. 권장 경로 매트릭스</h2>
+<table>
+  <tr><th>점수 / 인프라 조건</th><th>권장 경로</th><th>예상 기간 / 비용</th></tr>
+  <tr><td>75점 이상</td><td>콘텐츠 강화 (Reinforce)</td><td>월간 운영 / 월 50~150만원</td></tr>
+  <tr><td>60~74점</td><td>부분 개선 (Selective Boost)</td><td>3~6개월 / 월 200~500만원</td></tr>
+  <tr><td>45~59점</td><td>비교 검토 (Selective vs Rebuild)</td><td>4~6개월 / 옵션별 상이</td></tr>
+  <tr><td>30~44점</td><td>신규 개발 권장 (Rebuild Recommended)</td><td>3주 / 400만원 + 운영</td></tr>
+  <tr><td>0~29점 또는 봇 5+ 차단 / 사이트 지도 손상</td><td><strong style="color:var(--critical);">신규 개발 필수 (Must Rebuild)</strong></td><td>3주 / 400만원 + 운영</td></tr>
+</table>
 
-    ${priorityActions.length ? `
-      <h3 class="section-title">우선순위 액션 Top 3</h3>
-      <div class="priority-grid">${priorityHTML}</div>
-    ` : ''}
+<h2>9. 3주 실행 플랜</h2>
+${phasesHTML}
 
-    <h3 class="section-title">콘텐츠 아이디어 ${contentIdeas.length}선</h3>
-    <div class="idea-grid">${ideasHTML}</div>
+${priorityHTML}
 
-    <h3 class="section-title">예상 성과 (3~6개월)</h3>
-    <table class="report-table">
-      <thead>
-        <tr><th>항목</th><th>현재</th><th>목표</th><th>변화</th></tr>
-      </thead>
-      <tbody>${outcomeHTML}</tbody>
-    </table>
+${quoteHTML}
 
-    <h3 class="section-title">투자 견적</h3>
-    <table class="report-table">
-      <thead>
-        <tr><th>항목</th><th>금액</th><th>주기</th><th>비고</th></tr>
-      </thead>
-      <tbody>${quoteHTML}</tbody>
-    </table>
-  </div>
+<h2>예상 성과 (오픈 후)</h2>
+<table>
+  <tr><th>지표</th><th>현재</th><th>1개월</th><th>3개월</th><th>6개월</th></tr>
+  <tr><td>구글 검색 노출 페이지</td><td>${totalScore < 40 ? '소수' : '중간'}</td><td>15~25개</td><td>40~60개</td><td>80~120개</td></tr>
+  <tr><td>월간 검색 노출 횟수</td><td>측정 불가</td><td>1,500회+</td><td>5,000회+</td><td>20,000회+</td></tr>
+  <tr><td>AI 답변 등장률</td><td>${totalScore < 40 ? '0%' : '낮음'}</td><td>등장 시작</td><td>20~30%</td><td>50%+</td></tr>
+  <tr><td>외부 매체 추천 건수</td><td>${totalScore < 40 ? '0건' : '소수'}</td><td>2~5건</td><td>5~10건</td><td>20건+</td></tr>
+</table>
+
+<div class="alert info" style="margin-top:24px;">
+  <strong>지속 가능한 디지털 자산화</strong>
+  <p style="margin-top:10px;color:inherit;">이 수치들은 일회성 마케팅 효과가 아니라 시간이 갈수록 더 강해지는 <strong>디지털 무형자산의 축적</strong>입니다. 한 번 검색에 자리 잡은 콘텐츠와 추천 신호는 누적 효과를 발휘하여, 6개월 후에는 ${e(industry)} 분야에서 디지털 권위를 확보한 브랜드로 자리매김합니다.</p>
+</div>
+
 </section>
 
-<!-- ========== 탭 3: 대표 ========== -->
-<section class="tab-panel panel-3" data-panel="3">
-  <div class="container">
-    <div class="panel-header">
-      <span class="accent-en label-en">Section III — Who delivers it</span>
-      <h2>대표 프로필</h2>
-    </div>
+<!-- ========== TAB 3: 대표 프로필 ========== -->
+<section class="tab-panel" id="panel-profile" role="tabpanel">
 
-    <div class="ceo-hero">
-      <div>
-        <img class="ceo-photo" src="https://aitutorhub.com/ceo-profile.png" alt="심재우 대표" onerror="this.style.background='linear-gradient(135deg,#0a0e1a,#722f37)'; this.alt='';" />
-      </div>
-      <div class="ceo-info">
-        <div class="ceo-tag accent-en">Founder &amp; CEO</div>
-        <h3>심재우</h3>
-        <div class="ceo-position">AX Biz Group 대표 · AI Transformation Strategist</div>
-        <div class="ceo-bio">
-          AI 검색 시대 기업의 존재력을 설계하는 전략가. 특허·저작권·상표권·저서 등
-          무형 자산 130여 건을 보유한 다작 발명가이자 저자로, 의료·교육·세일즈·컨설팅
-          영역에서 AI 트랜스포메이션 플랫폼을 자체 IP로 구축해 왔습니다.
-          AX Biz Group은 GEO Score AI를 비롯한 AI 진단·운영 시스템을 통해
-          중소기업이 AI 시대에도 발견되고 선택되는 브랜드로 성장하도록 돕습니다.
-        </div>
-      </div>
+<h2>대표 컨설턴트 소개</h2>
+<div class="principal-grid">
+  <div class="principal-photo-col">
+    <div class="principal-photo">
+      <img src="https://aitutorhub.com/ceo-profile.png" alt="심재우 대표"
+           onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','&lt;div class=&quot;principal-photo-fallback&quot;&gt;&#27784;&lt;/div&gt;');">
     </div>
-
-    <h3 class="section-title">지식재산 보유 현황</h3>
-    <div class="ceo-kpi-row">
-      <div class="ceo-kpi">
-        <div><span class="ceo-kpi-num">10</span><span class="ceo-kpi-num-suffix">건</span></div>
-        <div class="ceo-kpi-label">특허</div>
-        <div class="ceo-kpi-sub accent-en">Patents</div>
-      </div>
-      <div class="ceo-kpi">
-        <div><span class="ceo-kpi-num">50</span><span class="ceo-kpi-num-suffix">건</span></div>
-        <div class="ceo-kpi-label">저작권</div>
-        <div class="ceo-kpi-sub accent-en">Copyrights</div>
-      </div>
-      <div class="ceo-kpi">
-        <div><span class="ceo-kpi-num">20</span><span class="ceo-kpi-num-suffix">건</span></div>
-        <div class="ceo-kpi-label">상표권</div>
-        <div class="ceo-kpi-sub accent-en">Trademarks</div>
-      </div>
-      <div class="ceo-kpi">
-        <div><span class="ceo-kpi-num">50</span><span class="ceo-kpi-num-suffix">권</span></div>
-        <div class="ceo-kpi-label">저서</div>
-        <div class="ceo-kpi-sub accent-en">Books</div>
-      </div>
-    </div>
-
-    <div class="ceo-expertise">
-      <h4>전문 분야</h4>
-      <div class="expertise-tags">
-        <span class="expertise-tag">AI 검색 최적화 (GEO)</span>
-        <span class="expertise-tag">콘텐츠 자동 생산 시스템</span>
-        <span class="expertise-tag">의료 AI 상담 플랫폼</span>
-        <span class="expertise-tag">SPIN/인사이트 셀링</span>
-        <span class="expertise-tag">교육 AI 코칭</span>
-        <span class="expertise-tag">온톨로지 기반 플랫폼 설계</span>
-        <span class="expertise-tag">특허·저작권 전략</span>
-      </div>
-    </div>
-
-    <div class="contact-card">
-      <div>
-        <div class="label-en">Direct Contact</div>
-        <h4>지금 바로 상담을 시작하세요</h4>
-        <div class="contact-row">
-          <span>📧 jaiwshim@gmail.com</span>
-          <span>📱 010-2397-5734</span>
-          <span>🏢 AX Biz Group</span>
-        </div>
-      </div>
-      <a class="contact-cta" href="mailto:jaiwshim@gmail.com?subject=${encodeURIComponent('[GEO 리포트 상담] ' + brand)}">상담 신청 →</a>
+    <div class="principal-name-card">
+      <span class="ko-name">심재우</span>
+      <span class="role-tag">Principal Consultant</span>
     </div>
   </div>
-</section>
 
-<footer class="report-footer">
-  <div class="container">
-    <div class="footer-row">
-      <div class="footer-brand">
-        <img src="https://jaiwshim-project.github.io/01-2-AXBizGroup/%EB%A1%9C%EA%B3%A0-AX%EB%B9%84%EC%A6%88%EA%B7%B8%EB%A3%B9.jpg" alt="AX Biz Group" onerror="this.style.display='none'" />
-        <div>
-          <div class="footer-brand-text">AX Biz Group</div>
-          <div class="footer-meta accent-en">AI Transformation · GEO · Content Engine</div>
-        </div>
+  <div class="principal-body">
+    <p class="principal-quote">AI 검색 시대 기업 존재력 설계 · 디지털 무형자산 전환 전략</p>
+    <p class="principal-summary">디지털트윈 시뮬레이션 전문가에서 글로벌 B2B 세일즈 마스터로, 다시 AI 시대의 비즈니스 가시성 설계자로 — <strong>현대자동차 5년 · GE USA 8년의 글로벌 산업 경력</strong>과 <strong>특허 10건·저작권 50건·저서 50권</strong>의 지식재산을 바탕으로, 오프라인 자산을 AI 시대 온라인 권위로 전환하는 전략을 직접 설계합니다.</p>
+
+    <div class="principal-stats">
+      <div class="stat"><span class="num">10</span><span class="label">Patents · 특허</span></div>
+      <div class="stat"><span class="num">50</span><span class="label">Copyrights · 저작권</span></div>
+      <div class="stat"><span class="num">20</span><span class="label">Trademarks · 상표권</span></div>
+      <div class="stat"><span class="num">50</span><span class="label">Books · 저서</span></div>
+    </div>
+
+    <h3 class="principal-h3">Career · 주요 경력</h3>
+    <ul class="principal-list">
+      <li><strong>기계공학 석사</strong> — 구조해석 및 시뮬레이션 전공</li>
+      <li><strong>현대자동차 기술연구소</strong> — 5년</li>
+      <li><strong>General Electric (USA) Plastics</strong> — 8년</li>
+      <li><strong>허스웨이트 스핀셀링</strong> 국제공인 마스터트레이너</li>
+    </ul>
+
+    <h3 class="principal-h3">Expertise · 전문 분야</h3>
+    <p class="principal-text">AI 검색 최적화 (GEO) · 콘텐츠 자동 생산 시스템 · 의료/세일즈/교육 AI 플랫폼 · 온톨로지 기반 플랫폼 설계 · 특허·저작권 전략 · 디지털트윈 · 글로벌 B2B 세일즈</p>
+
+    <h3 class="principal-h3">Featured Works · 주요 활동</h3>
+    <ul class="principal-list">
+      <li>『점의 반란』 공동 저술</li>
+      <li><strong>AI노벨문해력5©</strong> 개발</li>
+      <li><strong>3색줄독서법</strong> 개발 및 특허 등록</li>
+      <li><strong>15창의질문</strong> 개발 및 저작권 등록</li>
+      <li>기업 교육 프로그램 <strong>90건</strong> 개발</li>
+      <li>주요 저서 <strong>50권</strong> 출판</li>
+    </ul>
+
+    <h3 class="principal-h3">Recognition · 등재</h3>
+    <p class="principal-text"><strong>마르퀴즈 후즈후 (Marquis Who's Who) 세계인명사전</strong> — 2016년 &amp; 2020년 등재</p>
+
+    <div class="principal-contact-card">
+      <div class="contact-row">
+        <span class="contact-label">Email</span>
+        <span class="contact-val">jaiwshim@gmail.com</span>
       </div>
-      <div class="footer-meta">
-        대표 심재우 · jaiwshim@gmail.com · 010-2397-5734<br />
-        본 리포트는 GEO Score AI 자동 진단 결과를 영업·제안용으로 정리한 문서입니다.<br />
-        © ${new Date().getFullYear()} AX Biz Group. All rights reserved.
+      <div class="contact-row">
+        <span class="contact-label">Mobile</span>
+        <span class="contact-val">010-2397-5734</span>
+      </div>
+      <div class="contact-row">
+        <span class="contact-label">Group</span>
+        <span class="contact-val">AX Biz Group</span>
       </div>
     </div>
+  </div>
+</div>
+
+</section>
+
+</div>
+
+<footer class="premium-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="ax-logo-row">
+        <div class="ax-logo-img">
+          <img src="https://jaiwshim-project.github.io/01-2-AXBizGroup/%EB%A1%9C%EA%B3%A0-AX%EB%B9%84%EC%A6%88%EA%B7%B8%EB%A3%B9.jpg" alt="AX Biz Group" onerror="this.style.display='none'">
+        </div>
+        <div class="ax-wordmark">
+          <span class="ax-name">AX BIZ GROUP</span>
+          <span class="ax-tagline">AI · Excellence · Strategy</span>
+        </div>
+      </div>
+      <p class="brand-desc">
+        <strong>AX Biz Group</strong>은 AI 검색 시대의 비즈니스 가시성을 설계하는 프리미엄 AI 내재화 컨설팅 그룹입니다. 오프라인 자산을 ChatGPT · Claude · Perplexity · Gemini 시대의 온라인 권위로 전환하는 전략을 제공합니다.
+      </p>
+    </div>
+
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h5>Services</h5>
+        <ul>
+          <li>GEO Score AI 자동 진단</li>
+          <li>프리미엄 신규 홈페이지 개발</li>
+          <li>지속적 콘텐츠 운영 대행</li>
+          <li>지역 비즈니스 GEO 전략</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>This Report</h5>
+        <ul>
+          <li><strong>대상</strong> ${e(brand)}</li>
+          <li><strong>일정</strong> ${e(footerPeriod)}</li>
+          <li><strong>비용</strong> ${e(footerCost)}</li>
+          <li><strong>발행</strong> ${e(dateStr)}</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Contact</h5>
+        <ul>
+          <li>jaiwshim@gmail.com</li>
+          <li>010-2397-5734</li>
+          <li>화상 미팅 가능</li>
+          <li>방문 미팅 가능 (수도권)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-divider"></div>
+
+  <div class="footer-bottom">
+    본 리포트는 ${e(dateStr)} 기준 GEO Score AI 자동 진단 결과를 영업·제안용으로 정리한 문서입니다
+    <span class="footer-mark">❖</span>
+    © ${new Date().getFullYear()} <strong>AX BIZ GROUP</strong> · All Rights Reserved
   </div>
 </footer>
 
+</div>
+
 <script>
-(function(){
-  var btns = document.querySelectorAll('.tab-btn');
+(function() {
+  var tabs = document.querySelectorAll('.tab-btn');
   var panels = document.querySelectorAll('.tab-panel');
-  btns.forEach(function(b){
-    b.addEventListener('click', function(){
-      var t = b.getAttribute('data-tab');
-      btns.forEach(function(x){ x.classList.remove('active'); });
-      panels.forEach(function(p){ p.classList.remove('active'); });
-      b.classList.add('active');
-      var panel = document.querySelector('.tab-panel[data-panel="'+t+'"]');
-      if (panel) panel.classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  tabs.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = btn.dataset.tab;
+      tabs.forEach(function(b) {
+        var isActive = b.dataset.tab === target;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', isActive);
+      });
+      panels.forEach(function(p) {
+        p.classList.toggle('active', p.id === 'panel-' + target);
+      });
+      var tabsTop = document.querySelector('.tabs');
+      if (tabsTop) window.scrollTo({ top: tabsTop.offsetTop - 20, behavior: 'smooth' });
     });
   });
+  if (location.hash === '#solution') {
+    var b = document.querySelector('[data-tab="solution"]');
+    if (b) b.click();
+  }
 })();
 </script>
 
@@ -879,6 +1410,7 @@ export default async function handler(req, res) {
       });
     }
 
+    const path = decideRecommendedPath(result.totalScore, result?.meta?.infraSignals);
     const html = buildHTML(result, recommendation, brand, industry);
 
     return res.status(200).json({
@@ -886,6 +1418,8 @@ export default async function handler(req, res) {
       brand,
       industry,
       totalScore: result.totalScore,
+      recommendation: path.key,
+      recommendationLabel: path.title,
       htmlLength: html.length,
       html
     });
