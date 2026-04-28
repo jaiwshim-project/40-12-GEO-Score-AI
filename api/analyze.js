@@ -438,8 +438,8 @@ ${fetchResult.content || '(본문을 가져오지 못함)'}
     "cepScene": { "value": 0, "reason": "..." }
   },
   "summary": {
-    "headline": "한 줄 충격 메시지 (예: 현재 귀사의 AI 인용 가능성은 23%입니다)",
-    "diagnosis": "현황 진단 2~3 문장",
+    "headline": "한 줄 충격 메시지 — 위 10 KPI 중 가장 낮은 1~2개 KPI를 명시 (임의 % 숫자 절대 금지, 위에서 산출한 KPI 점수만 인용)",
+    "diagnosis": "현황 진단 2~3 문장 — 종합 점수와 일관된 진단 작성. 가장 약한 KPI 2~3개를 구체적으로 거론하고, 60점 이상이면 '기본은 갖춰졌으나 AI 인용 최적화에 미달' 톤, 45~59점이면 '구조 정비 필요' 톤, 45점 미만이면 '신규 개발 권장' 톤. 진단 메시지에 임의의 %·숫자 생성 금지. 위 KPI 점수만 사용.",
     "topProblems": ["문제 1", "문제 2", "문제 3"],
     "opportunities": ["기회 1", "기회 2"],
     "recommendation": "GEO-AIO 솔루션 적용 시 기대 효과 1~2 문장",
@@ -884,16 +884,46 @@ export default async function handler(req, res) {
       }, 0)
     );
 
+    // 새 6단계 등급 (kpi-config.js의 GRADE_CONFIG와 동일)
     const grade = (() => {
-      if (totalScore >= 90) return { key: 'dominant', label: 'AI Dominant' };
-      if (totalScore >= 70) return { key: 'strong', label: 'Strong' };
-      if (totalScore >= 50) return { key: 'growing', label: 'Growing' };
-      if (totalScore >= 30) return { key: 'weak', label: 'Weak' };
-      return { key: 'critical', label: 'Critical' };
+      if (totalScore >= 90) return { key: 'dominant', label: 'A+ Premium', desc: '최상위' };
+      if (totalScore >= 75) return { key: 'strong',   label: 'A 우수',     desc: '우수' };
+      if (totalScore >= 60) return { key: 'growing',  label: 'B 보통',     desc: '보통' };
+      if (totalScore >= 45) return { key: 'weak',     label: 'C 미흡',     desc: '구조 정비 필요' };
+      if (totalScore >= 30) return { key: 'poor',     label: 'D 부족',     desc: '상당한 개선 필요' };
+      return { key: 'critical', label: 'F 잠금', desc: '신규 개발 필수' };
     })();
 
     // 옛 KPI alias (마이그레이션 호환)
     const legacyScores = buildLegacyScores(analysis.scores, fetchResult.meta);
+
+    // diagnosis 메시지 일관성 보장 — 임의 % 숫자 제거 + 종합 점수 기반 톤 강제
+    if (analysis.summary) {
+      // 임의의 "AI 최적화 준비도 NN%" 같은 hallucinated 숫자 제거
+      const sortedKpis = Object.entries(analysis.scores)
+        .map(([id, s]) => ({ id, value: s.value || 0, name: KPI_LIST.find(k => k.id === id)?.name || id }))
+        .sort((a, b) => a.value - b.value);
+      const weakest = sortedKpis.slice(0, 3);
+
+      // 종합 점수 기반 톤
+      let toneLine;
+      if (totalScore >= 75) {
+        toneLine = `상위권에 진입했습니다. 약점 KPI(${weakest[0].name} ${weakest[0].value}점)만 추가 강화하면 1위권 도달이 가능합니다.`;
+      } else if (totalScore >= 60) {
+        toneLine = `기본 구조는 갖춰졌으나 AI 인용·추천 최적화에는 미달합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점) 2개 영역의 보강이 우선입니다.`;
+      } else if (totalScore >= 45) {
+        toneLine = `AI 검색 시대 핵심 신호가 부족합니다. ${weakest[0].name}(${weakest[0].value}점), ${weakest[1].name}(${weakest[1].value}점), ${weakest[2].name}(${weakest[2].value}점) 영역에서 구조 정비가 시급하며, 부분 개선만으로는 한계가 있을 수 있습니다.`;
+      } else if (totalScore >= 30) {
+        toneLine = `AI 검색에서 사실상 인용·추천이 어려운 상태입니다. 약점 KPI 다수(${weakest.map(w => w.name + ' ' + w.value).join(', ')})가 임계점 미만으로, 신규 개발 권장 단계입니다.`;
+      } else {
+        toneLine = `AI 검색에서 거의 발견되지 않는 잠금 상태입니다. 기존 구조로는 회복이 어려워 신규 개발이 필수입니다.`;
+      }
+
+      // headline + diagnosis 일관성 강제
+      const cleanHeadline = (analysis.summary.headline || '').replace(/\d+%/g, '').replace(/\s+/g, ' ').trim();
+      analysis.summary.headline = `현재 ${companyName}의 GEO 종합 점수는 ${totalScore}점 (${grade.label})입니다`;
+      analysis.summary.diagnosis = toneLine;
+    }
 
     return res.status(200).json({
       success: true,

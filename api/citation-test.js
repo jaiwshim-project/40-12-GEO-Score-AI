@@ -156,11 +156,12 @@ export default async function handler(req, res) {
       citationRate,
       generalRate: generalTotal > 0 ? generalCited / generalTotal : 0,
       brandedRate: brandedTotal > 0 ? brandedCited / brandedTotal : 0,
-      grade: citationRate >= 0.8 ? { key: 'dominant', label: 'AI Dominant' }
-           : citationRate >= 0.5 ? { key: 'strong', label: 'Strong' }
-           : citationRate >= 0.3 ? { key: 'growing', label: 'Growing' }
-           : citationRate >= 0.1 ? { key: 'weak', label: 'Weak' }
-           : { key: 'critical', label: 'Critical' },
+      grade: citationRate >= 0.8 ? { key: 'dominant', label: 'A+ Premium' }
+           : citationRate >= 0.5 ? { key: 'strong',   label: 'A 우수' }
+           : citationRate >= 0.3 ? { key: 'growing',  label: 'B 보통' }
+           : citationRate >= 0.15? { key: 'weak',     label: 'C 미흡' }
+           : citationRate >= 0.05? { key: 'poor',     label: 'D 부족' }
+           : { key: 'critical', label: 'F 잠금' },
       answers
     });
   } catch (e) {
