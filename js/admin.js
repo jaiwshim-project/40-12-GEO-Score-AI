@@ -4,7 +4,7 @@
 
 (function() {
   const ADMIN_SESSION_KEY = 'geo_admin_session';
-  const DEFAULT_PASS = 'admin0425';
+  const DEFAULT_PASS = '963314';
 
   function escapeHtml(s) {
     if (!s) return '';
