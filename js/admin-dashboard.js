@@ -21,6 +21,25 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // 업종 영문 코드 → 한글 라벨 매핑 (진단 폼 select 옵션과 동일)
+  const INDUSTRY_KO = {
+    dental: '치과',
+    hospital: '병원/의료',
+    legal: '법무/세무',
+    education: '교육/학원',
+    beauty: '미용/뷰티',
+    restaurant: '음식점/카페',
+    retail: '유통/판매',
+    b2b: 'B2B/제조',
+    other: '기타',
+    '': '미분류',
+    '미분류': '미분류'
+  };
+  function getIndustryKo(code) {
+    if (!code) return '미분류';
+    return INDUSTRY_KO[code] || code;
+  }
+
   // 비밀번호 sessionStorage 기억 (이번 세션만)
   const SAVED = sessionStorage.getItem('admin_pass');
   if (SAVED) {
@@ -106,15 +125,16 @@
   function renderIndustry() {
     const sel = $('filIndustry');
     if (sel && sel.options.length <= 1) {
+      // 필터 옵션은 업종 코드를 value로(서버 필터용), 라벨은 한글로 표시
       sel.innerHTML = '<option value="">전체</option>' + curIndustries.map(i =>
-        `<option value="${escapeHtml(i.industry)}">${escapeHtml(i.industry)} (${i.count})</option>`
+        `<option value="${escapeHtml(i.industry)}">${escapeHtml(getIndustryKo(i.industry))} (${i.count})</option>`
       ).join('');
     }
     $('adIndustry').innerHTML = curIndustries.length === 0
       ? '<div style="color: var(--text-tertiary); font-size: 0.85rem;">데이터 없음</div>'
       : curIndustries.map(i => `
           <div class="ad-industry-card">
-            <div class="name">${escapeHtml(i.industry || '미분류')}</div>
+            <div class="name">${escapeHtml(getIndustryKo(i.industry))}</div>
             <div class="meta">진단 ${i.count}건 · 평균 <strong>${i.avg_score || 0}점</strong> (${i.min_score || 0}~${i.max_score || 0})</div>
           </div>`).join('');
   }
@@ -124,17 +144,36 @@
       $('adTableBody').innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 40px; color: var(--text-tertiary);">데이터 없음</td></tr>`;
       return;
     }
+    // 모드 라벨 변환 — v3.x(target_type 필드) + 옛 진단(mode 필드) 모두 호환
+    function getModeBadge(it) {
+      const t = it.target_type || it.target;
+      const m = it.mode;
+      if (t === 'homepage') return { label: '🏠 홈페이지', color: '#0095ff' };
+      if (t === 'blog')     return { label: '📝 블로그',  color: '#a855f7' };
+      if (t === 'article')  return { label: '📄 글',      color: '#ff8800' };
+      if (m === 'content')  return { label: '📄 글',      color: '#ff8800' };
+      if (m === 'url' || m === 'site') return { label: '🏠 홈페이지', color: '#0095ff' };
+      return { label: escapeHtml(m || '-'), color: 'var(--text-tertiary)' };
+    }
+
+
     $('adTableBody').innerHTML = curItems.map(it => {
       const date = new Date(it.created_at || it.analyzed_at || Date.now()).toLocaleString('ko-KR');
       const url = it.website_url || '-';
       const domain = url !== '-' ? url.replace(/^https?:\/\//,'').split('/')[0] : '-';
+      const mode = getModeBadge(it);
       return `
         <tr>
           <td style="white-space: nowrap; font-size: 0.78rem;">${escapeHtml(date)}</td>
-          <td><strong>${escapeHtml(it.company_name)}</strong></td>
-          <td style="font-size: 0.78rem;"><a href="${escapeHtml(url)}" target="_blank" style="color: #0095ff;">${escapeHtml(domain)}</a></td>
-          <td>${escapeHtml(it.industry || '-')}</td>
-          <td><span style="font-size: 0.72rem; padding: 2px 6px; background: var(--bg-tertiary); border-radius: 4px;">${escapeHtml(it.mode || 'url')}</span></td>
+          <td>
+            <a href="#" data-id="${escapeHtml(it.diagnosis_id)}" class="ad-view-link" title="진단 결과 페이지 열기"
+               style="color: #0095ff; text-decoration: none; font-weight: 700; cursor: pointer;"
+               onmouseover="this.style.textDecoration='underline'"
+               onmouseout="this.style.textDecoration='none'">${escapeHtml(it.company_name)}</a>
+          </td>
+          <td style="font-size: 0.78rem;"><a href="${escapeHtml(url)}" target="_blank" style="color: var(--text-tertiary);">${escapeHtml(domain)}</a></td>
+          <td>${escapeHtml(getIndustryKo(it.industry))}</td>
+          <td><span style="font-size: 0.74rem; padding: 3px 8px; background: ${mode.color}1A; color: ${mode.color}; border: 1px solid ${mode.color}40; border-radius: 999px; font-weight: 700; white-space: nowrap;">${mode.label}</span></td>
           <td><strong style="font-family: monospace;">${it.total_score || 0}</strong></td>
           <td><span class="ad-grade ${escapeHtml(it.grade_key || '')}">${escapeHtml(it.grade_label || '-')}</span></td>
           <td>
@@ -146,31 +185,37 @@
         </tr>`;
     }).join('');
 
-    // 상세 보기 버튼
-    document.querySelectorAll('.ad-view').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const item = curItems.find(i => i.diagnosis_id === id);
-        if (!item) return;
-        // sessionStorage에 result 형식으로 저장 후 result-overview로 이동
-        const result = {
-          id: item.diagnosis_id,
-          companyName: item.company_name,
-          websiteUrl: item.website_url,
-          industry: item.industry,
-          analyzedAt: item.analyzed_at,
-          totalScore: item.total_score,
-          grade: { key: item.grade_key, label: item.grade_label },
-          scores: item.scores,
-          legacyScores: item.legacy_scores,
-          weights: item.weights,
-          summary: item.summary,
-          competitors: item.competitors,
-          meta: item.meta
-        };
-        sessionStorage.setItem('current_result_' + id, JSON.stringify({ result, recommendation: null }));
-        window.open(`result-tabs.html?id=${id}`, '_blank');
+    // 진단 결과 열기 — 회사명 링크 + 📋 상세 버튼 양쪽 동일 핸들러
+    function openResult(id) {
+      const item = curItems.find(i => i.diagnosis_id === id);
+      if (!item) return;
+      const result = {
+        id: item.diagnosis_id,
+        companyName: item.company_name,
+        websiteUrl: item.website_url,
+        industry: item.industry,
+        analyzedAt: item.analyzed_at,
+        totalScore: item.total_score,
+        grade: { key: item.grade_key, label: item.grade_label },
+        scores: item.scores,
+        legacyScores: item.legacy_scores,
+        weights: item.weights,
+        summary: item.summary,
+        competitors: item.competitors,
+        meta: item.meta
+      };
+      sessionStorage.setItem('current_result_' + id, JSON.stringify({ result, recommendation: null }));
+      window.open(`result-tabs.html?id=${id}`, '_blank');
+    }
+
+    document.querySelectorAll('.ad-view-link').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        openResult(a.dataset.id);
       });
+    });
+    document.querySelectorAll('.ad-view').forEach(btn => {
+      btn.addEventListener('click', () => openResult(btn.dataset.id));
     });
 
     // 삭제 버튼 — 2단계 재확인 후 실행
